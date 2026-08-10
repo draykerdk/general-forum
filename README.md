@@ -29,4 +29,4 @@ Issues small enough for one person to finish carry the `open-function` label acr
 
 ---
 
-Drayker is a volunteer, non-profit organization, organized through [DFMP](https://dfmp.drayker.org), with resources governed by the [DAF](https://daf.drayker.org).
+Drayker is an open, primarily volunteer R&D initiative. [DFMP](https://dfmp.drayker.org) and [DAF](https://daf.drayker.org) describe proposed collaboration and governance architecture; the current founding-phase governance is documented in [`draykerdk/.github`](https://github.com/draykerdk/.github/blob/master/GOVERNANCE.md).
