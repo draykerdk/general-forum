@@ -1,0 +1,54 @@
+name: Partnership proposal
+description: Propose a public institutional, research or community collaboration.
+title: "[Partnership] "
+labels:
+  - partnership
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form for an initial public proposal. It does not create a contract, endorsement, funding commitment or exclusivity. Do not publish confidential terms or personal data.
+  - type: input
+    id: proposer
+    attributes:
+      label: Proposer
+      description: Your public name, handle or organization.
+    validations:
+      required: true
+  - type: input
+    id: public_reference
+    attributes:
+      label: Public reference
+      description: A website, repository, publication or other verifiable public link.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed collaboration
+      description: What would the parties do together, and which Drayker component does it relate to?
+    validations:
+      required: true
+  - type: textarea
+    id: public_value
+    attributes:
+      label: Public value and evidence
+      description: What problem would this address, for whom, and what evidence supports the proposal?
+    validations:
+      required: true
+  - type: textarea
+    id: boundaries
+    attributes:
+      label: Boundaries and requested next step
+      description: State what is not being proposed and the smallest useful next action.
+    validations:
+      required: true
+  - type: checkboxes
+    id: public
+    attributes:
+      label: Public-proposal check
+      options:
+        - label: This issue contains no confidential terms, credentials or private personal data.
+          required: true
+        - label: I understand this proposal creates no contract, endorsement or funding commitment.
+          required: true
