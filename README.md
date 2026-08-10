@@ -4,6 +4,12 @@ Announcements, ideas and work related to Drayker that do not fit the topic of an
 
 If you are unsure where something belongs, this is a reasonable place to say it out loud. If it turns out to belong to a project, it moves there.
 
+## Public entry routes
+
+- **Want to contribute?** Use the [volunteer introduction](https://github.com/draykerdk/general-forum/issues/new?template=volunteer-introduction.yml). Share only information you are comfortable publishing; participation is voluntary and does not promise compensation or placement.
+- **Represent a possible partner?** Use the [partnership proposal](https://github.com/draykerdk/general-forum/issues/new?template=partnership.yml). This begins a public discussion and is not a contract, endorsement or funding commitment.
+- **Already know the component?** Open the issue directly beside the documentation or code it concerns.
+
 ## Where things usually belong instead
 
 | If it is about… | Open it in |
@@ -19,7 +25,7 @@ If you are unsure where something belongs, this is a reasonable place to say it 
 
 ## Looking for something to work on?
 
-Issues small enough for one person to finish carry the `open-function` label across the organization and appear on the board at [drayker.org](https://drayker.org/#org/fn). If nothing there fits, [say what you are good at](https://drayker.org/#org/join) and a first function can be cut with you.
+Issues small enough for one person to finish carry the `open-function` label across the organization and appear on the board at [drayker.org](https://drayker.org/#org/fn). If nothing there fits, use the [volunteer introduction](https://github.com/draykerdk/general-forum/issues/new?template=volunteer-introduction.yml) and a first function can be shaped with you.
 
 ---
 

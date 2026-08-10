@@ -1,0 +1,56 @@
+name: Volunteer introduction
+description: Introduce what you would like to contribute and find a public starting point.
+title: "[Volunteer] "
+labels:
+  - volunteer-introduction
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is a public issue. Share only information you are comfortable publishing. A contribution is voluntary and does not imply employment, payment, ownership, tokens or guaranteed placement.
+  - type: input
+    id: name
+    attributes:
+      label: How should we address you?
+      description: A name or public handle is enough.
+    validations:
+      required: true
+  - type: textarea
+    id: interests
+    attributes:
+      label: What would you like to help with?
+      description: Describe the subjects, problems or Drayker components that interest you.
+    validations:
+      required: true
+  - type: textarea
+    id: contribution
+    attributes:
+      label: What can you contribute now?
+      description: Examples include research, documentation, translation, design, code, review or organizing public information.
+    validations:
+      required: true
+  - type: dropdown
+    id: starting_point
+    attributes:
+      label: Preferred starting point
+      options:
+        - A small open function
+        - Review or improve existing documentation
+        - Discuss and refine a proposal
+        - I need help finding the right route
+    validations:
+      required: true
+  - type: textarea
+    id: references
+    attributes:
+      label: Public references
+      description: Optional links to relevant work or profiles. Do not include private contact details.
+  - type: checkboxes
+    id: public
+    attributes:
+      label: Public and voluntary participation
+      options:
+        - label: I understand this submission is public and contains no credentials, private personal data or confidential information.
+          required: true
+        - label: I understand that participation is voluntary and creates no promise of compensation, employment or funding.
+          required: true
