@@ -102,6 +102,7 @@ for (const route of ['', 'new', 'decisions', 'routing', 'about']) {
   const page = fs.readFileSync(file, 'utf8');
   const expected = 'https://forum.drayker.org/' + (route ? route + '/' : '');
   check(page.includes('<link rel="canonical" href="' + expected + '">'), 'wrong canonical for /' + route);
+  check((page.match(/<link rel="canonical"/g) || []).length === 1, 'duplicate canonical for /' + route);
   check(page.includes('<noscript>'), 'missing readable no-script fallback for /' + route);
 }
 
