@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>About — Drayker Forum</title>
+<meta name="description" content="A reading surface over a conversation that already exists on GitHub. No accounts, no database, no ranking, no moderation.">
+<meta name="theme-color" content="#08080A">
+<link rel="canonical" href="https://forum.drayker.org/about/">
+<link rel="shortcut icon" href="../favicon.ico?v=20260811">
+<link rel="icon" href="../favicon.ico?v=20260811" type="image/x-icon" sizes="32x32">
+<link rel="icon" href="../assets/logo/drayker-favicon.svg?v=20260811" type="image/svg+xml" sizes="any">
+<link rel="icon" href="../assets/logo/kit/favicon-32.png?v=20260811" type="image/png" sizes="32x32">
+<link rel="icon" href="../assets/logo/kit/favicon-16.png?v=20260811" type="image/png" sizes="16x16">
+<link rel="apple-touch-icon" href="../assets/logo/kit/apple-touch-icon.png?v=20260811" sizes="180x180">
+<meta property="og:type" content="website">
+<meta property="og:title" content="About — Drayker Forum">
+<meta property="og:description" content="A reading surface over a conversation that already exists on GitHub. No accounts, no database, no ranking, no moderation.">
+<meta property="og:url" content="https://forum.drayker.org/about/">
+<script src="../support.js"></script>
+<!-- FORUM_PRERENDER_START --><script>if(!location.hash)location.replace("#/about");</script><!-- FORUM_PRERENDER_END -->
+</head>
+<body>
+<!-- FORUM_PRERENDER_START --><noscript><div style="max-width:64ch;margin:0 auto;padding:40px 20px;font-family:Archivo,Helvetica,Arial,sans-serif;color:#EDECF0;background:#08080A"><h1>About — Drayker Forum</h1><p>A reading surface over a conversation that already exists on GitHub. No accounts, no database, no ranking, no moderation.</p><p>The forum reads public conversations from <a href="https://github.com/draykerdk">github.com/draykerdk</a>. Publishing and replying happen on GitHub.</p><ul><li><a href="https://forum.drayker.org/">Drayker Forum — every public thread</a></li><li><a href="https://forum.drayker.org/new/">Start a thread — Drayker Forum</a></li><li><a href="https://forum.drayker.org/decisions/">Decisions — Drayker Forum</a></li><li><a href="https://forum.drayker.org/routing/">Where a subject belongs — Drayker Forum</a></li><li><a href="https://forum.drayker.org/about/">About — Drayker Forum</a></li></ul></div></noscript><!-- FORUM_PRERENDER_END -->
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="The public conversation of Drayker: every proposal, question and decision across github.com/draykerdk, read as conversation." />
+<link rel="canonical" href="https://forum.drayker.org/" />
+<meta property="og:title" content="Drayker Forum" />
+<meta property="og:description" content="Every proposal, question and decision in Drayker, read as conversation. Nothing is transmitted by this site." />
+<meta property="og:url" content="https://forum.drayker.org/" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="crossorigin" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet" />
+<!-- Rotating Earth for the mark: variation 1d ("Terra brasa") from the logo study —
+     the brand sphere with real coastlines cut into it in negative. d3 + topojson only
+     draw the coastline path; if either fails to load the mark simply stays the plain
+     sphere, so the page never depends on them. -->
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+<style>
+  *{box-sizing:border-box}
+  :root,[data-theme="dark"]{--bg:#08080A;--surf:#0C0C0F;--surf2:#111115;--line:#18181E;--line2:#222230;--line3:#2E2E38;--tx:#EDECF0;--tx2:#9898A8;--tx3:#6A6A80;--hdr:rgba(11,11,12,0.9)}
+  [data-theme="light"]{--bg:#FAF8F5;--surf:#FFFFFF;--surf2:#F3F0EB;--line:#E4E0D8;--line2:#D6D1C7;--line3:#C2BCB0;--tx:#14141A;--tx2:#56545F;--tx3:#7C7A86;--hdr:rgba(255,255,255,0.88)}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--tx);font-family:'Archivo',sans-serif;-webkit-font-smoothing:antialiased;transition:background .25s ease,color .25s ease}
+  a{color:#FF5500;text-decoration:none}
+  a:hover{color:#FF7A33}
+  ::selection{background:#FF5500;color:#0A0A0C}
+  input,textarea,select,button{font-family:inherit}
+  .dk-glow{text-shadow:0 0 32px rgba(255,85,0,0.3),0 0 80px rgba(255,85,0,0.1)}
+  [data-theme="light"] .dk-glow{text-shadow:none}
+  /* Decorative only. The ring and shadow shapes are NOT animated by CSS — they are
+     recomputed every frame in the logic class (MARK PHYSICS). */
+  @keyframes dk-surf{from{transform:translateX(0)}to{transform:translateX(74px)}}
+  @keyframes dk-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.015)}}
+  @keyframes dk-fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .dk-surf{animation:dk-surf 9s linear infinite}
+  .dk-core{animation:dk-breathe 8s ease-in-out infinite;transform-box:view-box;transform-origin:0 0}
+  .dk-page{animation:dk-fade .3s ease both}
+</style>
+</helmet>
+
+<div style="background:var(--bg);min-height:100vh;display:flex;flex-direction:column">
+
+  <header style="position:sticky;top:0;z-index:50;background:var(--hdr);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)">
+    <div style="max-width:1320px;margin:0 auto;padding:13px clamp(16px,4vw,44px);display:flex;align-items:center;gap:clamp(14px,2.6vw,36px);flex-wrap:wrap">
+      <div onClick="{{ goHome }}" style="display:flex;align-items:center;gap:10px;cursor:pointer;flex-shrink:0">
+<!-- Flat mark, identical geometry to the portal header: crossed ellipses = ring (#8585A0),
+     solid circle = sphere (#FF5500), path = fixed shadow wedge (#000000). Never recolour the
+     ring, the rim or the wedge — only the globe, and only with an approved scope colour. -->
+<svg viewBox="-106 -106 212 212" width="30" height="30" style="display:block">
+          <ellipse cx="0" cy="0" rx="119" ry="38" transform="rotate(45)" fill="none" stroke="#8585A0" stroke-width="3.4"></ellipse>
+          <ellipse cx="0" cy="0" rx="119" ry="38" transform="rotate(-45)" fill="none" stroke="#8585A0" stroke-width="3.4"></ellipse>
+          <circle r="100" fill="#FF5500"></circle>
+          <path d="M -84.4 -53.7 A 119 38 45 0 0 0 51.2 A 119 38 -45 0 0 84.4 -53.7 A 100 100 0 0 0 -84.4 -53.7 Z M 0 51.2 A 119 38 45 0 0 53.7 84.4 A 100 100 0 0 1 -53.7 84.4 A 119 38 -45 0 0 0 51.2 Z" fill="#000000"></path>
+        </svg>
+        <span style="font-size:17px;font-weight:600;letter-spacing:-0.02em">Drayker</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);letter-spacing:0.08em;padding-top:3px">forum</span>
+      </div>
+
+      <nav style="display:flex;align-items:center;gap:clamp(9px,1.5vw,20px);flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;min-width:0;flex:{{ navFlex }};order:{{ navOrder }};width:{{ navWidth }}">
+        <sc-for list="{{ nav }}" as="item" hint-placeholder-count="5">
+          <div onClick="{{ item.onClick }}" style="font-size:13.5px;font-weight:500;cursor:pointer;padding:5px 0;border-bottom:1px solid transparent;white-space:nowrap;color:{{ item.color }};border-bottom-color:{{ item.line }}" style-hover="color:var(--tx)">{{ item.label }}</div>
+        </sc-for>
+      </nav>
+
+      <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;order:{{ ctrlOrder }};margin-left:{{ ctrlPush }}">
+        <div onClick="{{ toggleTheme }}" title="Switch light / dark" style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.1em;color:var(--tx3);border:1px solid var(--line2);padding:6px 10px;cursor:pointer" style-hover="border-color:#FF5500;color:#FF5500">{{ themeLabel }}</div>
+        <a href="https://drayker.org" style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.1em;color:var(--tx3);border:1px solid var(--line2);padding:6px 10px" style-hover="border-color:#FF5500;color:#FF5500">DRAYKER.ORG →</a>
+        <div onClick="{{ goNew }}" style="background:#FF5500;color:#0A0A0C;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;box-shadow:0 0 16px rgba(255,85,0,0.2)" style-hover="background:#FF7A33">Start a thread</div>
+      </div>
+    </div>
+  </header>
+
+  <main style="flex:1">
+
+    <sc-if value="{{ isList }}" hint-placeholder-val="{{ true }}">
+      <div class="dk-page">
+      <section style="max-width:1320px;margin:0 auto;padding:clamp(30px,4vw,58px) clamp(16px,4vw,44px) clamp(18px,2.6vw,28px);display:grid;grid-template-columns:{{ heroCols }};gap:clamp(20px,4vw,56px);align-items:center">
+        <div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#FF5500;margin-bottom:20px">The public conversation of Drayker</div>
+          <h1 class="dk-glow" style="font-size:clamp(32px,4.6vw,60px);line-height:1.02;letter-spacing:-0.04em;font-weight:700;margin:0 0 22px;max-width:20ch;text-wrap:balance">Every argument that built this system is still readable.</h1>
+          <p style="font-size:clamp(15.5px,1.25vw,18px);line-height:1.66;color:var(--tx2);max-width:62ch;margin:0;text-wrap:pretty">Threads live in the repositories they belong to, on GitHub. This site reads all of them in one place and lays them out as reading — no account, no moderation queue, and no private channel where the real conversation happens instead. Writing is done on GitHub, under your own name.</p>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:center;padding:clamp(4px,1.6vw,18px)">
+<!-- ============================================================================
+     DRAYKER MARK — full 3D version. Structure, back to front:
+       1. circle r=138 fill=dkglow   -> halo behind the sphere
+       2. path ringBackRef           -> ring arcs passing BEHIND the sphere (dim)
+       3. circle r=100 fill=dkball   -> the lit sphere body
+       4. clipped .dk-surf rect      -> faint drifting streak on the surface
+       5. path shadowRef             -> night-side wedge (recomputed live in JS)
+       6. path ringOverRef           -> ring arcs in front but inside the silhouette
+       7. path ringOutRef            -> ring arcs in front and outside the silhouette
+       8. circle r=100 stroke=dkrim  -> rim light on the sphere edge
+     Geometry and colours are the approved mark; only the globe may be recoloured.
+     ============================================================================ -->
+<svg ref="{{ markRef }}" viewBox="-128 -128 256 256" style="width:100%;max-width:{{ markSize }};height:auto;display:block">
+            <defs>
+              <clipPath id="fdkow" clipPathUnits="userSpaceOnUse"><circle r="100"></circle></clipPath>
+              <radialGradient id="fdkglow" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="138">
+                <stop offset="0.5" stop-color="#FF5500" stop-opacity="0.17"></stop>
+                <stop offset="0.78" stop-color="#FF5500" stop-opacity="0.05"></stop>
+                <stop offset="1" stop-color="#FF5500" stop-opacity="0"></stop>
+              </radialGradient>
+              <radialGradient id="fdkball" gradientUnits="userSpaceOnUse" cx="-42" cy="-48" r="172">
+                <stop offset="0" stop-color="#FFB050"></stop>
+                <stop offset="0.26" stop-color="#FF7A10"></stop>
+                <stop offset="0.6" stop-color="#E05000"></stop>
+                <stop offset="0.88" stop-color="#B03800"></stop>
+                <stop offset="1" stop-color="#7A2600"></stop>
+              </radialGradient>
+              <radialGradient id="fdkdark" gradientUnits="userSpaceOnUse" cx="-42" cy="-48" r="182">
+                <stop offset="0" stop-color="#1B1B22"></stop>
+                <stop offset="0.42" stop-color="#0D0D12"></stop>
+                <stop offset="1" stop-color="#040406"></stop>
+              </radialGradient>
+              <linearGradient id="fdkrim" gradientUnits="userSpaceOnUse" x1="-72" y1="-74" x2="76" y2="84">
+                <stop offset="0" stop-color="#000000" stop-opacity="0.4"></stop>
+                <stop offset="0.5" stop-color="#000000" stop-opacity="0.12"></stop>
+                <stop offset="1" stop-color="#FFB070" stop-opacity="0.55"></stop>
+              </linearGradient>
+              <linearGradient id="fdkring" gradientUnits="userSpaceOnUse" x1="-104" y1="-104" x2="104" y2="104">
+                <stop offset="0" stop-color="#E4E4F0"></stop>
+                <stop offset="0.45" stop-color="#9090A8"></stop>
+                <stop offset="1" stop-color="#444462"></stop>
+              </linearGradient>
+              <linearGradient id="fdkog" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="74" y2="0" spreadMethod="repeat">
+                <stop offset="0" stop-color="#fff" stop-opacity="0"></stop>
+                <stop offset="0.5" stop-color="#fff" stop-opacity="0.11"></stop>
+                <stop offset="1" stop-color="#fff" stop-opacity="0"></stop>
+              </linearGradient>
+            </defs>
+            <g class="dk-core" style="transform-box:view-box;transform-origin:0 0">
+              <circle r="138" fill="url(#fdkglow)"></circle>
+              <path ref="{{ ringBackRef }}" d="" fill="none" stroke="#32324A" stroke-width="2" stroke-linecap="round"></path>
+              <circle r="100" fill="url(#fdkball)"></circle>
+              <g clip-path="url(#fdkow)">
+                <path ref="{{ landRef }}" d="" fill="#08080A" fill-opacity="0.62" stroke="#08080A" stroke-width="0.5" stroke-opacity="0.6"></path>
+                <g class="dk-surf"><rect x="-260" y="-110" width="520" height="220" fill="url(#fdkog)"></rect></g>
+              </g>
+              <path ref="{{ shadowRef }}" d="M -84.4 -53.7 A 118 38 45 0 0 0 50.7 A 118 38 -45 0 0 84.4 -53.7 A 100 100 0 0 0 -84.4 -53.7 Z M 0 50.7 A 118 38 45 0 0 53.7 84.4 A 100 100 0 0 1 -53.7 84.4 A 118 38 -45 0 0 0 50.7 Z" fill="url(#fdkdark)"></path>
+              <path ref="{{ ringOverRef }}" d="" fill="none" stroke="#FFE8D0" stroke-opacity="0.2" stroke-width="2" stroke-linecap="round"></path>
+              <path ref="{{ ringOutRef }}" d="M 83.4 83.4 A 118 38 45 0 1 -83.4 -83.4 A 118 38 45 0 1 83.4 83.4 Z M -83.4 83.4 A 118 38 -45 0 1 83.4 -83.4 A 118 38 -45 0 1 -83.4 83.4 Z" fill="none" stroke="url(#fdkring)" stroke-width="2.1" stroke-linecap="round"></path>
+              <circle r="100" fill="none" stroke="url(#fdkrim)" stroke-width="1.6"></circle>
+            </g>
+          </svg>
+        </div>
+      </section>
+
+      <section style="border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+        <div style="max-width:1320px;margin:0 auto;padding:0 clamp(16px,4vw,44px);display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr))">
+          <sc-for list="{{ stats }}" as="st" hint-placeholder-count="4">
+            <div style="padding:22px 20px 22px 0">
+              <div style="font-size:clamp(24px,2.6vw,34px);font-weight:600;letter-spacing:-0.03em;line-height:1">{{ st.v }}</div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.14em;color:var(--tx3);margin-top:7px">{{ st.k }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <section>
+        <div style="max-width:1320px;margin:0 auto;padding:clamp(24px,3.2vw,40px) clamp(16px,4vw,44px) clamp(40px,5vw,80px)">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.12em;color:var(--tx3);margin-bottom:20px">{{ stamp }}</div>
+
+          <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px">
+            <sc-for list="{{ types }}" as="f" hint-placeholder-count="6">
+              <div onClick="{{ f.pick }}" style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.1em;padding:8px 12px;cursor:pointer;border:1px solid var(--line2);background:{{ f.bg }};color:{{ f.fg }}" style-hover="border-color:#FF5500">{{ f.t }}</div>
+            </sc-for>
+          </div>
+
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:24px">
+            <input value="{{ q }}" onChange="{{ setQ }}" placeholder="Search every thread…" style="flex:1;min-width:220px;background:var(--surf);border:1px solid var(--line2);color:var(--tx);padding:11px 13px;font-size:14px;outline:none" />
+            <select value="{{ part }}" onChange="{{ setPart }}" style="background:var(--surf);border:1px solid var(--line2);color:var(--tx);padding:11px 13px;font-size:14px;outline:none;min-width:220px">
+              <sc-for list="{{ partOpts }}" as="o" hint-placeholder-count="4">
+                <option value="{{ o.v }}">{{ o.t }}</option>
+              </sc-for>
+            </select>
+            <div onClick="{{ toggleWait }}" style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.1em;padding:11px 13px;cursor:pointer;border:1px solid var(--line2);background:{{ waitBg }};color:{{ waitFg }};white-space:nowrap" style-hover="border-color:#FF5500">NOBODY ANSWERED YET</div>
+          </div>
+
+          <sc-if value="{{ hasRows }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line)">
+              <sc-for list="{{ rows }}" as="r" hint-placeholder-count="7">
+                <div onClick="{{ r.pick }}" style="background:var(--bg);padding:20px 24px;cursor:pointer;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px" style-hover="background:var(--surf2)">
+                  <div style="grid-column:span 2;min-width:0;display:flex;flex-direction:column;gap:8px">
+                    <div style="font-size:17.5px;font-weight:600;letter-spacing:-0.02em;line-height:1.3;text-wrap:pretty">{{ r.title }}</div>
+                    <div style="font-size:13.5px;color:var(--tx2)">{{ r.meta }}</div>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:7px;align-items:flex-start">
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.12em;color:{{ r.kindFg }}">{{ r.kindLabel }}</div>
+                    <div style="font-size:13.5px;color:var(--tx)">{{ r.partName }}</div>
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.08em;color:var(--tx3)">{{ r.where }}</div>
+                    <sc-if value="{{ r.waiting }}" hint-placeholder-val="{{ false }}">
+                      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.12em;color:#FF5500">WAITING FOR A FIRST REPLY</div>
+                    </sc-if>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.1em;color:var(--tx3);margin-top:14px">{{ count }}</div>
+          </sc-if>
+
+          <sc-if value="{{ noMatch }}" hint-placeholder-val="{{ false }}">
+            <div style="border:1px solid var(--line2);background:var(--surf);padding:28px 26px">
+              <div style="font-size:17px;font-weight:600;margin-bottom:8px">Nothing matches that.</div>
+              <div style="font-size:14.5px;line-height:1.62;color:var(--tx2);max-width:60ch;margin-bottom:14px;text-wrap:pretty">These are real threads, so an empty result means nobody has raised this in public yet.</div>
+              <div onClick="{{ goNew }}" style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.12em;color:#FF5500;cursor:pointer">BE THE FIRST →</div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ nothing }}" hint-placeholder-val="{{ false }}">
+            <div style="border:1px solid var(--line2);background:var(--surf);padding:28px 26px">
+              <div style="font-size:17px;font-weight:600;margin-bottom:8px">No public thread is open right now.</div>
+              <div style="font-size:14.5px;line-height:1.62;color:var(--tx2);max-width:60ch;text-wrap:pretty">Nothing is shown in its place. The repositories and the gaps each of them declares are still there to read, and the first thread on any of them can be yours.</div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ down }}" hint-placeholder-val="{{ false }}">
+            <div style="border:1px solid var(--line2);background:var(--surf);padding:28px 26px;margin-top:14px">
+              <div style="font-size:17px;font-weight:600;margin-bottom:8px">GitHub could not be reached.</div>
+              <div style="font-size:14.5px;line-height:1.62;color:var(--tx2);max-width:60ch;margin-bottom:14px;text-wrap:pretty">The conversation lives there, not here, so there is nothing cached that would still be true. The routing map is written down and stays correct either way.</div>
+              <div onClick="{{ refresh }}" style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.12em;color:#FF5500;cursor:pointer">TRY AGAIN →</div>
+            </div>
+          </sc-if>
+        </div>
+      </section>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isThread }}" hint-placeholder-val="{{ false }}">
+      <div class="dk-page">
+      <section>
+        <div style="max-width:1320px;margin:0 auto;padding:clamp(26px,3.6vw,48px) clamp(16px,4vw,44px) clamp(40px,5vw,80px)">
+          <div onClick="{{ goHome }}" style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.14em;color:var(--tx3);cursor:pointer;margin-bottom:26px" style-hover="color:#FF5500">← ALL THREADS</div>
+
+          <sc-if value="{{ tLoading }}" hint-placeholder-val="{{ false }}">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.14em;color:var(--tx3)">READING THE THREAD…</div>
+          </sc-if>
+
+          <sc-if value="{{ tMissing }}" hint-placeholder-val="{{ false }}">
+            <div style="border:1px solid var(--line2);background:var(--surf);padding:28px 26px;max-width:66ch">
+              <div style="font-size:17px;font-weight:600;margin-bottom:8px">No thread with that address.</div>
+              <div style="font-size:14.5px;line-height:1.62;color:var(--tx2);margin-bottom:14px;text-wrap:pretty">It may have been moved to the repository that owns the subject, which is normal here — or the link is wrong.</div>
+              <div onClick="{{ goHome }}" style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.12em;color:#FF5500;cursor:pointer">BACK TO EVERY THREAD →</div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ tReady }}" hint-placeholder-val="{{ true }}">
+            <div style="max-width:74ch">
+              <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.14em;color:#FF5500">{{ t.kindLabel }}</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.1em;color:var(--tx3)">{{ t.where }}</div>
+              </div>
+              <h1 style="font-size:clamp(28px,3.6vw,46px);line-height:1.08;letter-spacing:-0.035em;font-weight:600;margin:0 0 14px;text-wrap:balance">{{ t.title }}</h1>
+              <div style="font-size:14px;color:var(--tx2);margin-bottom:10px">{{ t.meta }}</div>
+              <div style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:30px">
+                <a href="{{ t.partHref }}" target="_blank" rel="noreferrer" style="font-size:13.5px;font-weight:600">About {{ t.partName }} →</a>
+                <a href="{{ t.url }}" target="_blank" rel="noreferrer" style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.08em;color:var(--tx3)" style-hover="color:#FF5500">ORIGINAL ON GITHUB →</a>
+              </div>
+
+              <div style="display:flex;flex-direction:column;gap:14px;border-top:1px solid var(--line2);padding-top:26px">
+                <sc-for list="{{ tBody }}" as="b" hint-placeholder-count="4">
+                  <div>
+                    <sc-if value="{{ b.isP }}" hint-placeholder-val="{{ true }}">
+                      <p style="font-size:16.5px;line-height:1.72;color:var(--tx);margin:0;text-wrap:pretty">{{ b.text }}</p>
+                    </sc-if>
+                    <sc-if value="{{ b.isH }}" hint-placeholder-val="{{ false }}">
+                      <div style="font-size:18px;font-weight:600;letter-spacing:-0.02em;color:var(--tx);margin:10px 0 0">{{ b.text }}</div>
+                    </sc-if>
+                    <sc-if value="{{ b.isLi }}" hint-placeholder-val="{{ false }}">
+                      <div style="display:flex;gap:12px;align-items:baseline">
+                        <div style="color:#FF5500;font-size:14px">—</div>
+                        <div style="font-size:16px;line-height:1.68;color:var(--tx);min-width:0;text-wrap:pretty">{{ b.text }}</div>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ b.isQ }}" hint-placeholder-val="{{ false }}">
+                      <div style="border-left:2px solid var(--line3);padding-left:16px;font-size:16px;line-height:1.68;color:var(--tx2);text-wrap:pretty">{{ b.text }}</div>
+                    </sc-if>
+                    <sc-if value="{{ b.isCode }}" hint-placeholder-val="{{ false }}">
+                      <pre style="font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.6;color:var(--tx2);background:var(--surf);border:1px solid var(--line2);padding:16px;overflow-x:auto;margin:0;white-space:pre-wrap;word-break:break-word">{{ b.text }}</pre>
+                    </sc-if>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ tNoBody }}" hint-placeholder-val="{{ false }}">
+                  <p style="font-size:16px;line-height:1.7;color:var(--tx3);margin:0">This thread was opened with a title and nothing else.</p>
+                </sc-if>
+              </div>
+
+              <sc-if value="{{ tLoadingCmts }}" hint-placeholder-val="{{ false }}">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.14em;color:var(--tx3);margin-top:34px">READING THE REPLIES…</div>
+              </sc-if>
+              <sc-if value="{{ tNoCmts }}" hint-placeholder-val="{{ false }}">
+                <div style="border-top:1px solid var(--line2);margin-top:34px;padding-top:22px;font-size:15.5px;line-height:1.68;color:var(--tx2);text-wrap:pretty">Nobody has replied to this yet. A first answer — even one that says the question is wrong — is a contribution.</div>
+              </sc-if>
+
+              <div style="display:flex;flex-direction:column;gap:34px;margin-top:34px">
+                <sc-for list="{{ tCmts }}" as="c" hint-placeholder-count="0">
+                  <div style="border-top:1px solid var(--line2);padding-top:22px">
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.12em;color:var(--tx3);margin-bottom:14px">{{ c.who }} · {{ c.when }}</div>
+                    <div style="display:flex;flex-direction:column;gap:13px">
+                      <sc-for list="{{ c.blocks }}" as="b" hint-placeholder-count="2">
+                        <div>
+                          <sc-if value="{{ b.isP }}" hint-placeholder-val="{{ true }}">
+                            <p style="font-size:16px;line-height:1.72;color:var(--tx);margin:0;text-wrap:pretty">{{ b.text }}</p>
+                          </sc-if>
+                          <sc-if value="{{ b.isH }}" hint-placeholder-val="{{ false }}">
+                            <div style="font-size:17px;font-weight:600;letter-spacing:-0.02em;color:var(--tx)">{{ b.text }}</div>
+                          </sc-if>
+                          <sc-if value="{{ b.isLi }}" hint-placeholder-val="{{ false }}">
+                            <div style="display:flex;gap:12px;align-items:baseline">
+                              <div style="color:#FF5500;font-size:14px">—</div>
+                              <div style="font-size:15.5px;line-height:1.68;color:var(--tx);min-width:0;text-wrap:pretty">{{ b.text }}</div>
+                            </div>
+                          </sc-if>
+                          <sc-if value="{{ b.isQ }}" hint-placeholder-val="{{ false }}">
+                            <div style="border-left:2px solid var(--line3);padding-left:16px;font-size:15.5px;line-height:1.68;color:var(--tx2);text-wrap:pretty">{{ b.text }}</div>
+                          </sc-if>
+                          <sc-if value="{{ b.isCode }}" hint-placeholder-val="{{ false }}">
+                            <pre style="font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.6;color:var(--tx2);background:var(--surf);border:1px solid var(--line2);padding:16px;overflow-x:auto;margin:0;white-space:pre-wrap;word-break:break-word">{{ b.text }}</pre>
+                          </sc-if>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--line2);margin-top:34px;padding-top:24px">
+                <a href="{{ tReplyUrl }}" target="_blank" rel="noreferrer" style="background:#FF5500;color:#0A0A0C;padding:14px 26px;font-size:14px;font-weight:600;box-shadow:0 0 20px rgba(255,85,0,0.22)" style-hover="background:#FF7A33;color:#0A0A0C">Reply on GitHub →</a>
+                <div style="font-size:13.5px;color:var(--tx3);max-width:44ch;line-height:1.55;text-wrap:pretty">Your reply is published from your own account, in the repository the thread lives in.</div>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </section>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isNew }}" hint-placeholder-val="{{ false }}">
+      <div class="dk-page">
+      <section>
+        <div style="max-width:1320px;margin:0 auto;padding:clamp(32px,4.4vw,60px) clamp(16px,4vw,44px) clamp(40px,5vw,80px);display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:clamp(26px,4vw,60px);align-items:start">
+          <div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#FF5500;margin-bottom:20px">Start a thread</div>
+            <h1 style="font-size:clamp(28px,3.6vw,48px);line-height:1.04;letter-spacing:-0.038em;font-weight:700;margin:0 0 18px;max-width:20ch;text-wrap:balance">Write it here. Publish it there, as yourself.</h1>
+            <p style="font-size:16px;line-height:1.68;color:var(--tx2);margin:0 0 18px;max-width:56ch;text-wrap:pretty">This site sends you to the repository that owns the subject with the text already written — the routing is the organization's own, not a guess. You read it, edit it and publish it under your account. No email, no handle and no contact detail is collected here, and nothing is stored.</p>
+            <p style="font-size:15px;line-height:1.66;color:var(--tx3);margin:0 0 24px;max-width:56ch;text-wrap:pretty">A proposal nobody can disagree with is not a proposal. The second question exists for that reason.</p>
+            <div onClick="{{ goRouting }}" style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.12em;color:#FF5500;cursor:pointer">SEE WHERE EACH SUBJECT BELONGS →</div>
+          </div>
+          <div style="border:1px solid var(--line2);background:var(--surf);padding:clamp(20px,2.6vw,30px);display:flex;flex-direction:column;gap:18px">
+            <div style="display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line)">
+              <sc-for list="{{ kinds }}" as="k" hint-placeholder-count="4">
+                <div onClick="{{ k.pick }}" style="background:{{ k.bg }};padding:14px 16px;cursor:pointer;display:flex;flex-direction:column;gap:5px" style-hover="background:var(--surf2)">
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.12em;color:{{ k.fg }}">{{ k.t }}</div>
+                  <div style="font-size:13.5px;line-height:1.55;color:var(--tx2);text-wrap:pretty">{{ k.d }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <label style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.14em;color:var(--tx3)">IN ONE LINE</label>
+              <input value="{{ cTitle }}" onChange="{{ setCTitle }}" placeholder="The whole thing, said once." style="background:var(--bg);border:1px solid var(--line2);color:var(--tx);padding:12px 13px;font-size:14.5px;outline:none" />
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <label style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.14em;color:var(--tx3)">WHICH PART OF THE SYSTEM</label>
+              <select value="{{ cPart }}" onChange="{{ setCPart }}" style="background:var(--bg);border:1px solid var(--line2);color:var(--tx);padding:12px 13px;font-size:14.5px;outline:none">
+                <sc-for list="{{ cPartOpts }}" as="o" hint-placeholder-count="4">
+                  <option value="{{ o.v }}">{{ o.t }}</option>
+                </sc-for>
+              </select>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <label style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.05em;color:var(--tx3)">{{ cQ1 }}</label>
+              <textarea value="{{ cWhat }}" onChange="{{ setCWhat }}" rows="4" placeholder="Plainly. Assume the reader has not read anything else." style="background:var(--bg);border:1px solid var(--line2);color:var(--tx);padding:12px 13px;font-size:14.5px;line-height:1.6;outline:none;resize:vertical"></textarea>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <label style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.05em;color:var(--tx3)">{{ cQ2 }}</label>
+              <textarea value="{{ cWhy }}" onChange="{{ setCWhy }}" rows="3" placeholder="What would be true afterwards that is not true now." style="background:var(--bg);border:1px solid var(--line2);color:var(--tx);padding:12px 13px;font-size:14.5px;line-height:1.6;outline:none;resize:vertical"></textarea>
+            </div>
+            <div style="border:1px solid var(--line2);background:var(--bg);padding:18px">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.14em;color:var(--tx3);margin-bottom:12px">WHAT THE PUBLIC THREAD WILL CONTAIN</div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <sc-for list="{{ cPreview }}" as="line" hint-placeholder-count="5">
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.62;color:var(--tx2);word-break:break-word">{{ line }}</div>
+                </sc-for>
+              </div>
+            </div>
+            <div onClick="{{ openPost }}" style="background:#FF5500;color:#0A0A0C;padding:16px;font-size:14px;font-weight:600;cursor:pointer;text-align:center;opacity:{{ cReady }};box-shadow:0 0 20px rgba(255,85,0,0.22)" style-hover="background:#FF7A33">Open it on GitHub →</div>
+            <sc-if value="{{ cOpened }}" hint-placeholder-val="{{ false }}">
+              <div style="border-top:1px solid var(--line2);padding-top:16px;display:flex;flex-direction:column;gap:8px">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.16em;color:#FF5500">OPENED ON GITHUB</div>
+                <div style="font-size:13.5px;line-height:1.6;color:var(--tx2);text-wrap:pretty">It is not published until you press the button there. If the tab did not open, use the link below.</div>
+                <a href="{{ cUrl }}" target="_blank" rel="noreferrer" style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.08em;word-break:break-all">OPEN THE PREFILLED THREAD →</a>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </section>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isDecisions }}" hint-placeholder-val="{{ false }}">
+      <div class="dk-page">
+      <section>
+        <div style="max-width:1320px;margin:0 auto;padding:clamp(32px,4.4vw,60px) clamp(16px,4vw,44px) clamp(40px,5vw,80px)">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#FF5500;margin-bottom:20px">What was decided</div>
+          <h1 style="font-size:clamp(28px,3.6vw,48px);line-height:1.04;letter-spacing:-0.038em;font-weight:700;margin:0 0 18px;max-width:24ch;text-wrap:balance">A merged pull request is the only decision this organization makes.</h1>
+          <p style="font-size:16px;line-height:1.68;color:var(--tx2);margin:0 0 clamp(24px,3.2vw,36px);max-width:64ch;text-wrap:pretty">Not an announcement, not a roadmap, not a status somebody set. If something changed, it is in this list, and the discussion that produced it is one click away.</p>
+          <div style="display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line)">
+            <sc-for list="{{ decisions }}" as="d" hint-placeholder-count="8">
+              <a href="{{ d.url }}" target="_blank" rel="noreferrer" style="background:var(--bg);padding:18px 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;color:var(--tx)" style-hover="background:var(--surf2);color:var(--tx)">
+                <div style="grid-column:span 2;min-width:0;font-size:16px;font-weight:500;line-height:1.45;text-wrap:pretty">{{ d.title }}</div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.08em;color:var(--tx3)">{{ d.where }}</div>
+                  <div style="font-size:13px;color:var(--tx2)">{{ d.meta }}</div>
+                </div>
+              </a>
+            </sc-for>
+          </div>
+          <sc-if value="{{ noDecisions }}" hint-placeholder-val="{{ false }}">
+            <div style="border:1px solid var(--line2);padding:26px 24px;font-size:15px;line-height:1.68;color:var(--tx2);max-width:64ch;text-wrap:pretty">No pull request has been merged in the public organization yet. The first one — a correction, a paper, a specification — is still available to whoever writes it.</div>
+          </sc-if>
+        </div>
+      </section>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isRouting }}" hint-placeholder-val="{{ false }}">
+      <div class="dk-page">
+      <section>
+        <div style="max-width:1320px;margin:0 auto;padding:clamp(32px,4.4vw,60px) clamp(16px,4vw,44px) clamp(40px,5vw,80px)">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#FF5500;margin-bottom:20px">Where a subject belongs</div>
+          <h1 style="font-size:clamp(28px,3.6vw,48px);line-height:1.04;letter-spacing:-0.038em;font-weight:700;margin:0 0 18px;max-width:22ch;text-wrap:balance">There is no single inbox, and that is deliberate.</h1>
+          <p style="font-size:16px;line-height:1.68;color:var(--tx2);margin:0 0 clamp(24px,3.2vw,36px);max-width:64ch;text-wrap:pretty">A conversation sitting beside the thing it is about survives; one piled into a general channel does not. This forum reads them all together, but each thread stays in the repository that owns it — and a thread that turns out to belong somewhere else is moved rather than closed.</p>
+          <div style="display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:clamp(30px,4vw,52px)">
+            <sc-for list="{{ routes }}" as="r" hint-placeholder-count="9">
+              <div style="background:var(--bg);padding:16px 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;align-items:baseline">
+                <div style="grid-column:span 2;min-width:0;font-size:15px;line-height:1.6;color:var(--tx);text-wrap:pretty">{{ r.about }}</div>
+                <a href="{{ r.href }}" target="_blank" rel="noreferrer" style="font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:0.06em;color:var(--tx3);word-break:break-word" style-hover="color:#FF5500">{{ r.repo }} →</a>
+              </div>
+            </sc-for>
+          </div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#FF5500;margin-bottom:18px">Every repository this forum reads</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1px;background:var(--line);border:1px solid var(--line)">
+            <sc-for list="{{ repoList }}" as="p" hint-placeholder-count="17">
+              <div style="background:var(--bg);padding:16px 20px;display:flex;flex-direction:column;gap:6px">
+                <a href="{{ p.issues }}" target="_blank" rel="noreferrer" style="font-size:15px;font-weight:600;letter-spacing:-0.02em;color:var(--tx)" style-hover="color:#FF5500">{{ p.name }}</a>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.06em;color:var(--tx3);word-break:break-word">{{ p.repo }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </section>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isAbout }}" hint-placeholder-val="{{ false }}">
+      <div class="dk-page">
+      <section style="max-width:1320px;margin:0 auto;padding:clamp(32px,4.4vw,60px) clamp(16px,4vw,44px) clamp(24px,3vw,40px)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#FF5500;margin-bottom:20px">About this forum</div>
+        <h1 style="font-size:clamp(28px,3.6vw,48px);line-height:1.04;letter-spacing:-0.038em;font-weight:700;margin:0 0 20px;max-width:22ch;text-wrap:balance">A reading surface over a conversation that already exists.</h1>
+        <p style="font-size:16.5px;line-height:1.7;color:var(--tx);max-width:66ch;margin:0 0 16px;text-wrap:pretty">Drayker's discussion has always been public, in the issues of seventeen repositories. That is the right place for it — a thread beside the code and documents it concerns survives, and can be argued with by whoever maintains them. It is also a place most people never look, and never think to answer in.</p>
+        <p style="font-size:16px;line-height:1.68;color:var(--tx2);max-width:66ch;margin:0;text-wrap:pretty">So this site reads all of it and presents it as what it is: conversation. It writes nothing, stores nothing and asks for nothing. Every reply, proposal and correction is published from your own GitHub account, in the repository where it belongs — which means this forum can disappear tomorrow without a single word of the discussion being lost.</p>
+      </section>
+
+      <section style="border-top:1px solid var(--line);background:var(--surf)">
+        <div style="max-width:1320px;margin:0 auto;padding:clamp(34px,4.4vw,64px) clamp(16px,4vw,44px)">
+          <h2 style="font-size:clamp(23px,3vw,38px);line-height:1.06;letter-spacing:-0.035em;font-weight:600;margin:0 0 16px;max-width:26ch;text-wrap:balance">A thread is not chatter. It is the first step of the only process there is.</h2>
+          <p style="font-size:16px;line-height:1.68;color:var(--tx2);margin:0 0 clamp(24px,3.2vw,38px);max-width:64ch;text-wrap:pretty">Nothing here is decided by a meeting, a vote in private or a person with a title. A subject is said in the open, routed to whatever owns it, and if it becomes work it ends as a change anyone can read.</p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1px;background:var(--line);border:1px solid var(--line)">
+            <div style="background:var(--bg);padding:24px 22px;display:flex;flex-direction:column;gap:10px;min-height:186px">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.14em;color:#FF5500">01 · SAID IN THE OPEN</div>
+              <div style="font-size:14.5px;line-height:1.62;color:var(--tx2);text-wrap:pretty">Anyone opens a thread. There is no membership, no application, no waiting list and no private channel where the real conversation happens instead.</div>
+            </div>
+            <div style="background:var(--bg);padding:24px 22px;display:flex;flex-direction:column;gap:10px;min-height:186px">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.14em;color:#FF5500">02 · ROUTED TO ITS OWNER</div>
+              <div style="font-size:14.5px;line-height:1.62;color:var(--tx2);text-wrap:pretty">If the subject belongs to a component, it moves to that component's repository, beside the code and the documents it is about.</div>
+            </div>
+            <div style="background:var(--bg);padding:24px 22px;display:flex;flex-direction:column;gap:10px;min-height:186px">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.14em;color:#FF5500">03 · CUT SMALL ENOUGH</div>
+              <div style="font-size:14.5px;line-height:1.62;color:var(--tx2);text-wrap:pretty">A thread that turns into work is cut into pieces one person can finish. Those carry the label <span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--tx)">open-function</span> and appear on the board.</div>
+            </div>
+            <div style="background:var(--bg);padding:24px 22px;display:flex;flex-direction:column;gap:10px;min-height:186px">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.14em;color:#FF5500">04 · ARGUED AGAINST A CHANGE</div>
+              <div style="font-size:14.5px;line-height:1.62;color:var(--tx2);text-wrap:pretty">Whoever claims it opens a pull request to master. From there the discussion is about the actual difference being proposed, not about the idea of it.</div>
+            </div>
+            <div style="background:var(--bg);padding:24px 22px;display:flex;flex-direction:column;gap:10px;min-height:186px">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.14em;color:#FF5500">05 · MERGED, AND KEPT</div>
+              <div style="font-size:14.5px;line-height:1.62;color:var(--tx2);text-wrap:pretty">The merge is the decision. The thread stays where it is as the record of why it was taken — which is why none of this is deleted.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section style="border-top:1px solid var(--line)">
+        <div style="max-width:1320px;margin:0 auto;padding:clamp(34px,4.4vw,64px) clamp(16px,4vw,44px);display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:clamp(24px,4vw,56px);align-items:start">
+          <div>
+            <h2 style="font-size:clamp(21px,2.6vw,32px);line-height:1.08;letter-spacing:-0.03em;font-weight:600;margin:0 0 14px;max-width:22ch;text-wrap:balance">What this site does not have.</h2>
+            <p style="font-size:15.5px;line-height:1.66;color:var(--tx2);margin:0;max-width:52ch;text-wrap:pretty">Every absence below is deliberate. A forum that keeps its own accounts, its own copies and its own moderation becomes a second source of truth — and then the argument is about the forum instead of about the work.</p>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line)">
+            <div style="background:var(--bg);padding:16px 20px;display:grid;grid-template-columns:150px 1fr;gap:14px;align-items:baseline">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.1em;color:var(--tx3)">NO ACCOUNTS</div>
+              <div style="font-size:14.5px;line-height:1.6;color:var(--tx2);min-width:0;text-wrap:pretty">Your GitHub account is the only identity involved, and it never touches this site.</div>
+            </div>
+            <div style="background:var(--bg);padding:16px 20px;display:grid;grid-template-columns:150px 1fr;gap:14px;align-items:baseline">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.1em;color:var(--tx3)">NO DATABASE</div>
+              <div style="font-size:14.5px;line-height:1.6;color:var(--tx2);min-width:0;text-wrap:pretty">Static pages on GitHub Pages, reading the public API. Nothing is transmitted from here.</div>
+            </div>
+            <div style="background:var(--bg);padding:16px 20px;display:grid;grid-template-columns:150px 1fr;gap:14px;align-items:baseline">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.1em;color:var(--tx3)">NO RANKING</div>
+              <div style="font-size:14.5px;line-height:1.6;color:var(--tx2);min-width:0;text-wrap:pretty">Threads are ordered by last activity. Nothing is promoted, scored or hidden.</div>
+            </div>
+            <div style="background:var(--bg);padding:16px 20px;display:grid;grid-template-columns:150px 1fr;gap:14px;align-items:baseline">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.1em;color:var(--tx3)">NO MODERATION</div>
+              <div style="font-size:14.5px;line-height:1.6;color:var(--tx2);min-width:0;text-wrap:pretty">Whatever moderation exists is GitHub's, in the repositories, under the organization's own code of conduct.</div>
+            </div>
+            <div style="background:var(--bg);padding:16px 20px;display:grid;grid-template-columns:150px 1fr;gap:14px;align-items:baseline">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.1em;color:var(--tx3)">NO STATUS</div>
+              <div style="font-size:14.5px;line-height:1.6;color:var(--tx2);min-width:0;text-wrap:pretty">Labels shown here are the repositories' own. This site never invents a stage, a phase or a badge.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+      </div>
+    </sc-if>
+
+  </main>
+
+  <footer style="border-top:1px solid var(--line);background:var(--surf)">
+    <div style="max-width:1320px;margin:0 auto;padding:clamp(34px,4vw,56px) clamp(16px,4vw,44px);display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:clamp(24px,4vw,48px)">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+<svg viewBox="-106 -106 212 212" width="26" height="26" style="display:block">
+            <ellipse cx="0" cy="0" rx="119" ry="38" transform="rotate(45)" fill="none" stroke="#8585A0" stroke-width="3.4"></ellipse>
+            <ellipse cx="0" cy="0" rx="119" ry="38" transform="rotate(-45)" fill="none" stroke="#8585A0" stroke-width="3.4"></ellipse>
+            <circle r="100" fill="#FF5500"></circle>
+            <path d="M -84.4 -53.7 A 119 38 45 0 0 0 51.2 A 119 38 -45 0 0 84.4 -53.7 A 100 100 0 0 0 -84.4 -53.7 Z M 0 51.2 A 119 38 45 0 0 53.7 84.4 A 100 100 0 0 1 -53.7 84.4 A 119 38 -45 0 0 0 51.2 Z" fill="#000000"></path>
+          </svg>
+          <span style="font-size:16px;font-weight:600;letter-spacing:-0.02em">Drayker Forum</span>
+        </div>
+        <div style="font-size:14px;color:var(--tx2);line-height:1.6;max-width:34ch;text-wrap:pretty">The conversation lives on GitHub. This is a way to read it.</div>
+      </div>
+      <div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.16em;color:var(--tx3);margin-bottom:14px">THIS FORUM</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div onClick="{{ goHome }}" style="font-size:14px;cursor:pointer;color:var(--tx)" style-hover="color:#FF5500">Every thread</div>
+          <div onClick="{{ goNew }}" style="font-size:14px;cursor:pointer;color:var(--tx)" style-hover="color:#FF5500">Start a thread</div>
+          <div onClick="{{ goDecisions }}" style="font-size:14px;cursor:pointer;color:var(--tx)" style-hover="color:#FF5500">Decisions</div>
+          <div onClick="{{ goRouting }}" style="font-size:14px;cursor:pointer;color:var(--tx)" style-hover="color:#FF5500">Where things belong</div>
+          <div onClick="{{ goAbout }}" style="font-size:14px;cursor:pointer;color:var(--tx)" style-hover="color:#FF5500">About</div>
+        </div>
+      </div>
+      <div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.16em;color:var(--tx3);margin-bottom:14px">THE REST OF DRAYKER</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <a href="https://drayker.org" style="font-size:14px;color:var(--tx)" style-hover="color:#FF5500">Volunteers portal</a>
+          <a href="https://drayker.org/#org/fn" style="font-size:14px;color:var(--tx)" style-hover="color:#FF5500">Open functions</a>
+          <a href="https://drayker.com" style="font-size:14px;color:var(--tx)" style-hover="color:#FF5500">drayker.com</a>
+          <a href="https://dknowledger.drayker.org/" style="font-size:14px;color:var(--tx)" style-hover="color:#FF5500">Dknowledger</a>
+          <a href="https://github.com/draykerdk" style="font-size:14px;color:var(--tx)" style-hover="color:#FF5500">github.com/draykerdk</a>
+        </div>
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--line)">
+      <div style="max-width:1320px;margin:0 auto;padding:16px clamp(16px,4vw,44px);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.14em;color:var(--tx3)">CC BY 4.0 · OPEN SOURCE · NON-PROFIT</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.14em;color:var(--tx3)">forum.drayker.org</div>
+      </div>
+    </div>
+  </footer>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+// ============================================================================
+// DRAYKER FORUM — its own static site, published from draykerdk/general-forum on
+// GitHub Pages at forum.drayker.org. It reads the organization's real public
+// conversation (issues across every repository) and its real decisions (merged
+// pull requests). It writes nothing: every post and reply opens GitHub under the
+// reader's own account.
+//
+// Hash routes, so a thread has a shareable address:
+//   #/  ·  #/t/<repo>/<number>  ·  #/new  ·  #/decisions  ·  #/routing  ·  #/about
+// ============================================================================
+const A = '#FF5500';
+
+// The twenty parts of the system. `repo` is what the API returns; the last three
+// are declared concepts with no repository yet.
+const PARTS = [
+  { key: 'dk', name: 'Dk', repo: 'dk' },
+  { key: 'bsdk', name: 'BSDK', repo: 'bsdk' },
+  { key: 'dknetwork', name: 'Dk Network', repo: 'dk-network' },
+  { key: 'lc', name: 'Living Cryptography', repo: 'living-cryptography' },
+  { key: 'osdk', name: 'OSDK', repo: 'osdk' },
+  { key: 'uid', name: 'UID', repo: 'uid' },
+  { key: 'dfmp', name: 'DFMP', repo: 'dfmp' },
+  { key: 'metadfmp', name: 'MetaDFMP', repo: 'metadfmp' },
+  { key: 'daf', name: 'DAF', repo: 'daf' },
+  { key: 'advices', name: 'Councils', repo: 'advices' },
+  { key: 'emergence', name: 'Emergence Initiative', repo: 'emergence-initiative' },
+  { key: 'dknowledge', name: 'Dknowledger', repo: 'dknowledge' },
+  { key: 'dfmpproject', name: 'DFMPProject', repo: 'dfmpproject' },
+  { key: 'general', name: 'General Forum', repo: 'general-forum' },
+  { key: 'org', name: 'drayker.org', repo: 'drayker.org' },
+  { key: 'com', name: 'drayker.com', repo: 'drayker.com' },
+  { key: 'theme', name: 'drayker-theme', repo: 'drayker-theme' },
+  { key: 'dsupport', name: 'Distributed support', repo: '' },
+  { key: 'openscience', name: 'Open science & health', repo: '' },
+  { key: 'valueunit', name: 'Value unit', repo: '' }
+];
+
+// Types are the organization's own labels (draykerdk/.github labels.yml). A thread
+// with no label is a question or an idea — the honest reading, not a badge.
+const TYPES = [
+  { id: 'all', label: 'EVERYTHING', match: [] },
+  { id: 'proposal', label: 'PROPOSALS', match: ['motion', 'partnership'] },
+  { id: 'work', label: 'WORK TO PICK UP', match: ['open-function', 'good first issue', 'help wanted', 'claimed'] },
+  { id: 'docs', label: 'DOCUMENTATION', match: ['documentation'] },
+  { id: 'intro', label: 'INTRODUCTIONS', match: ['volunteer-introduction'] },
+  { id: 'open', label: 'QUESTIONS & IDEAS', match: [] }
+];
+
+// The routing table published in the general-forum README.
+const ROUTES = [
+  { about: 'The collaboration method, or the path a proposal takes', repo: 'dfmp' },
+  { about: 'Papers, the roadmap or the knowledge base', repo: 'dknowledge' },
+  { about: 'The kernel, its base structure, network or cryptography', repo: 'dk' },
+  { about: 'Identity and the applications that use it', repo: 'uid' },
+  { about: 'The federation, resources or governance', repo: 'daf' },
+  { about: 'Proposing a new project of your own', repo: 'dfmpproject' },
+  { about: 'Something that has no home yet', repo: 'emergence-initiative' },
+  { about: 'The websites, including this forum', repo: 'drayker.org' },
+  { about: 'Anything you are not sure about', repo: 'general-forum' }
+];
+
+const POST = [
+  { id: 'proposal', label: 'A PROPOSAL', line: 'Something you want the project to do, written so that someone can disagree with it.',
+    prefix: '[Proposal] ', lab: 'motion', q1: 'What are you proposing?', q2: 'What would be different if it happened?' },
+  { id: 'question', label: 'A QUESTION', line: 'Something you could not find an answer to in the repositories.',
+    prefix: '[Question] ', lab: '', q1: 'What do you want to know?', q2: 'Where did you already look?' },
+  { id: 'idea', label: 'AN IDEA', line: 'Not a proposal yet — a direction that seems worth testing in the open.',
+    prefix: '[Idea] ', lab: '', q1: 'What is the idea?', q2: 'What makes you think it is worth trying?' },
+  { id: 'report', label: 'SOMETHING IS WRONG', line: 'A document that no longer matches reality, or a part that does not behave as written.',
+    prefix: '[Report] ', lab: 'documentation', q1: 'What is wrong?', q2: 'Where did you see it?' }
+];
+
+// general-forum publishes volunteer-introduction.yml and partnership.yml today.
+// proposal.yml is published in this repository. The composer can therefore fill
+// its canonical field ids when a proposal begins in the General Forum.
+const PROPOSAL_TEMPLATE = true;
+
+const META = {
+  list: { t: 'Drayker Forum — every public thread', d: 'Every proposal, question and answer across github.com/draykerdk, read as conversation.' },
+  thread: { t: 'Thread — Drayker Forum', d: 'A public thread in the Drayker organization, read as conversation.' },
+  new: { t: 'Start a thread — Drayker Forum', d: 'Write a proposal, question, idea or report and publish it on GitHub under your own account.' },
+  decisions: { t: 'Decisions — Drayker Forum', d: 'Every merged pull request in the organization: the only decisions Drayker makes.' },
+  routing: { t: 'Where a subject belongs — Drayker Forum', d: 'Which repository owns which subject, and every repository this forum reads.' },
+  about: { t: 'About — Drayker Forum', d: 'A reading surface over a conversation that already exists on GitHub. No accounts, no database, no ranking, no moderation.' }
+};
+
+class Component extends DCLogic {
+  state = {
+    page: 'list', tRepo: '', tNum: '', tFetch: null, tFetching: false, tFailed: false,
+    type: 'all', part: 'all', q: '', wait: false,
+    cKind: 'proposal', cPart: '', cTitle: '', cWhat: '', cWhy: '', cOpened: false,
+    themePref: 'auto', resolved: 'dark',
+    threads: [], decisions: [], ghState: 'idle', ghAt: 0, load: false, tick: 0,
+    vw: typeof window !== 'undefined' ? window.innerWidth : 1440
+  };
+
+  get org() { return this.props.org || 'draykerdk'; }
+
+  cmts = {};
+  CACHE = 'drayker-forum-v1';
+
+  // LIVE GITHUB — two unauthenticated search calls, cached 30 min in localStorage
+  // so a whole session costs nothing. A committed ./data/forum.json is preferred
+  // when it exists. Nothing is ever invented in place of missing data.
+  loadGH = async (force) => {
+    if (!force) {
+      try {
+        const c = JSON.parse(localStorage.getItem(this.CACHE) || 'null');
+        if (c && Date.now() - c.t < 18e5) {
+          this.setState({ threads: c.threads || [], decisions: c.decisions || [], ghAt: c.t, ghState: 'ready' });
+          return;
+        }
+      } catch (e) {}
+    }
+    let snap = null;
+    try {
+      const r = await fetch('/data/forum.json', { cache: 'no-cache' });
+      if (r.ok) snap = await r.json();
+    } catch (e) {}
+    if (snap && snap.threads && snap.threads.length) {
+      this.setState({ threads: snap.threads, decisions: snap.decisions || [],
+        ghAt: Date.parse(snap.generated_at || '') || Date.now(), ghState: 'ready' });
+    } else {
+      this.setState({ ghState: 'loading' });
+    }
+    const get = async (u) => {
+      const r = await fetch(u, { headers: { Accept: 'application/vnd.github+json' } });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    };
+    const base = 'https://api.github.com/search/issues?q=';
+    try {
+      const s = await get(base + encodeURIComponent('org:' + this.org + ' is:issue') + '&sort=updated&order=desc&per_page=' + (this.props.threadLimit || 60));
+      const threads = (s.items || []).map((i) => ({
+        num: i.number, title: i.title, url: i.html_url,
+        repo: (i.repository_url || '').split('/').pop(),
+        labels: (i.labels || []).map((l) => (l.name || '').toLowerCase()),
+        user: i.user ? i.user.login : '', body: i.body || '',
+        comments: i.comments || 0, at: i.updated_at, open: i.state !== 'closed'
+      }));
+      let decisions = [];
+      try {
+        const p = await get(base + encodeURIComponent('org:' + this.org + ' is:pr is:merged') + '&sort=updated&order=desc&per_page=24');
+        decisions = (p.items || []).map((i) => ({
+          num: i.number, title: i.title, url: i.html_url,
+          repo: (i.repository_url || '').split('/').pop(),
+          user: i.user ? i.user.login : '', at: i.closed_at || i.updated_at
+        }));
+      } catch (e) {}
+      const t = Date.now();
+      try { localStorage.setItem(this.CACHE, JSON.stringify({ t, threads, decisions })); } catch (e) {}
+      this.setState({ threads, decisions, ghAt: t, ghState: 'ready' });
+    } catch (e) {
+      this.setState({ ghState: snap && snap.threads && snap.threads.length ? 'ready' : 'error' });
+    }
+  };
+
+  ago = (iso) => {
+    if (!iso) return '—';
+    const d = (Date.now() - new Date(iso).getTime()) / 1000;
+    if (d < 3600) return Math.max(1, Math.round(d / 60)) + 'm ago';
+    if (d < 86400) return Math.round(d / 3600) + 'h ago';
+    if (d < 2592000) return Math.round(d / 86400) + 'd ago';
+    return Math.round(d / 2592000) + 'mo ago';
+  };
+
+  kindOf = (labels) => {
+    const l = labels || [];
+    for (const t of TYPES) {
+      if (t.id === 'all' || t.id === 'open') continue;
+      if (t.match.some((m) => l.indexOf(m) >= 0)) return t.id;
+    }
+    return 'open';
+  };
+
+  kindLabel = (id) => {
+    const t = TYPES.filter((x) => x.id === id)[0];
+    return t ? t.label : 'CONVERSATION';
+  };
+
+  partOf = (repo) => PARTS.filter((p) => p.repo && p.repo === repo)[0] || null;
+
+  // MARKDOWN — an issue body becomes blocks of TEXT, never HTML. The source is
+  // public input, so nothing from it is injected into the page.
+  mdInline = (s) => String(s)
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/__([^_]+)__/g, '$1')
+    .replace(/(^|[\s(])[*_]([^*_\n]+)[*_]/g, '$1$2')
+    .trim();
+
+  md = (src) => {
+    const lines = String(src || '').replace(/\r/g, '').replace(/<!--[\s\S]*?-->/g, '').split('\n');
+    const out = [];
+    let para = [], code = null;
+    const flush = () => { if (para.length) { out.push({ kind: 'p', text: this.mdInline(para.join(' ')) }); para = []; } };
+    for (const l of lines) {
+      if (/^\s*```/.test(l)) {
+        if (code) { out.push({ kind: 'code', text: code.join('\n') }); code = null; }
+        else { flush(); code = []; }
+        continue;
+      }
+      if (code) { code.push(l); continue; }
+      if (!l.trim()) { flush(); continue; }
+      if (/^\s*(-{3,}|={3,})\s*$/.test(l)) { flush(); continue; }
+      if (/^#{1,6}\s/.test(l)) { flush(); out.push({ kind: 'h', text: this.mdInline(l.replace(/^#{1,6}\s*/, '')) }); continue; }
+      if (/^\s*([-*+]|\d+\.)\s+/.test(l)) { flush(); out.push({ kind: 'li', text: this.mdInline(l.replace(/^\s*([-*+]|\d+\.)\s+/, '')) }); continue; }
+      if (/^\s*>\s?/.test(l)) { flush(); out.push({ kind: 'q', text: this.mdInline(l.replace(/^\s*>\s?/, '')) }); continue; }
+      if (/^\s*\|/.test(l)) {
+        const row = this.mdInline(l.replace(/^\s*\|/, '').replace(/\|\s*$/, '').split('|').join(' · '));
+        flush(); if (!/^[-\s·:]*$/.test(row)) out.push({ kind: 'p', text: row });
+        continue;
+      }
+      para.push(l.trim());
+    }
+    flush();
+    if (code) out.push({ kind: 'code', text: code.join('\n') });
+    return out.filter((b) => b.text).slice(0, 120).map((b, i) => ({
+      i, text: b.text,
+      isP: b.kind === 'p', isH: b.kind === 'h', isLi: b.kind === 'li',
+      isQ: b.kind === 'q', isCode: b.kind === 'code'
+    }));
+  };
+
+  // ROUTING — a thread has its own address so it can be linked from a README, a
+  // paper or a message. A deep link to a thread outside the list is fetched alone.
+  readHash = () => {
+    const parts = (window.location.hash || '').replace(/^#\/?/, '').split('/').filter(Boolean);
+    const p = parts[0] || 'list';
+    if (p === 't' && parts[1] && parts[2]) {
+      this.setState({ page: 'thread', tRepo: parts[1], tNum: parts[2], tFailed: false });
+      this.ensureThread(parts[1], parts[2]);
+      return;
+    }
+    const known = ['list', 'new', 'decisions', 'routing', 'about'];
+    this.setState({ page: known.indexOf(p) >= 0 ? p : 'list' });
+  };
+
+  syncHash = () => {
+    const s = this.state;
+    const path = s.page === 'thread' ? 't/' + s.tRepo + '/' + s.tNum : (s.page === 'list' ? '' : s.page);
+    const h = '#/' + path;
+    if (window.location.hash !== h && !(path === '' && !window.location.hash)) {
+      this.skip = true;
+      window.location.hash = h;
+    }
+    const m = META[s.page] || META.list;
+    const found = this.thread();
+    const title = s.page === 'thread' && found ? found.title + ' — Drayker Forum' : m.t;
+    if (document.title !== title) document.title = title;
+    const set = (sel, attr, val) => {
+      const el = document.head ? document.head.querySelector(sel) : null;
+      if (el && el.getAttribute(attr) !== val) el.setAttribute(attr, val);
+    };
+    set('meta[name="description"]', 'content', m.d);
+    const canonical = s.page === 'list' ? 'https://forum.drayker.org/'
+      : s.page === 'thread' ? 'https://forum.drayker.org/' + h
+      : 'https://forum.drayker.org/' + s.page + '/';
+    set('link[rel="canonical"]', 'href', canonical);
+    set('meta[property="og:title"]', 'content', title);
+    set('meta[property="og:url"]', 'content', canonical);
+  };
+
+  go = (page) => () => { this.setState({ page, tRepo: '', tNum: '' }); window.scrollTo(0, 0); };
+
+  openThread = (t) => () => {
+    this.setState({ page: 'thread', tRepo: t.repo, tNum: String(t.num), tFailed: false });
+    window.scrollTo(0, 0);
+    this.loadComments(t.repo, t.num);
+  };
+
+  thread = () => {
+    const s = this.state;
+    if (s.page !== 'thread') return null;
+    const inList = s.threads.filter((t) => t.repo === s.tRepo && String(t.num) === String(s.tNum))[0];
+    return inList || (s.tFetch && s.tFetch.repo === s.tRepo && String(s.tFetch.num) === String(s.tNum) ? s.tFetch : null);
+  };
+
+  ensureThread = (repo, num) => {
+    const known = this.state.threads.filter((t) => t.repo === repo && String(t.num) === String(num))[0];
+    if (known) { this.loadComments(repo, num); return; }
+    if (this.state.tFetching) return;
+    this.setState({ tFetching: true });
+    fetch('https://api.github.com/repos/' + this.org + '/' + repo + '/issues/' + num, { headers: { Accept: 'application/vnd.github+json' } })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((i) => {
+        if (!i || !i.number) { this.setState({ tFetching: false, tFailed: true }); return; }
+        this.setState({ tFetching: false, tFetch: {
+          num: i.number, title: i.title, url: i.html_url, repo,
+          labels: (i.labels || []).map((l) => (l.name || '').toLowerCase()),
+          user: i.user ? i.user.login : '', body: i.body || '',
+          comments: i.comments || 0, at: i.updated_at, open: i.state !== 'closed'
+        } });
+        this.loadComments(repo, num);
+      })
+      .catch(() => this.setState({ tFetching: false, tFailed: true }));
+  };
+
+  loadComments = (repo, num) => {
+    const key = repo + '#' + num;
+    if (this.cmts[key]) return;
+    this.setState({ load: true });
+    fetch('https://api.github.com/repos/' + this.org + '/' + repo + '/issues/' + num + '/comments?per_page=100', { headers: { Accept: 'application/vnd.github+json' } })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((list) => {
+        this.cmts[key] = (list || []).map((c) => ({ id: c.id, who: c.user ? c.user.login : 'someone', at: c.created_at, body: c.body || '' }));
+        this.setState((st) => ({ load: false, tick: st.tick + 1 }));
+      })
+      .catch(() => { this.cmts[key] = []; this.setState((st) => ({ load: false, tick: st.tick + 1 })); });
+  };
+
+  postKind = () => POST.filter((k) => k.id === this.state.cKind)[0] || POST[0];
+
+  postRepo = () => {
+    const p = PARTS.filter((x) => x.key === this.state.cPart)[0];
+    return p && p.repo ? p.repo : 'general-forum';
+  };
+
+  postUrl = () => {
+    const k = this.postKind();
+    const s = this.state;
+    const part = PARTS.filter((x) => x.key === s.cPart)[0];
+    const title = k.prefix + (s.cTitle || 'untitled');
+    const body = [
+      k.q1, (s.cWhat || '(writing this here)'), '',
+      k.q2, (s.cWhy || '(writing this here)'), '',
+      part ? 'Part of the system: ' + part.name + '.' : 'Which part of the system: not sure yet.',
+      'Opened from forum.drayker.org — a public thread; the site collected nothing about the author.'
+    ].join('\n');
+    const u = 'https://github.com/' + this.org + '/' + this.postRepo() + '/issues/new';
+    if (PROPOSAL_TEMPLATE && k.id === 'proposal' && this.postRepo() === 'general-forum') {
+      return u + '?template=proposal.yml&title=' + encodeURIComponent(title)
+        + '&summary=' + encodeURIComponent(s.cWhat || '')
+        + '&change=' + encodeURIComponent(s.cWhy || '')
+        + '&component=' + encodeURIComponent(part ? part.name : 'Not sure yet');
+    }
+    return u + '?title=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(body)
+      + (k.lab ? '&labels=' + encodeURIComponent(k.lab) : '');
+  };
+
+  openPost = () => {
+    try { window.open(this.postUrl(), '_blank', 'noopener'); } catch (e) {}
+    this.setState({ cOpened: true });
+  };
+
+  applyTheme = (pref) => {
+    let resolved = pref;
+    if (pref === 'auto') {
+      let light = false;
+      try { light = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches; } catch (e) {}
+      resolved = light ? 'light' : 'dark';
+    }
+    try { document.documentElement.setAttribute('data-theme', resolved); } catch (e) {}
+    this.setState({ themePref: pref, resolved });
+  };
+
+  toggleTheme = () => {
+    const next = this.state.resolved === 'dark' ? 'light' : 'dark';
+    try { localStorage.setItem('drayker-theme', next); } catch (e) {}
+    this.applyTheme(next);
+  };
+
+  // ==========================================================================
+  // MARK PHYSICS — lifted from the portal. The ring is two great circles of
+  // radius 118, both tilted 42° around a unit vector w (the point on the front
+  // hemisphere the mark is looking at), so it reads as an armillary sphere that
+  // reorients with the gaze. Samples are classified by depth and silhouette
+  // radius — behind, in front but inside the silhouette, in front and outside —
+  // and runs of the same class become one path. The shadow wedge is ray-marched
+  // from the gaze point until each ray crosses the ball radius, so the
+  // terminator rotates correctly with it.
+  // ==========================================================================
+  markRef = React.createRef();
+  shadowRef = React.createRef();
+  ringOverRef = React.createRef();
+  ringOutRef = React.createRef();
+  ringBackRef = React.createRef();
+  landRef = React.createRef();
+  gaze = { x: 0, y: 0.42 };
+  gazeT = { x: 0, y: 0.42 };
+
+  markGeom(gx, gy) {
+    const R = 100, RR = 118, CA = Math.cos(0.733), SA = Math.sin(0.733);
+    const wz = Math.sqrt(Math.max(0.25, 1 - gx * gx - gy * gy));
+    const w = [gx, gy, wz];
+    let u1 = [1 - w[0] * w[0], -w[0] * w[1], -w[0] * w[2]];
+    const n1 = Math.hypot(u1[0], u1[1], u1[2]) || 1;
+    u1 = [u1[0] / n1, u1[1] / n1, u1[2] / n1];
+    const u2 = [w[1] * u1[2] - w[2] * u1[1], w[2] * u1[0] - w[0] * u1[2], w[0] * u1[1] - w[1] * u1[0]];
+    const vs = [
+      [CA * u1[0] + SA * u2[0], CA * u1[1] + SA * u2[1], CA * u1[2] + SA * u2[2]],
+      [CA * u1[0] - SA * u2[0], CA * u1[1] - SA * u2[1], CA * u1[2] - SA * u2[2]]
+    ];
+    const pt = (v, t) => {
+      const c = Math.cos(t), s = Math.sin(t);
+      return [RR * (w[0] * c + v[0] * s), RR * (w[1] * c + v[1] * s), RR * (w[2] * c + v[2] * s)];
+    };
+    const f = (n) => Math.round(n * 10) / 10;
+
+    const segs = { over: [], out: [], back: [] };
+    for (const v of vs) {
+      let cur = null, kind = '', prev = null;
+      const N = 220;
+      for (let i = 0; i <= N; i++) {
+        const p = pt(v, i / N * Math.PI * 2);
+        const r = Math.hypot(p[0], p[1]);
+        const k = p[2] > 0 ? (r < R ? 'over' : 'out') : (r > R ? 'back' : '');
+        if (k !== kind) {
+          if (k) {
+            const st = prev || p;
+            cur = ['M ' + f(st[0]) + ' ' + f(st[1]), 'L ' + f(p[0]) + ' ' + f(p[1])];
+            segs[k].push(cur);
+          }
+          kind = k;
+        } else if (k) cur.push('L ' + f(p[0]) + ' ' + f(p[1]));
+        prev = p;
+      }
+    }
+
+    const P = [RR * w[0], RR * w[1]];
+    const hit = (a, b) => {
+      let lo = 0, hi = 1;
+      for (let i = 0; i < 14; i++) {
+        const m = (lo + hi) / 2;
+        const x = a[0] + (b[0] - a[0]) * m, y = a[1] + (b[1] - a[1]) * m;
+        if (Math.hypot(x, y) < R) lo = m; else hi = m;
+      }
+      return [a[0] + (b[0] - a[0]) * lo, a[1] + (b[1] - a[1]) * lo];
+    };
+    const rays = [];
+    for (let ri = 0; ri < 2; ri++) for (const sg of [1, -1]) {
+      const seq = [];
+      let prev = P, end = null;
+      for (let k = 1; k <= 140; k++) {
+        const p = pt(vs[ri], sg * k * 0.0209);
+        if (Math.hypot(p[0], p[1]) >= R) { end = hit(prev, p); break; }
+        seq.push([p[0], p[1]]);
+        prev = [p[0], p[1]];
+      }
+      if (!end) {
+        const m = Math.hypot(prev[0], prev[1]) || 1;
+        end = [prev[0] / m * R, prev[1] / m * R];
+      }
+      rays.push({ sg: sg, seq: seq, end: end, psi: Math.atan2(end[1], end[0]) });
+    }
+    rays.sort((a, b) => a.psi - b.psi);
+
+    const inArc = (from, to, q) => {
+      let s = to - from; if (s < 0) s += Math.PI * 2;
+      let d2 = q - from; if (d2 < 0) d2 += Math.PI * 2;
+      return d2 <= s;
+    };
+    const dark = [];
+    for (let i = 0; i < 4; i++) {
+      const a = rays[i], b = rays[(i + 1) % 4];
+      if (inArc(a.psi, b.psi, -Math.PI / 2) || inArc(a.psi, b.psi, Math.PI / 2)) dark.push(i);
+    }
+    const useTB = dark.length === 2 && (dark[1] - dark[0]) % 2 === 0;
+
+    let dsh = '';
+    for (let i = 0; i < 4; i++) {
+      const a = rays[i], b = rays[(i + 1) % 4];
+      if (useTB ? dark.indexOf(i) < 0 : a.sg === b.sg) continue;
+      let span = b.psi - a.psi;
+      if (span < 0) span += Math.PI * 2;
+      dsh += 'M ' + f(P[0]) + ' ' + f(P[1]) + ' ';
+      for (const q of a.seq) dsh += 'L ' + f(q[0]) + ' ' + f(q[1]) + ' ';
+      dsh += 'L ' + f(a.end[0]) + ' ' + f(a.end[1]) + ' A ' + R + ' ' + R + ' 0 ' + (span > Math.PI ? 1 : 0) + ' 1 ' + f(b.end[0]) + ' ' + f(b.end[1]) + ' ';
+      for (let k = b.seq.length - 1; k >= 0; k--) dsh += 'L ' + f(b.seq[k][0]) + ' ' + f(b.seq[k][1]) + ' ';
+      dsh += 'Z ';
+    }
+    const join = (a) => a.map((s) => s.join(' ')).join(' ');
+    return { shadow: dsh, over: join(segs.over), out: join(segs.out), back: join(segs.back) };
+  }
+
+  paintMark() {
+    const g = this.markGeom(this.gaze.x, this.gaze.y);
+    const set = (ref, d) => { if (ref.current) ref.current.setAttribute('d', d); };
+    set(this.shadowRef, g.shadow);
+    set(this.ringOverRef, g.over);
+    set(this.ringOutRef, g.out);
+    set(this.ringBackRef, g.back);
+  }
+
+  // EARTH — variation 1d of the logo study: the brand sphere with real coastlines
+  // (Natural Earth 110m) cut into it in negative, orthographic, turning a fraction
+  // of a degree per frame. If d3, topojson or the atlas fail to load, the mark stays
+  // the plain sphere and nothing else changes.
+  initEarth() {
+    if (typeof d3 === 'undefined' || typeof topojson === 'undefined') {
+      if (this.earthTries === undefined) this.earthTries = 0;
+      if (this.earthTries++ < 40) setTimeout(() => this.initEarth(), 250);
+      return;
+    }
+    this.proj = d3.geoOrthographic().scale(100).translate([0, 0]).clipAngle(90).precision(0.4);
+    this.geoPath = d3.geoPath(this.proj);
+    this.lon = -60;
+    d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json')
+      .then((topo) => { this.land = topojson.merge(topo, topo.objects.countries.geometries); this.paintEarth(); })
+      .catch(() => {});
+  }
+
+  paintEarth() {
+    if (!this.land || !this.landRef.current) return;
+    this.proj.rotate([this.lon, -14, 0]);
+    this.landRef.current.setAttribute('d', this.geoPath(this.land) || '');
+  }
+
+  componentDidMount() {
+    let saved = 'auto';
+    try { saved = localStorage.getItem('drayker-theme') || 'auto'; } catch (e) {}
+    this.applyTheme(saved);
+    this.mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)');
+    this.onScheme = () => { if (this.state.themePref === 'auto') this.applyTheme('auto'); };
+    if (this.mq && this.mq.addEventListener) this.mq.addEventListener('change', this.onScheme);
+
+    this.readHash();
+    this.onHash = () => { if (this.skip) { this.skip = false; return; } this.readHash(); };
+    window.addEventListener('hashchange', this.onHash);
+
+    // Gaze: the cursor steers the mark; after 2.4s without a pointer it drifts on
+    // its own along a slow Lissajous path so it never looks frozen.
+    this.lastMove = -9999;
+    this.onGaze = (ev) => {
+      const el = this.markRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      if (!r.width) return;
+      const k = r.width * 0.66;
+      let gx = (ev.clientX - (r.left + r.width / 2)) / k;
+      let gy = (ev.clientY - (r.top + r.height / 2)) / k;
+      const m = Math.hypot(gx, gy);
+      if (m > 0.5) { gx = gx / m * 0.5; gy = gy / m * 0.5; }
+      this.gazeT = { x: gx, y: gy };
+      this.lastMove = performance.now();
+    };
+    window.addEventListener('pointermove', this.onGaze, { passive: true });
+    let frame = 0;
+    const tick = () => {
+      const now = performance.now();
+      let t = this.gazeT;
+      if (now - this.lastMove > 2400) {
+        const s = now / 1000;
+        t = { x: Math.sin(s * 0.23) * 0.22 + Math.sin(s * 0.07) * 0.06, y: 0.34 + Math.cos(s * 0.17) * 0.17 };
+      }
+      const nx = this.gaze.x + (t.x - this.gaze.x) * 0.06;
+      const ny = this.gaze.y + (t.y - this.gaze.y) * 0.06;
+      if (Math.abs(nx - this.gaze.x) > 0.0002 || Math.abs(ny - this.gaze.y) > 0.0002) {
+        this.gaze = { x: nx, y: ny };
+        this.paintMark();
+      }
+      frame++;
+      if (frame % 2 === 0 && this.land) { this.lon = (this.lon + 0.14) % 360; this.paintEarth(); }
+      this.raf = requestAnimationFrame(tick);
+    };
+    this.paintMark();
+    this.raf = requestAnimationFrame(tick);
+    this.initEarth();
+
+    this.onResize = () => {
+      const vw = window.innerWidth;
+      const crossed = (vw < 1080) !== (this.state.vw < 1080) || (vw < 940) !== (this.state.vw < 940);
+      if (crossed || Math.abs(vw - this.state.vw) > 120) this.setState({ vw });
+    };
+    window.addEventListener('resize', this.onResize);
+    this.loadGH(false);
+  }
+
+  componentDidUpdate() { this.paintMark(); this.paintEarth(); this.syncHash(); }
+
+  componentWillUnmount() {
+    cancelAnimationFrame(this.raf);
+    window.removeEventListener('pointermove', this.onGaze);
+    window.removeEventListener('hashchange', this.onHash);
+    window.removeEventListener('resize', this.onResize);
+    if (this.mq && this.mq.removeEventListener) this.mq.removeEventListener('change', this.onScheme);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const p = s.page;
+    const narrow = s.vw < 940;
+    const navNarrow = s.vw < 1080;
+
+    const all = s.threads.map((t) => {
+      const kind = this.kindOf(t.labels);
+      const part = this.partOf(t.repo);
+      return {
+        key: t.repo + '#' + t.num, num: t.num, repo: t.repo, title: t.title, url: t.url,
+        body: t.body || '', user: t.user, comments: t.comments || 0, at: t.at, isOpen: t.open !== false,
+        kind, kindLabel: this.kindLabel(kind),
+        partKey: part ? part.key : '', partName: part ? part.name : t.repo
+      };
+    });
+    const q = (s.q || '').trim().toLowerCase();
+    const rows = all.filter((t) =>
+      (s.type === 'all' || t.kind === s.type)
+      && (s.part === 'all' || t.partKey === s.part)
+      && (!s.wait || (t.isOpen && t.comments === 0))
+      && (!q || (t.title + ' ' + t.body + ' ' + t.partName).toLowerCase().indexOf(q) >= 0));
+    const live = s.ghState === 'ready' && all.length > 0;
+    const seen = {};
+    all.forEach((t) => { if (t.partKey) seen[t.partKey] = t.partName; });
+
+    const open = this.thread();
+    const oKind = open ? this.kindOf(open.labels) : '';
+    const oPart = open ? this.partOf(open.repo) : null;
+    const cm = open ? this.cmts[open.repo + '#' + open.num] : null;
+    const k = this.postKind();
+    const postPart = PARTS.filter((x) => x.key === s.cPart)[0];
+
+    const navItems = [
+      { id: 'list', label: 'Threads' }, { id: 'new', label: 'Start one' },
+      { id: 'decisions', label: 'Decisions' }, { id: 'routing', label: 'Where things belong' },
+      { id: 'about', label: 'About' }
+    ];
+
+    return {
+      nav: navItems.map((n) => ({
+        label: n.label, onClick: this.go(n.id),
+        color: (p === n.id || (n.id === 'list' && p === 'thread')) ? 'var(--tx)' : '#8585A0',
+        line: (p === n.id || (n.id === 'list' && p === 'thread')) ? A : 'transparent'
+      })),
+      // Below ~1080px the nav drops to its own full-width row instead of being
+      // clipped — same relayout the portal header uses, driven from vw because the
+      // whole design is inline styles rather than media queries.
+      navFlex: navNarrow ? '0 0 100%' : '1',
+      navOrder: navNarrow ? '3' : '0',
+      navWidth: navNarrow ? '100%' : 'auto',
+      ctrlOrder: navNarrow ? '2' : '0',
+      ctrlPush: navNarrow ? 'auto' : '0',
+      themeLabel: s.resolved === 'dark' ? 'LIGHT' : 'DARK',
+      toggleTheme: this.toggleTheme,
+      goHome: this.go('list'), goNew: this.go('new'), goDecisions: this.go('decisions'),
+      goRouting: this.go('routing'), goAbout: this.go('about'),
+
+      isList: p === 'list', isThread: p === 'thread', isNew: p === 'new',
+      isDecisions: p === 'decisions', isRouting: p === 'routing', isAbout: p === 'about',
+
+      heroCols: narrow ? '1fr' : '1.4fr 0.6fr',
+      markSize: narrow ? '240px' : '360px',
+      markRef: this.markRef, shadowRef: this.shadowRef, ringOverRef: this.ringOverRef,
+      ringOutRef: this.ringOutRef, ringBackRef: this.ringBackRef, landRef: this.landRef,
+
+      stats: [
+        { k: 'THREADS', v: live ? String(all.length) : '—' },
+        { k: 'STILL OPEN', v: live ? String(all.filter((t) => t.isOpen).length) : '—' },
+        { k: 'WAITING FOR A FIRST REPLY', v: live ? String(all.filter((t) => t.isOpen && t.comments === 0).length) : '—' },
+        { k: 'MERGED PULL REQUESTS', v: live ? String(s.decisions.length) : '—' }
+      ],
+      stamp: live ? 'READ FROM GITHUB.COM/' + this.org.toUpperCase() + ' · ' + this.ago(new Date(s.ghAt).toISOString())
+        : s.ghState === 'error' ? 'GITHUB UNREACHABLE — NOTHING IS SHOWN IN ITS PLACE'
+        : 'READING THE ORGANIZATION…',
+      refresh: () => this.loadGH(true),
+
+      types: TYPES.map((t) => {
+        const on = s.type === t.id;
+        return { t: t.label, bg: on ? A : 'transparent', fg: on ? 'var(--bg)' : '#8585A0',
+          pick: () => this.setState({ type: t.id }) };
+      }),
+      partOpts: [{ v: 'all', t: 'Every part of the system' }]
+        .concat(Object.keys(seen).map((key) => ({ v: key, t: seen[key] }))),
+      part: s.part, setPart: (e) => this.setState({ part: e.target.value }),
+      q: s.q, setQ: (e) => this.setState({ q: e.target.value }),
+      waitBg: s.wait ? A : 'transparent', waitFg: s.wait ? 'var(--bg)' : '#8585A0',
+      toggleWait: () => this.setState((st) => ({ wait: !st.wait })),
+
+      rows: rows.slice(0, 40).map((t) => ({
+        title: t.title, kindLabel: t.kindLabel,
+        kindFg: t.kind === 'proposal' ? A : 'var(--tx3)',
+        partName: t.partName,
+        meta: (t.comments ? t.comments + (t.comments === 1 ? ' reply' : ' replies') : 'no reply yet')
+          + ' · ' + this.ago(t.at) + (t.user ? ' · started by ' + t.user : ''),
+        where: t.repo + ' #' + t.num + (t.isOpen ? '' : ' · CLOSED'),
+        waiting: t.isOpen && t.comments === 0,
+        pick: this.openThread(t)
+      })),
+      hasRows: rows.length > 0,
+      count: live ? rows.length + (rows.length === 1 ? ' thread' : ' threads') : '',
+      noMatch: all.length > 0 && rows.length === 0,
+      nothing: s.ghState === 'ready' && all.length === 0,
+      down: s.ghState === 'error',
+
+      tLoading: p === 'thread' && !open && s.tFetching,
+      tMissing: p === 'thread' && !open && !s.tFetching && (s.tFailed || s.ghState === 'error'),
+      tReady: !!open,
+      t: open ? {
+        title: open.title, kindLabel: this.kindLabel(oKind),
+        where: open.repo + ' #' + open.num + (open.open !== false ? ' · still open' : ' · closed'),
+        meta: (open.user ? 'started by ' + open.user : 'started') + ' · last activity ' + this.ago(open.at),
+        url: open.url,
+        partName: oPart ? oPart.name : open.repo,
+        partHref: 'https://drayker.org/#org/project/' + (oPart ? oPart.key : '')
+      } : { title: '', kindLabel: '', where: '', meta: '', url: '', partName: '', partHref: '' },
+      tBody: open ? this.md(open.body) : [],
+      tNoBody: !!(open && !String(open.body || '').trim()),
+      tCmts: (cm || []).map((c) => ({ who: c.who, when: this.ago(c.at), blocks: this.md(c.body) })),
+      tLoadingCmts: s.load,
+      tNoCmts: !!(open && cm && cm.length === 0 && !s.load),
+      tReplyUrl: open ? open.url + '#new_comment_field' : '',
+
+      kinds: POST.map((x) => {
+        const on = s.cKind === x.id;
+        return { t: x.label, d: x.line, fg: on ? A : 'var(--tx)', bg: on ? 'var(--surf2)' : 'transparent',
+          pick: () => this.setState({ cKind: x.id, cOpened: false }) };
+      }),
+      cQ1: k.q1, cQ2: k.q2,
+      cPartOpts: [{ v: '', t: 'I am not sure which part yet' }].concat(PARTS.map((x) => ({ v: x.key, t: x.name }))),
+      cPart: s.cPart, setCPart: (e) => this.setState({ cPart: e.target.value, cOpened: false }),
+      cTitle: s.cTitle, setCTitle: (e) => this.setState({ cTitle: e.target.value, cOpened: false }),
+      cWhat: s.cWhat, setCWhat: (e) => this.setState({ cWhat: e.target.value, cOpened: false }),
+      cWhy: s.cWhy, setCWhy: (e) => this.setState({ cWhy: e.target.value, cOpened: false }),
+      cPreview: [
+        'REPOSITORY  ' + this.org + '/' + this.postRepo(),
+        'TITLE       ' + k.prefix + (s.cTitle || 'untitled'),
+        'ABOUT       ' + (postPart ? postPart.name : 'not tied to a part yet'),
+        'AUTHOR      your own GitHub account',
+        'NOT SENT    this site transmits nothing — GitHub opens with the text filled in'
+      ],
+      cReady: s.cTitle.trim() ? '1' : '0.55',
+      cOpened: s.cOpened, cUrl: this.postUrl(), openPost: this.openPost,
+
+      decisions: s.decisions.slice(0, 24).map((d) => ({
+        title: d.title, url: d.url, where: d.repo + ' #' + d.num,
+        meta: 'merged ' + this.ago(d.at) + (d.user ? ' · ' + d.user : '')
+      })),
+      noDecisions: s.ghState === 'ready' && s.decisions.length === 0,
+
+      routes: ROUTES.map((r) => ({
+        about: r.about, repo: this.org + '/' + r.repo,
+        href: 'https://github.com/' + this.org + '/' + r.repo + '/issues'
+      })),
+      repoList: PARTS.filter((x) => x.repo).map((x) => ({
+        name: x.name, repo: this.org + '/' + x.repo,
+        issues: 'https://github.com/' + this.org + '/' + x.repo + '/issues'
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>

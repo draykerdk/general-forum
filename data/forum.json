@@ -1,0 +1,343 @@
+{
+  "generated_at": "2026-08-11T03:50:05Z",
+  "threads": [
+    {
+      "num": 1,
+      "title": "Write the identity requirements",
+      "url": "https://github.com/draykerdk/uid/issues/1",
+      "repo": "uid",
+      "labels": [
+        "open-function",
+        "skill:research",
+        "level:intermediate",
+        "effort:~8h"
+      ],
+      "user": "Hyadhuad",
+      "body": "## What is delivered\nA requirements document for UID: what a universal identity in this ecosystem must guarantee, and what it must never do.\n\nCover at least: what an identity is bound to; how a participant proves control of one; whether identities can be separated or held pseudonymously; how contribution history attaches to an identity; and what happens when an identity is lost.\n\n## Why it is needed\nUID is described as the primary system design and the basis for every application on the platform. No requirements are published, so nothing about it can be designed against or argued with from outside.\n\nFor a system whose premise is that strangers cooperate, how identity works is not a detail to postpone.\n\n## Where to start\nPrior art and objections are as welcome here as proposals. What existing identity systems get wrong is a good place to begin.\n## Prior material\n\nDrayker has earlier work on this subject in its own knowledge base — drafts, mostly in Portuguese, written before the public repositories took their current shape. It is not published yet. If you take this function, say so in the thread and the relevant material will be published alongside it, so you are consolidating and arguing with existing thinking rather than starting from a blank page.\n\n---\nThis is an open function: small enough for one person to finish, defined enough that the result composes with the rest. Claim it in this thread before starting so two people do not carry the same function, and deliver through a pull request to `master`. It appears on the board at https://drayker.org/#org/fn\n",
+      "comments": 0,
+      "at": "2026-08-10T01:31:15Z",
+      "open": true
+    },
+    {
+      "num": 1,
+      "title": "Write the research charter for Meta DFM",
+      "url": "https://github.com/draykerdk/metadfmp/issues/1",
+      "repo": "metadfmp",
+      "labels": [
+        "open-function",
+        "skill:research",
+        "level:advanced",
+        "effort:~10h"
+      ],
+      "user": "Hyadhuad",
+      "body": "## What is delivered\nA document stating what Meta DFM actually covers: the mathematical and logical protocols underneath DFM, and how the engineering swarm — the teams and artificial agents working on the technical architecture — is meant to be coordinated. Include which problems get modelled, against which requirements, with what method, and how a result is judged good enough to change an architecture decision.\n\n## Why it is needed\nBSDK, Dk and Dk Network all defer their final shape to \"optimal solutions proposed and developed with metaprogramming intelligent algorithms and research organized through DFMP\". They are pointing here. This repository publishes one line of intent.\n\nUntil this is published, three other repositories are deferring to work nobody outside can see.\n\n## Where to start\nNone of this requires a model to run. It requires the unglamorous part to be written: the questions, the criteria, and what would count as an answer.\n## Prior material\n\nDrayker has earlier work on this subject in its own knowledge base — drafts, mostly in Portuguese, written before the public repositories took their current shape. It is not published yet. If you take this function, say so in the thread and the relevant material will be published alongside it, so you are consolidating and arguing with existing thinking rather than starting from a blank page.\n\n---\nThis is an open function: small enough for one person to finish, defined enough that the result composes with the rest. Claim it in this thread before starting so two people do not carry the same function, and deliver through a pull request to `master`. It appears on the board at https://drayker.org/#org/fn\n",
+      "comments": 0,
+      "at": "2026-08-10T01:31:13Z",
+      "open": true
+    },
+    {
+      "num": 1,
+      "title": "Specify federative points and the voting procedure",
+      "url": "https://github.com/draykerdk/daf/issues/1",
+      "repo": "daf",
+      "labels": [
+        "open-function",
+        "skill:governance",
+        "level:advanced",
+        "effort:~16h"
+      ],
+      "user": "Hyadhuad",
+      "body": "## What is delivered\nA specification of how federative points are earned, held and counted, and how a decision of the federation is actually taken.\n\nCover at least: what counts as delivered work; who confirms it; whether points decay; how points map to voting weight; what can be voted on; quorum; and how a resource request is evaluated against the rule that support is a last resort.\n\n## Why it is needed\nThe README states that DAOs accumulate federative points and voting power over federation resources and decisions. None of the mechanism behind that sentence is published — neither the contract, nor the point mechanics, nor the voting procedure.\n\nFor a federation whose whole premise is cooperation without an owner, this is the gap that matters most. Drayker has substantial unpublished work on its economic and resource model; this function is largely about consolidating it into something reviewable.\n\n## Where to start\nThe published rules are the constraints: the initial DAO is funded by grants and side projects; support requests only where there is no alternative; resource efficiency matters; main projects are the priority. Any design has to keep those true.\n## Prior material\n\nDrayker has earlier work on this subject in its own knowledge base — drafts, mostly in Portuguese, written before the public repositories took their current shape. It is not published yet. If you take this function, say so in the thread and the relevant material will be published alongside it, so you are consolidating and arguing with existing thinking rather than starting from a blank page.\n\n---\nThis is an open function: small enough for one person to finish, defined enough that the result composes with the rest. Claim it in this thread before starting so two people do not carry the same function, and deliver through a pull request to `master`. It appears on the board at https://drayker.org/#org/fn\n",
+      "comments": 0,
+      "at": "2026-08-10T01:31:11Z",
+      "open": true
+    },
+    {
+      "num": 2,
+      "title": "Publish the first motion for resolution on the base structure",
+      "url": "https://github.com/draykerdk/bsdk/issues/2",
+      "repo": "bsdk",
+      "labels": [
+        "open-function",
+        "skill:research",
+        "level:advanced",
+        "effort:~12h"
+      ],
+      "user": "Hyadhuad",
+      "body": "## What is delivered\nOne motion for resolution, published in `docs/`, on a concrete part of the base structure — how a function is described, how modules compose, or how the structure is meant to evolve without discarding what works.\n\n## Why it is needed\nThis repository is described as the place where motions for resolution on the kernel's base structure live. None are published. One worked example would show what a motion looks like here and unblock everyone who would write the second. Drayker holds earlier architectural work on the base structure that has never been published — consolidating it into a motion is a legitimate way to do this.\n\n## Where to start\nThe ground rule is published and binding: only the requirements of Dk and the Drayker platform are final. A motion argues for a solution to those requirements; it does not redefine them.\n## Prior material\n\nDrayker has earlier work on this subject in its own knowledge base — drafts, mostly in Portuguese, written before the public repositories took their current shape. It is not published yet. If you take this function, say so in the thread and the relevant material will be published alongside it, so you are consolidating and arguing with existing thinking rather than starting from a blank page.\n\n---\nThis is an open function: small enough for one person to finish, defined enough that the result composes with the rest. Claim it in this thread before starting so two people do not carry the same function, and deliver through a pull request to `master`. It appears on the board at https://drayker.org/#org/fn\n",
+      "comments": 0,
+      "at": "2026-08-10T01:31:09Z",
+      "open": true
+    },
+    {
+      "num": 1,
+      "title": "Write how a council works",
+      "url": "https://github.com/draykerdk/advices/issues/1",
+      "repo": "advices",
+      "labels": [
+        "open-function",
+        "skill:governance",
+        "level:intermediate",
+        "effort:~6h"
+      ],
+      "user": "Hyadhuad",
+      "body": "## What is delivered\nA first version of \"how a council works\": how a council is formed, how someone joins one, which councils exist or should exist, how a council records a position, and what weight that position carries in DFMP.\n\n## Why it is needed\nDFMP says validation runs alongside development and that papers pass through the DAOs and/or councils depending on their purpose. Nothing about the councils themselves is published. For a system whose legitimacy rests on decentralized peer review, that is a load-bearing absence.\n\n## Where to start\nThe DFMP README and `dfmpp/README.md` describe where councils appear in the process. This function fills in what happens inside them.\n\nYou do not need authority to write this — propose it, and let the communities argue it through.\n## Prior material\n\nDrayker has earlier work on this subject in its own knowledge base — drafts, mostly in Portuguese, written before the public repositories took their current shape. It is not published yet. If you take this function, say so in the thread and the relevant material will be published alongside it, so you are consolidating and arguing with existing thinking rather than starting from a blank page.\n\n---\nThis is an open function: small enough for one person to finish, defined enough that the result composes with the rest. Claim it in this thread before starting so two people do not carry the same function, and deliver through a pull request to `master`. It appears on the board at https://drayker.org/#org/fn\n",
+      "comments": 0,
+      "at": "2026-08-10T01:31:07Z",
+      "open": true
+    },
+    {
+      "num": 1,
+      "title": "Recover or rewrite the Initial Network Architecture",
+      "url": "https://github.com/draykerdk/dk-network/issues/1",
+      "repo": "dk-network",
+      "labels": [
+        "open-function",
+        "skill:research",
+        "level:advanced",
+        "effort:~16h"
+      ],
+      "user": "Hyadhuad",
+      "body": "## What is delivered\nThe Initial Network Architecture, published in this repository — or, if it cannot be consolidated from existing material, a first version written against the requirements that are published.\n\n## Why it is needed\nThe README lists the network requirements and then says \"Other requirements are specified in the Initial Network Architecture\". That document is not published anywhere public, so the most consequential document of this layer is currently a reference to itself.\n\n## Where to start\nThe published requirements are the contract: two networks, three layers, compatibility with Living Cryptography, modular and evolutionary protocol, intelligent interconnection, separation of layers and subnetworks, distribution and fault tolerance, offline adaptability, DFM architecture. A rewrite has to satisfy them, not replace them.\n\nRecovering and consolidating what already exists is worth more than rewriting from scratch.\n## Prior material\n\nDrayker has earlier work on this subject in its own knowledge base — drafts, mostly in Portuguese, written before the public repositories took their current shape. It is not published yet. If you take this function, say so in the thread and the relevant material will be published alongside it, so you are consolidating and arguing with existing thinking rather than starting from a blank page.\n\n---\nThis is an open function: small enough for one person to finish, defined enough that the result composes with the rest. Claim it in this thread before starting so two people do not carry the same function, and deliver through a pull request to `master`. It appears on the board at https://drayker.org/#org/fn\n",
+      "comments": 0,
+      "at": "2026-08-10T01:31:06Z",
+      "open": true
+    },
+    {
+      "num": 2,
+      "title": "Write a threat model for re-encryption on failed authentication",
+      "url": "https://github.com/draykerdk/living-cryptography/issues/2",
+      "repo": "living-cryptography",
+      "labels": [
+        "open-function",
+        "skill:research",
+        "level:advanced",
+        "effort:~10h"
+      ],
+      "user": "Hyadhuad",
+      "body": "## What is delivered\nA threat model for the design where a failed authentication changes the cryptographic scheme: what it defends against, what it does not, and what it costs.\n\n## Why it is needed\nThe claim is strong — that repeating a brute-force attempt stops paying off, and that the system gets stronger under attack. A claim that strong needs an adversary written down next to it.\n\n## Where to start\nUseful attacks to reason about: an adversary who fails deliberately to force re-encryption; the cost of re-encryption to legitimate holders of the data; what happens to data in flight during a scheme change; and whether an attacker can distinguish schemes.\n\nA well-argued \"this does not hold under X\" is as valuable as a defence of the design.\n## Prior material\n\nDrayker has earlier work on this subject in its own knowledge base — drafts, mostly in Portuguese, written before the public repositories took their current shape. It is not published yet. If you take this function, say so in the thread and the relevant material will be published alongside it, so you are consolidating and arguing with existing thinking rather than starting from a blank page.\n\n---\nThis is an open function: small enough for one person to finish, defined enough that the result composes with the rest. Claim it in this thread before starting so two people do not carry the same function, and deliver through a pull request to `master`. It appears on the board at https://drayker.org/#org/fn\n",
+      "comments": 0,
+      "at": "2026-08-10T01:31:04Z",
+      "open": true
+    },
+    {
+      "num": 1,
+      "title": "Specify the uPOW: inputs, cost and verification",
+      "url": "https://github.com/draykerdk/living-cryptography/issues/1",
+      "repo": "living-cryptography",
+      "labels": [
+        "open-function",
+        "skill:research",
+        "level:advanced",
+        "effort:~12h"
+      ],
+      "user": "Hyadhuad",
+      "body": "## What is delivered\nA specification of the unit of proof-of-work a requester must run: what it takes as input, how its cost is set, how the distributed system verifies it, and how the split between authentication work and network work is decided.\n\n## Why it is needed\nThe uPOW is the mechanism the whole security model rests on, and what is published is currently one paragraph of prose. Nothing about it can be reviewed, implemented or attacked on paper in its present form.\n\n## Where to start\nThe README describes the intent. The hard questions are the useful ones: who chooses the difficulty, what stops it from being a denial-of-service against legitimate users, and what exactly the network gets back for the work spent.\n## Prior material\n\nDrayker has earlier work on this subject in its own knowledge base — drafts, mostly in Portuguese, written before the public repositories took their current shape. It is not published yet. If you take this function, say so in the thread and the relevant material will be published alongside it, so you are consolidating and arguing with existing thinking rather than starting from a blank page.\n\n---\nThis is an open function: small enough for one person to finish, defined enough that the result composes with the rest. Claim it in this thread before starting so two people do not carry the same function, and deliver through a pull request to `master`. It appears on the board at https://drayker.org/#org/fn\n",
+      "comments": 0,
+      "at": "2026-08-10T01:31:02Z",
+      "open": true
+    },
+    {
+      "num": 1,
+      "title": "Publish a worked example of a project proposal model",
+      "url": "https://github.com/draykerdk/dfmpproject/issues/1",
+      "repo": "dfmpproject",
+      "labels": [
+        "open-function",
+        "skill:docs",
+        "level:entry",
+        "effort:~5h"
+      ],
+      "user": "Hyadhuad",
+      "body": "## What is delivered\nOne complete example of a project proposed through DFM: the issue modelled, fragmented into functions, with the modules that connect them made explicit.\n\n## Why it is needed\nThe repository describes the idea of distributed, modularized projects but does not publish the models it refers to. Proposing a project is therefore harder than it should be — the only way to learn the shape is to guess it.\n\n## Where to start\nA real proposal works better than an invented one. Any of the open functions in this organization could be written up as the example.\n## Prior material\n\nDrayker has earlier work on this subject in its own knowledge base — drafts, mostly in Portuguese, written before the public repositories took their current shape. It is not published yet. If you take this function, say so in the thread and the relevant material will be published alongside it, so you are consolidating and arguing with existing thinking rather than starting from a blank page.\n\n---\nThis is an open function: small enough for one person to finish, defined enough that the result composes with the rest. Claim it in this thread before starting so two people do not carry the same function, and deliver through a pull request to `master`. It appears on the board at https://drayker.org/#org/fn\n",
+      "comments": 0,
+      "at": "2026-08-10T01:31:01Z",
+      "open": true
+    },
+    {
+      "num": 2,
+      "title": "Expand the ethical code of Dk",
+      "url": "https://github.com/draykerdk/dk/issues/2",
+      "repo": "dk",
+      "labels": [
+        "open-function",
+        "skill:research",
+        "level:intermediate",
+        "effort:~8h"
+      ],
+      "user": "Hyadhuad",
+      "body": "## What is delivered\n`docs/ethos.md` written out, beyond the single sentence it currently holds.\n\n## Why it is needed\nThe documentation itself says the ethical code is one of the most important parts of Dk's intelligence. What is published is one line. A statement of importance without content is the weakest kind of claim a system can make about itself.\n\n## Where to start\nThe manifesto and the principles at https://drayker.org/#org/manifesto are the values the rest of the system already commits to. This function is about what they mean for an intelligence that acts.\n## Prior material\n\nDrayker has earlier work on this subject in its own knowledge base — drafts, mostly in Portuguese, written before the public repositories took their current shape. It is not published yet. If you take this function, say so in the thread and the relevant material will be published alongside it, so you are consolidating and arguing with existing thinking rather than starting from a blank page.\n\n---\nThis is an open function: small enough for one person to finish, defined enough that the result composes with the rest. Claim it in this thread before starting so two people do not carry the same function, and deliver through a pull request to `master`. It appears on the board at https://drayker.org/#org/fn\n",
+      "comments": 0,
+      "at": "2026-08-10T01:30:59Z",
+      "open": true
+    },
+    {
+      "num": 1,
+      "title": "Decide whether OSDK is active architecture",
+      "url": "https://github.com/draykerdk/osdk/issues/1",
+      "repo": "osdk",
+      "labels": [
+        "open-function",
+        "skill:research",
+        "level:entry",
+        "effort:~4h"
+      ],
+      "user": "Hyadhuad",
+      "body": "## What is delivered\nA short document, and an update to this repository's README, stating whether OSDK is an active part of the Drayker architecture or an early idea kept for the record — with the reasoning.\n\n## Why it is needed\nOSDK has a published documentation site and a one-sentence description, and it does not appear in the ecosystem map at https://drayker.org/#org/eco — so a reader cannot tell whether it is a live layer or a fossil. Either answer is fine. Ambiguity is not.\n\n## Where to start\nCompare what OSDK claims to do with what Dk Network and UID already cover. If it overlaps entirely, say so.\n\n---\nThis is an open function: small enough for one person to finish, defined enough that the result composes with the rest. Claim it in this thread before starting so two people do not carry the same function, and deliver through a pull request to `master`. It appears on the board at https://drayker.org/#org/fn\n",
+      "comments": 0,
+      "at": "2026-08-10T01:30:57Z",
+      "open": true
+    },
+    {
+      "num": 6,
+      "title": "Date-audit the papers and the roadmap",
+      "url": "https://github.com/draykerdk/dknowledge/issues/6",
+      "repo": "dknowledge",
+      "labels": [
+        "open-function",
+        "skill:docs",
+        "level:entry",
+        "effort:~6h"
+      ],
+      "user": "Hyadhuad",
+      "body": "## What is delivered\nA list of where the published papers and the roadmap no longer match the current state of the projects, with dates.\n\n## Why it is needed\nThis is the most complete documentation in the ecosystem and also the oldest. Parts of it predate the current shape of the projects. A reader today cannot tell which parts are still current, and that quietly undermines everything else here.\n\n## Where to start\nRead `papers/` and `roadmap/` against the current repositories and the ecosystem map at https://drayker.org/#org/eco\n\nYou do not have to fix what you find. Listing it accurately is the function.\n\n---\nThis is an open function: small enough for one person to finish, defined enough that the result composes with the rest. Claim it in this thread before starting so two people do not carry the same function, and deliver through a pull request to `master`. It appears on the board at https://drayker.org/#org/fn\n",
+      "comments": 0,
+      "at": "2026-08-10T01:30:55Z",
+      "open": true
+    },
+    {
+      "num": 3,
+      "title": "Bring the Spanish protocol README up to date",
+      "url": "https://github.com/draykerdk/dfmp/issues/3",
+      "repo": "dfmp",
+      "labels": [
+        "open-function",
+        "skill:translation",
+        "level:entry",
+        "effort:~3h"
+      ],
+      "user": "Hyadhuad",
+      "body": "## What is delivered\n`README.ES.md` matching the current English `README.md`.\n\n## Why it is needed\nThe English README was rewritten and the Spanish one is now behind it.\n\n## Where to start\nCompare `README.md` and `README.ES.md`.\n\n---\nThis is an open function: small enough for one person to finish, defined enough that the result composes with the rest. Claim it in this thread before starting so two people do not carry the same function, and deliver through a pull request to `master`. It appears on the board at https://drayker.org/#org/fn\n",
+      "comments": 0,
+      "at": "2026-08-10T01:30:53Z",
+      "open": true
+    },
+    {
+      "num": 2,
+      "title": "Bring the Portuguese protocol README up to date",
+      "url": "https://github.com/draykerdk/dfmp/issues/2",
+      "repo": "dfmp",
+      "labels": [
+        "open-function",
+        "skill:translation",
+        "level:entry",
+        "effort:~3h"
+      ],
+      "user": "Hyadhuad",
+      "body": "## What is delivered\n`README.PT.md` matching the current English `README.md`.\n\n## Why it is needed\nThe English README was rewritten and the Portuguese one is now behind it. A translation that silently lags is worse than no translation, because a reader has no way to tell.\n\n## Where to start\nCompare `README.md` and `README.PT.md`. The existing Portuguese text is real translation work — keep its voice where the content still matches.\n\n---\nThis is an open function: small enough for one person to finish, defined enough that the result composes with the rest. Claim it in this thread before starting so two people do not carry the same function, and deliver through a pull request to `master`. It appears on the board at https://drayker.org/#org/fn\n",
+      "comments": 0,
+      "at": "2026-08-10T01:30:52Z",
+      "open": true
+    },
+    {
+      "num": 1,
+      "title": "Write DFMP-000, the proposal process paper",
+      "url": "https://github.com/draykerdk/dfmp/issues/1",
+      "repo": "dfmp",
+      "labels": [
+        "open-function",
+        "skill:docs",
+        "level:intermediate",
+        "effort:~8h"
+      ],
+      "user": "Hyadhuad",
+      "body": "## What is delivered\n`dfmpp/dfmp-000-dfmp-proposal-process.md` written out: the path a proposal takes from an idea to a legitimated paper on master, in enough detail that someone who has never proposed anything here can follow it without asking.\n\nCover at least: what a proposal must contain before it is presented; how it is presented to the community through the issues; what \"widely discussed and validated\" means in practice; which DAOs or councils see it and how that is decided by purpose; how it enters the approval folder; how the pull request targets `master` and passes automated checks and public discussion; and how an update to an already-legitimated paper is handled.\n\n## Why it is needed\nThe file exists and contains only its own title. Every other repository in the ecosystem defers to \"research organized through DFMP\" — the process they defer to is currently undocumented.\n\n## Where to start\nThe README of this repository and `dfmpp/README.md` already describe the shape of the process in a few sentences. That is the skeleton; this function is the body.\n## Prior material\n\nDrayker has earlier work on this subject in its own knowledge base — drafts, mostly in Portuguese, written before the public repositories took their current shape. It is not published yet. If you take this function, say so in the thread and the relevant material will be published alongside it, so you are consolidating and arguing with existing thinking rather than starting from a blank page.\n\n---\nThis is an open function: small enough for one person to finish, defined enough that the result composes with the rest. Claim it in this thread before starting so two people do not carry the same function, and deliver through a pull request to `master`. It appears on the board at https://drayker.org/#org/fn\n",
+      "comments": 0,
+      "at": "2026-08-10T01:30:49Z",
+      "open": true
+    },
+    {
+      "num": 1,
+      "title": "Write the first-time contributor guide",
+      "url": "https://github.com/draykerdk/drayker.org/issues/1",
+      "repo": "drayker.org",
+      "labels": [
+        "open-function",
+        "skill:docs",
+        "level:entry",
+        "effort:~5h"
+      ],
+      "user": "Hyadhuad",
+      "body": "## What is delivered\nA guide for someone who has just decided to contribute and does not know the system: where the map is, how a function is claimed, how pull requests to `master` are checked and discussed, and what happens after they open their first pull request.\n\n## Why it is needed\nThe portal explains that you do not need to know the whole system to contribute to it. It does not yet explain the first twenty minutes.\n\n## Where to start\nThe DFM page and the open-functions board describe the shape of the work. This function is the missing bridge between \"I want to help\" and the first claimed function.\n\nWhere it lives is part of the function — this repository, or `dknowledge` alongside CONTRIBUTING.md.\n\n---\nThis is an open function: small enough for one person to finish, defined enough that the result composes with the rest. Claim it in this thread before starting so two people do not carry the same function, and deliver through a pull request to `master`. It appears on the board at https://drayker.org/#org/fn\n",
+      "comments": 0,
+      "at": "2026-08-10T01:30:48Z",
+      "open": true
+    }
+  ],
+  "decisions": [
+    {
+      "num": 1,
+      "title": "Publish Drayker 2.3 institutional site",
+      "url": "https://github.com/draykerdk/drayker.com/pull/1",
+      "repo": "drayker.com",
+      "user": "Hyadhuad",
+      "at": "2026-08-09T11:32:43Z"
+    },
+    {
+      "num": 2,
+      "title": "Publish Drayker 2.3 static Design Component",
+      "url": "https://github.com/draykerdk/drayker.org/pull/2",
+      "repo": "drayker.org",
+      "user": "Hyadhuad",
+      "at": "2026-08-09T04:16:23Z"
+    },
+    {
+      "num": 5,
+      "title": "update test double license",
+      "url": "https://github.com/draykerdk/dknowledge/pull/5",
+      "repo": "dknowledge",
+      "user": "Hyadhuad",
+      "at": "2019-10-16T11:27:10Z"
+    },
+    {
+      "num": 4,
+      "title": "update branches ",
+      "url": "https://github.com/draykerdk/dknowledge/pull/4",
+      "repo": "dknowledge",
+      "user": "Hyadhuad",
+      "at": "2019-10-12T13:00:06Z"
+    },
+    {
+      "num": 3,
+      "title": "update peer review",
+      "url": "https://github.com/draykerdk/dknowledge/pull/3",
+      "repo": "dknowledge",
+      "user": "Hyadhuad",
+      "at": "2019-10-12T12:58:54Z"
+    },
+    {
+      "num": 2,
+      "title": "update ",
+      "url": "https://github.com/draykerdk/dknowledge/pull/2",
+      "repo": "dknowledge",
+      "user": "Hyadhuad",
+      "at": "2019-10-09T11:39:32Z"
+    },
+    {
+      "num": 1,
+      "title": "Add files via upload",
+      "url": "https://github.com/draykerdk/dknowledge/pull/1",
+      "repo": "dknowledge",
+      "user": "Hyadhuad",
+      "at": "2019-06-28T15:19:02Z"
+    },
+    {
+      "num": 1,
+      "title": "Create CODE_OF_CONDUCT.md",
+      "url": "https://github.com/draykerdk/bsdk/pull/1",
+      "repo": "bsdk",
+      "user": "Hyadhuad",
+      "at": "2019-04-17T12:52:25Z"
+    }
+  ]
+}
