@@ -4,10 +4,14 @@ Announcements, ideas and work related to Drayker that do not fit the topic of an
 
 If you are unsure where something belongs, this is a reasonable place to say it out loud. If it turns out to belong to a project, it moves there.
 
+Official reading surface: **[forum.drayker.org](https://forum.drayker.org/)**. It brings the organization's public issues and merged pull requests into one readable forum while every post, reply and decision remains in its source repository on GitHub.
+
 ## Public entry routes
 
+- **Want to read or start a public conversation?** Begin at [forum.drayker.org](https://forum.drayker.org/). The site never creates an account or stores a submission; publishing always continues on GitHub under your own account.
 - **Want to contribute?** Use the [volunteer introduction](https://github.com/draykerdk/general-forum/issues/new?template=volunteer-introduction.yml). Share only information you are comfortable publishing; participation is voluntary and does not promise compensation or placement.
 - **Represent a possible partner?** Use the [partnership proposal](https://github.com/draykerdk/general-forum/issues/new?template=partnership.yml). This begins a public discussion and is not a contract, endorsement or funding commitment.
+- **Have a concrete proposal?** Use the [proposal form](https://github.com/draykerdk/general-forum/issues/new?template=proposal.yml), or compose it through the forum so the relevant fields are carried into GitHub.
 - **Already know the component?** Open the issue directly beside the documentation or code it concerns.
 
 ## Where things usually belong instead

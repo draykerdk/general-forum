@@ -1,0 +1,9 @@
+{
+  "name": "drayker-general-forum",
+  "private": true,
+  "scripts": {
+    "snapshot": "node tools/build-forum-snapshot.js",
+    "prerender": "node tools/prerender.js",
+    "test": "node tools/forum-check.js"
+  }
+}

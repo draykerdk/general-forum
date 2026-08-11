@@ -8,6 +8,7 @@ component:
   scope:
     - Structured public issue intake and routing.
     - Volunteer introductions and partnership proposals.
+    - A static reading surface over public issues and merged pull requests across the Drayker organization.
   non_scope:
     - Private applications or guaranteed placement.
     - Binding governance decisions or project management.
@@ -16,12 +17,14 @@ component:
     - emergence-initiative
   implementation:
     level: operational
-    scope: GitHub Issues provide a functioning public intake and routing surface; follow-through remains community-driven.
+    scope: GitHub Issues provide public intake and routing; forum.drayker.org provides a static reading and composing surface while publication and follow-through remain on GitHub.
     evidence:
       - type: usage
         ref: https://github.com/draykerdk/general-forum/issues
       - type: document
         ref: README.md
+      - type: deployment
+        ref: https://forum.drayker.org/
   risks:
     - Public issue content can expose information contributors intended to keep private.
     - Unclear routing can leave submissions without a next action.
@@ -31,4 +34,4 @@ component:
   source_of_truth:
     repository: https://github.com/draykerdk/general-forum
     path: README.md
-  last_reviewed: "2026-08-10"
+  last_reviewed: "2026-08-11"

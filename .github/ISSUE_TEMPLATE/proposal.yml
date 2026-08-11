@@ -1,0 +1,69 @@
+# Public proposal form used by the composer at forum.drayker.org. The forum
+# fills the canonical field ids summary, change and component before handing
+# publication to GitHub.
+#
+# Field ids are the contract between this form and the site. Do not rename
+# summary / change / component without changing postUrl() in the component.
+
+name: Proposal
+description: Propose something the project should do, written so that it can be argued with.
+title: "[Proposal] "
+labels:
+  - motion
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A proposal is a public thread, not a decision. It becomes one only if it is cut into work someone finishes and that work is merged. Share only what you are comfortable publishing.
+  - type: input
+    id: summary
+    attributes:
+      label: What are you proposing?
+      description: One line. Assume the reader has read nothing else.
+    validations:
+      required: true
+  - type: textarea
+    id: change
+    attributes:
+      label: What would be different if it happened?
+      description: State the difference, not the intention. A proposal nobody can disagree with is not a proposal.
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Which part of the system does it touch?
+      description: If it belongs to a component, the thread will be moved to that repository.
+      options:
+        - Not sure yet
+        - DFM Protocol
+        - Dk
+        - Base structure (BSDK)
+        - Dk Network
+        - Living Cryptography
+        - Universal Identity (UID)
+        - DAF — the federation
+        - Dknowledger
+        - The public websites
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: smallest_step
+    attributes:
+      label: The smallest piece someone could finish
+      description: Optional. If you can already see a first function, name it — that is how a proposal becomes work.
+  - type: textarea
+    id: against
+    attributes:
+      label: The strongest argument against it
+      description: Optional, and the most useful field on this form.
+  - type: checkboxes
+    id: public
+    attributes:
+      label: Public proposal
+      options:
+        - label: This thread contains no credentials, private personal data or confidential information.
+          required: true
+        - label: I understand a proposal creates no commitment by anyone to implement it.
+          required: true
