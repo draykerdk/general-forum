@@ -7,21 +7,32 @@
 <meta name="description" content="Write a proposal, question, idea or report and publish it on GitHub under your own account.">
 <meta name="theme-color" content="#08080A">
 <link rel="canonical" href="https://forum.drayker.org/new/">
-<link rel="shortcut icon" href="../favicon.ico?v=20260811">
-<link rel="icon" href="../favicon.ico?v=20260811" type="image/x-icon" sizes="32x32">
-<link rel="icon" href="../assets/logo/drayker-favicon.svg?v=20260811" type="image/svg+xml" sizes="any">
-<link rel="icon" href="../assets/logo/kit/favicon-32.png?v=20260811" type="image/png" sizes="32x32">
-<link rel="icon" href="../assets/logo/kit/favicon-16.png?v=20260811" type="image/png" sizes="16x16">
-<link rel="apple-touch-icon" href="../assets/logo/kit/apple-touch-icon.png?v=20260811" sizes="180x180">
+<link rel="shortcut icon" href="/favicon.ico?v=20260811">
+<link rel="icon" href="/favicon.ico?v=20260811" type="image/x-icon" sizes="32x32">
+<link rel="icon" href="/assets/logo/drayker-favicon.svg?v=20260811" type="image/svg+xml" sizes="any">
+<link rel="icon" href="/assets/logo/kit/favicon-32.png?v=20260811" type="image/png" sizes="32x32">
+<link rel="icon" href="/assets/logo/kit/favicon-16.png?v=20260811" type="image/png" sizes="16x16">
+<link rel="apple-touch-icon" href="/assets/logo/kit/apple-touch-icon.png?v=20260811" sizes="180x180">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Start a thread — Drayker Forum">
 <meta property="og:description" content="Write a proposal, question, idea or report and publish it on GitHub under your own account.">
 <meta property="og:url" content="https://forum.drayker.org/new/">
-<script src="../support.js"></script>
-<!-- FORUM_PRERENDER_START --><script>if(!location.hash)location.replace("#/new");</script><!-- FORUM_PRERENDER_END -->
+<meta property="og:image" content="https://forum.drayker.org/assets/forum-social.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Drayker Forum">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Start a thread — Drayker Forum">
+<meta name="twitter:description" content="Write a proposal, question, idea or report and publish it on GitHub under your own account.">
+<meta name="twitter:image" content="https://forum.drayker.org/assets/forum-social.png">
+<script src="/support.js"></script>
 </head>
 <body>
 <!-- FORUM_PRERENDER_START --><noscript><div style="max-width:64ch;margin:0 auto;padding:40px 20px;font-family:Archivo,Helvetica,Arial,sans-serif;color:#EDECF0;background:#08080A"><h1>Start a thread — Drayker Forum</h1><p>Write a proposal, question, idea or report and publish it on GitHub under your own account.</p><p>The forum reads public conversations from <a href="https://github.com/draykerdk">github.com/draykerdk</a>. Publishing and replying happen on GitHub.</p><ul><li><a href="https://forum.drayker.org/">Drayker Forum — every public thread</a></li><li><a href="https://forum.drayker.org/new/">Start a thread — Drayker Forum</a></li><li><a href="https://forum.drayker.org/decisions/">Decisions — Drayker Forum</a></li><li><a href="https://forum.drayker.org/routing/">Where a subject belongs — Drayker Forum</a></li><li><a href="https://forum.drayker.org/about/">About — Drayker Forum</a></li></ul></div></noscript><!-- FORUM_PRERENDER_END -->
+
+
+
+
 
 <x-dc>
 <helmet>
@@ -177,7 +188,14 @@
 
       <section>
         <div style="max-width:1320px;margin:0 auto;padding:clamp(24px,3.2vw,40px) clamp(16px,4vw,44px) clamp(40px,5vw,80px)">
-          <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.12em;color:var(--tx3);margin-bottom:20px">{{ stamp }}</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;border:1px solid var(--line2);background:var(--surf);padding:13px 15px;margin-bottom:20px">
+            <div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:0.14em;color:#FF5500;margin-bottom:5px">GITHUB SYNC</div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.08em;color:var(--tx)">{{ stamp }}</div>
+              <div style="font-size:12.5px;color:var(--tx3);margin-top:4px">{{ syncDetail }}</div>
+            </div>
+            <div onClick="{{ refresh }}" style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.11em;color:#FF5500;cursor:pointer;white-space:nowrap">REFRESH NOW →</div>
+          </div>
 
           <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px">
             <sc-for list="{{ types }}" as="f" hint-placeholder-count="6">
@@ -192,7 +210,20 @@
                 <option value="{{ o.v }}">{{ o.t }}</option>
               </sc-for>
             </select>
+            <select value="{{ status }}" onChange="{{ setStatus }}" style="background:var(--surf);border:1px solid var(--line2);color:var(--tx);padding:11px 13px;font-size:14px;outline:none;min-width:150px">
+              <option value="all">Every status</option>
+              <option value="open">Open</option>
+              <option value="closed">Closed</option>
+              <option value="answered">With replies</option>
+            </select>
+            <select value="{{ sort }}" onChange="{{ setSort }}" style="background:var(--surf);border:1px solid var(--line2);color:var(--tx);padding:11px 13px;font-size:14px;outline:none;min-width:170px">
+              <option value="recent">Recently active</option>
+              <option value="oldest">Oldest activity</option>
+              <option value="replies">Most replies</option>
+              <option value="unanswered">Needs a reply</option>
+            </select>
             <div onClick="{{ toggleWait }}" style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.1em;padding:11px 13px;cursor:pointer;border:1px solid var(--line2);background:{{ waitBg }};color:{{ waitFg }};white-space:nowrap" style-hover="border-color:#FF5500">NOBODY ANSWERED YET</div>
+            <div onClick="{{ clearFilters }}" style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.1em;padding:11px 4px;cursor:pointer;color:var(--tx3);white-space:nowrap" style-hover="color:#FF5500">CLEAR</div>
           </div>
 
           <sc-if value="{{ hasRows }}" hint-placeholder-val="{{ true }}">
@@ -596,8 +627,9 @@
 // pull requests). It writes nothing: every post and reply opens GitHub under the
 // reader's own account.
 //
-// Hash routes, so a thread has a shareable address:
-//   #/  ·  #/t/<repo>/<number>  ·  #/new  ·  #/decisions  ·  #/routing  ·  #/about
+// Clean static routes, so a thread has a durable, indexable address:
+//   /  ·  /t/<repo>/<number>/  ·  /new/  ·  /decisions/  ·  /routing/  ·  /about/
+// Historic hash links remain accepted and are upgraded in place.
 // ============================================================================
 const A = '#FF5500';
 
@@ -678,10 +710,10 @@ const META = {
 class Component extends DCLogic {
   state = {
     page: 'list', tRepo: '', tNum: '', tFetch: null, tFetching: false, tFailed: false,
-    type: 'all', part: 'all', q: '', wait: false,
+    type: 'all', part: 'all', status: 'all', sort: 'recent', q: '', wait: false,
     cKind: 'proposal', cPart: '', cTitle: '', cWhat: '', cWhy: '', cOpened: false,
     themePref: 'auto', resolved: 'dark',
-    threads: [], decisions: [], ghState: 'idle', ghAt: 0, load: false, tick: 0,
+    threads: [], decisions: [], ghState: 'idle', ghSource: '', ghAt: 0, load: false, tick: 0,
     vw: typeof window !== 'undefined' ? window.innerWidth : 1440
   };
 
@@ -698,7 +730,7 @@ class Component extends DCLogic {
       try {
         const c = JSON.parse(localStorage.getItem(this.CACHE) || 'null');
         if (c && Date.now() - c.t < 18e5) {
-          this.setState({ threads: c.threads || [], decisions: c.decisions || [], ghAt: c.t, ghState: 'ready' });
+          this.setState({ threads: c.threads || [], decisions: c.decisions || [], ghAt: c.t, ghState: 'ready', ghSource: 'browser cache' });
           return;
         }
       } catch (e) {}
@@ -710,7 +742,7 @@ class Component extends DCLogic {
     } catch (e) {}
     if (snap && snap.threads && snap.threads.length) {
       this.setState({ threads: snap.threads, decisions: snap.decisions || [],
-        ghAt: Date.parse(snap.generated_at || '') || Date.now(), ghState: 'ready' });
+        ghAt: Date.parse(snap.generated_at || '') || Date.now(), ghState: 'ready', ghSource: 'published snapshot' });
     } else {
       this.setState({ ghState: 'loading' });
     }
@@ -740,7 +772,7 @@ class Component extends DCLogic {
       } catch (e) {}
       const t = Date.now();
       try { localStorage.setItem(this.CACHE, JSON.stringify({ t, threads, decisions })); } catch (e) {}
-      this.setState({ threads, decisions, ghAt: t, ghState: 'ready' });
+      this.setState({ threads, decisions, ghAt: t, ghState: 'ready', ghSource: 'GitHub live' });
     } catch (e) {
       this.setState({ ghState: snap && snap.threads && snap.threads.length ? 'ready' : 'error' });
     }
@@ -815,43 +847,65 @@ class Component extends DCLogic {
     }));
   };
 
-  // ROUTING — a thread has its own address so it can be linked from a README, a
-  // paper or a message. A deep link to a thread outside the list is fetched alone.
-  readHash = () => {
-    const parts = (window.location.hash || '').replace(/^#\/?/, '').split('/').filter(Boolean);
+  // ROUTING — GitHub Pages serves generated documents for every thread in the
+  // snapshot. Hash links from the first release are kept as backwards-compatible
+  // inputs and upgraded to their clean equivalent without a reload.
+  readRoute = () => {
+    const clean = (window.location.pathname || '/').replace(/^\/+|\/+$/g, '').split('/').filter(Boolean);
+    const legacy = (window.location.hash || '').replace(/^#\/?/, '').split('/').filter(Boolean);
+    const parts = legacy.length ? legacy : clean;
     const p = parts[0] || 'list';
+    if (legacy.length && window.history && window.history.replaceState) {
+      const upgraded = p === 'list' ? '/' : '/' + parts.map(encodeURIComponent).join('/') + '/';
+      window.history.replaceState({}, '', upgraded + (window.location.search || ''));
+    }
     if (p === 't' && parts[1] && parts[2]) {
-      this.setState({ page: 'thread', tRepo: parts[1], tNum: parts[2], tFailed: false });
-      this.ensureThread(parts[1], parts[2]);
+      const repo = decodeURIComponent(parts[1]);
+      const num = decodeURIComponent(parts[2]);
+      this.setState({ page: 'thread', tRepo: repo, tNum: num, tFailed: false });
+      this.ensureThread(repo, num);
       return;
     }
     const known = ['list', 'new', 'decisions', 'routing', 'about'];
     this.setState({ page: known.indexOf(p) >= 0 ? p : 'list' });
   };
 
-  syncHash = () => {
+  syncRoute = () => {
     const s = this.state;
     const path = s.page === 'thread' ? 't/' + s.tRepo + '/' + s.tNum : (s.page === 'list' ? '' : s.page);
-    const h = '#/' + path;
-    if (window.location.hash !== h && !(path === '' && !window.location.hash)) {
-      this.skip = true;
-      window.location.hash = h;
+    const target = path ? '/' + path.split('/').map(encodeURIComponent).join('/') + '/' : '/';
+    if (window.location.pathname !== target && window.history && window.history.pushState) {
+      window.history.pushState({}, '', target);
     }
     const m = META[s.page] || META.list;
     const found = this.thread();
     const title = s.page === 'thread' && found ? found.title + ' — Drayker Forum' : m.t;
+    const description = s.page === 'thread' && found
+      ? this.socialDescription(found)
+      : m.d;
     if (document.title !== title) document.title = title;
     const set = (sel, attr, val) => {
       const el = document.head ? document.head.querySelector(sel) : null;
       if (el && el.getAttribute(attr) !== val) el.setAttribute(attr, val);
     };
-    set('meta[name="description"]', 'content', m.d);
+    set('meta[name="description"]', 'content', description);
     const canonical = s.page === 'list' ? 'https://forum.drayker.org/'
-      : s.page === 'thread' ? 'https://forum.drayker.org/' + h
+      : s.page === 'thread' ? 'https://forum.drayker.org' + target
       : 'https://forum.drayker.org/' + s.page + '/';
     set('link[rel="canonical"]', 'href', canonical);
+    set('meta[property="og:type"]', 'content', s.page === 'thread' ? 'article' : 'website');
     set('meta[property="og:title"]', 'content', title);
+    set('meta[property="og:description"]', 'content', description);
     set('meta[property="og:url"]', 'content', canonical);
+    set('meta[name="twitter:title"]', 'content', title);
+    set('meta[name="twitter:description"]', 'content', description);
+  };
+
+  socialDescription = (thread) => {
+    const plain = this.mdInline(String(thread.body || '').replace(/[#>*_|`~\[\]()!-]/g, ' ').replace(/\s+/g, ' '));
+    const lead = plain || 'A public discussion in the Drayker organization.';
+    return (lead.length > 176 ? lead.slice(0, 173).trim() + '…' : lead)
+      + ' · ' + this.org + '/' + thread.repo + ' #' + thread.num;
   };
 
   go = (page) => () => { this.setState({ page, tRepo: '', tNum: '' }); window.scrollTo(0, 0); };
@@ -1107,9 +1161,10 @@ class Component extends DCLogic {
     this.onScheme = () => { if (this.state.themePref === 'auto') this.applyTheme('auto'); };
     if (this.mq && this.mq.addEventListener) this.mq.addEventListener('change', this.onScheme);
 
-    this.readHash();
-    this.onHash = () => { if (this.skip) { this.skip = false; return; } this.readHash(); };
-    window.addEventListener('hashchange', this.onHash);
+    this.readRoute();
+    this.onRoute = () => this.readRoute();
+    window.addEventListener('popstate', this.onRoute);
+    window.addEventListener('hashchange', this.onRoute);
 
     // Gaze: the cursor steers the mark; after 2.4s without a pointer it drifts on
     // its own along a slow Lissajous path so it never looks frozen.
@@ -1159,12 +1214,13 @@ class Component extends DCLogic {
     this.loadGH(false);
   }
 
-  componentDidUpdate() { this.paintMark(); this.paintEarth(); this.syncHash(); }
+  componentDidUpdate() { this.paintMark(); this.paintEarth(); this.syncRoute(); }
 
   componentWillUnmount() {
     cancelAnimationFrame(this.raf);
     window.removeEventListener('pointermove', this.onGaze);
-    window.removeEventListener('hashchange', this.onHash);
+    window.removeEventListener('popstate', this.onRoute);
+    window.removeEventListener('hashchange', this.onRoute);
     window.removeEventListener('resize', this.onResize);
     if (this.mq && this.mq.removeEventListener) this.mq.removeEventListener('change', this.onScheme);
   }
@@ -1180,7 +1236,7 @@ class Component extends DCLogic {
       const part = this.partOf(t.repo);
       return {
         key: t.repo + '#' + t.num, num: t.num, repo: t.repo, title: t.title, url: t.url,
-        body: t.body || '', user: t.user, comments: t.comments || 0, at: t.at, isOpen: t.open !== false,
+        body: t.body || '', user: t.user, labels: t.labels || [], comments: t.comments || 0, at: t.at, isOpen: t.open !== false,
         kind, kindLabel: this.kindLabel(kind),
         partKey: part ? part.key : '', partName: part ? part.name : t.repo
       };
@@ -1189,8 +1245,19 @@ class Component extends DCLogic {
     const rows = all.filter((t) =>
       (s.type === 'all' || t.kind === s.type)
       && (s.part === 'all' || t.partKey === s.part)
+      && (s.status === 'all'
+        || (s.status === 'open' && t.isOpen)
+        || (s.status === 'closed' && !t.isOpen)
+        || (s.status === 'answered' && t.comments > 0))
       && (!s.wait || (t.isOpen && t.comments === 0))
-      && (!q || (t.title + ' ' + t.body + ' ' + t.partName).toLowerCase().indexOf(q) >= 0));
+      && (!q || (t.title + ' ' + t.body + ' ' + t.partName + ' ' + t.repo + ' ' + t.user
+        + ' ' + (t.labels || []).join(' ') + ' #' + t.num).toLowerCase().indexOf(q) >= 0));
+    rows.sort((a, b) => {
+      if (s.sort === 'oldest') return new Date(a.at) - new Date(b.at);
+      if (s.sort === 'replies') return b.comments - a.comments || new Date(b.at) - new Date(a.at);
+      if (s.sort === 'unanswered') return a.comments - b.comments || new Date(b.at) - new Date(a.at);
+      return new Date(b.at) - new Date(a.at);
+    });
     const live = s.ghState === 'ready' && all.length > 0;
     const seen = {};
     all.forEach((t) => { if (t.partKey) seen[t.partKey] = t.partName; });
@@ -1241,9 +1308,14 @@ class Component extends DCLogic {
         { k: 'WAITING FOR A FIRST REPLY', v: live ? String(all.filter((t) => t.isOpen && t.comments === 0).length) : '—' },
         { k: 'MERGED PULL REQUESTS', v: live ? String(s.decisions.length) : '—' }
       ],
-      stamp: live ? 'READ FROM GITHUB.COM/' + this.org.toUpperCase() + ' · ' + this.ago(new Date(s.ghAt).toISOString())
+      stamp: live ? 'UP TO DATE · ' + this.ago(new Date(s.ghAt).toISOString())
         : s.ghState === 'error' ? 'GITHUB UNREACHABLE — NOTHING IS SHOWN IN ITS PLACE'
         : 'READING THE ORGANIZATION…',
+      syncDetail: live
+        ? 'Source: ' + (s.ghSource || 'GitHub') + ' · ' + new Date(s.ghAt).toLocaleString('en-GB', {
+          day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'UTC', timeZoneName: 'short'
+        }) + ' · github.com/' + this.org
+        : 'The public snapshot is refreshed daily; this button checks GitHub now.',
       refresh: () => this.loadGH(true),
 
       types: TYPES.map((t) => {
@@ -1254,9 +1326,12 @@ class Component extends DCLogic {
       partOpts: [{ v: 'all', t: 'Every part of the system' }]
         .concat(Object.keys(seen).map((key) => ({ v: key, t: seen[key] }))),
       part: s.part, setPart: (e) => this.setState({ part: e.target.value }),
+      status: s.status, setStatus: (e) => this.setState({ status: e.target.value }),
+      sort: s.sort, setSort: (e) => this.setState({ sort: e.target.value }),
       q: s.q, setQ: (e) => this.setState({ q: e.target.value }),
       waitBg: s.wait ? A : 'transparent', waitFg: s.wait ? 'var(--bg)' : '#8585A0',
       toggleWait: () => this.setState((st) => ({ wait: !st.wait })),
+      clearFilters: () => this.setState({ type: 'all', part: 'all', status: 'all', sort: 'recent', q: '', wait: false }),
 
       rows: rows.slice(0, 40).map((t) => ({
         title: t.title, kindLabel: t.kindLabel,

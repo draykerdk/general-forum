@@ -21,10 +21,14 @@ check(html.includes('https://dknowledger.drayker.org/'), 'canonical Dknowledger 
 check(html.includes("const PROPOSAL_TEMPLATE = true"), 'proposal form integration is not enabled');
 check(html.includes("fetch('/data/forum.json'"), 'snapshot must use a root-absolute URL');
 check(html.includes('d3@7.9.0') && html.includes('topojson-client@3.1.0'), 'optional Earth renderer dependencies are missing');
+check(html.includes('meta name="twitter:card" content="summary_large_image"'), 'Twitter card metadata is missing');
+check(html.includes('meta property="og:image" content="https://forum.drayker.org/assets/forum-social.png"'), 'Open Graph image is missing');
+check(html.includes('readRoute = () =>') && html.includes('window.history.pushState'), 'clean History API routing is missing');
+check(!html.includes('syncHash = () =>'), 'legacy hash routing is still the primary router');
 
 for (const asset of [
   'favicon.ico', 'assets/logo/drayker-favicon.svg', 'assets/logo/kit/favicon-32.png',
-  'assets/logo/kit/favicon-16.png', 'assets/logo/kit/apple-touch-icon.png', 'support.js', 'CNAME'
+  'assets/logo/kit/favicon-16.png', 'assets/logo/kit/apple-touch-icon.png', 'assets/forum-social.png', 'support.js', 'CNAME'
 ]) check(fs.existsSync(path.join(root, asset)), 'missing required asset: ' + asset);
 
 const headIcons = ['favicon.ico', 'drayker-favicon.svg', 'favicon-32.png', 'favicon-16.png', 'apple-touch-icon.png'];
@@ -52,7 +56,11 @@ const context = {
   fetch: () => Promise.reject(new Error('offline test')),
   window: {
     innerWidth: 1440,
-    location: { hash: '', href: '' },
+    location: { hash: '', href: '', pathname: '/', search: '' },
+    history: {
+      pushState: (_state, _title, target) => { context.window.location.pathname = target; },
+      replaceState: (_state, _title, target) => { context.window.location.pathname = String(target).split('?')[0]; context.window.location.hash = ''; }
+    },
     scrollTo: () => {},
     open: () => {},
     addEventListener: () => {},
@@ -82,6 +90,31 @@ check(values.routes.length === 9 && values.repoList.length === 17, 'routing view
 check(component.kindOf(['motion']) === 'proposal', 'motion label must classify as proposal');
 check(component.kindOf(['open-function']) === 'work', 'open-function label must classify as work');
 
+const filterComponent = new bundle.Component();
+filterComponent.props = {};
+filterComponent.state = Object.assign({}, filterComponent.state, {
+  ghState: 'ready', ghSource: 'test', ghAt: Date.now(), status: 'closed', sort: 'recent',
+  threads: [
+    { num: 1, title: 'Open thread', repo: 'uid', labels: [], user: 'one', body: 'identity', comments: 0, at: '2026-08-11T00:00:00Z', open: true },
+    { num: 2, title: 'Closed thread', repo: 'dk', labels: ['documentation'], user: 'two', body: 'kernel', comments: 4, at: '2026-08-10T00:00:00Z', open: false }
+  ]
+});
+let filtered = filterComponent.renderVals();
+check(filtered.rows.length === 1 && filtered.rows[0].title === 'Closed thread', 'status filtering does not isolate closed threads');
+filterComponent.state.status = 'all';
+filterComponent.state.q = 'documentation';
+filtered = filterComponent.renderVals();
+check(filtered.rows.length === 1 && filtered.rows[0].title === 'Closed thread', 'search does not include labels and subjects');
+filterComponent.state.q = '';
+filterComponent.state.sort = 'replies';
+filtered = filterComponent.renderVals();
+check(filtered.rows[0].title === 'Closed thread', 'reply sorting is not applied');
+
+filterComponent.state = Object.assign({}, filterComponent.state, { page: 'thread', tRepo: 'uid', tNum: '1' });
+filterComponent.syncRoute();
+check(context.window.location.pathname === '/t/uid/1/', 'thread navigation did not produce a clean URL');
+check(headState['link[rel="canonical"]href'] === 'https://forum.drayker.org/t/uid/1/', 'runtime thread canonical is not clean');
+
 component.state = Object.assign({}, component.state, {
   page: 'new', cKind: 'proposal', cPart: '', cTitle: 'Trace decisions',
   cWhat: 'Connect decisions to sources', cWhy: 'Readers can follow the change'
@@ -110,6 +143,7 @@ const proposalForm = fs.readFileSync(path.join(root, '.github', 'ISSUE_TEMPLATE'
 for (const id of ['summary', 'change', 'component']) check(proposalForm.includes('id: ' + id), 'proposal form is missing field id ' + id);
 const workflow = fs.readFileSync(path.join(root, '.github', 'workflows', 'forum-snapshot.yml'), 'utf8');
 check(workflow.includes('data/forum.json') && workflow.includes('org:draykerdk is:issue'), 'snapshot workflow contract is incomplete');
+check(workflow.includes('node tools/prerender.js') && workflow.includes('sitemap.xml t'), 'snapshot workflow does not publish clean thread routes');
 
 const snapshotFile = path.join(root, 'data', 'forum.json');
 check(fs.existsSync(snapshotFile), 'initial forum snapshot is missing');
@@ -117,6 +151,18 @@ if (fs.existsSync(snapshotFile)) {
   const snapshot = JSON.parse(fs.readFileSync(snapshotFile, 'utf8'));
   check(Array.isArray(snapshot.threads) && snapshot.threads.length > 0, 'snapshot has no public threads');
   check(Array.isArray(snapshot.decisions), 'snapshot decisions are missing');
+  for (const thread of snapshot.threads || []) {
+    const route = path.join(root, 't', thread.repo, String(thread.num), 'index.html');
+    check(fs.existsSync(route), 'missing clean thread route: ' + thread.repo + ' #' + thread.num);
+    if (!fs.existsSync(route)) continue;
+    const page = fs.readFileSync(route, 'utf8');
+    const canonical = 'https://forum.drayker.org/t/' + encodeURIComponent(thread.repo) + '/' + thread.num + '/';
+    check(page.includes('<link rel="canonical" href="' + canonical + '">'), 'wrong thread canonical: ' + thread.repo + ' #' + thread.num);
+    check(page.includes('<meta property="og:type" content="article">'), 'thread social type is not article: ' + thread.repo + ' #' + thread.num);
+    const escapedTitle = String(thread.title).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+    check(page.includes('<meta name="twitter:title" content="' + escapedTitle), 'thread Twitter title is not specific: ' + thread.repo + ' #' + thread.num);
+    check(page.includes('src="/support.js"') && page.includes('href="/favicon.ico'), 'thread asset paths are not route-safe: ' + thread.repo + ' #' + thread.num);
+  }
 }
 
 if (failures.length) {
