@@ -13,6 +13,7 @@ const END = '<!-- FORUM_PRERENDER_END -->';
 
 let source = fs.readFileSync(SOURCE, 'utf8');
 source = source.replace(new RegExp(START + '[\\s\\S]*?' + END, 'g'), '');
+source = source.replace(/<body>\s*<x-dc>/, '<body>\n<x-dc>');
 
 function block(name) {
   const at = source.indexOf('const ' + name + ' = ');
