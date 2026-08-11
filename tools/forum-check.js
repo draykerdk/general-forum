@@ -141,9 +141,10 @@ for (const route of ['', 'new', 'decisions', 'routing', 'about']) {
 
 const proposalForm = fs.readFileSync(path.join(root, '.github', 'ISSUE_TEMPLATE', 'proposal.yml'), 'utf8');
 for (const id of ['summary', 'change', 'component']) check(proposalForm.includes('id: ' + id), 'proposal form is missing field id ' + id);
-const workflow = fs.readFileSync(path.join(root, '.github', 'workflows', 'forum-snapshot.yml'), 'utf8');
+const workflow = fs.readFileSync(path.join(root, '.github', 'workflows', 'forum-site.yml'), 'utf8');
 check(workflow.includes('data/forum.json') && workflow.includes('org:draykerdk is:issue'), 'snapshot workflow contract is incomplete');
-check(workflow.includes('node tools/prerender.js') && workflow.includes('sitemap.xml t'), 'snapshot workflow does not publish clean thread routes');
+check(workflow.includes('node tools/prerender.js') && workflow.includes('actions/upload-pages-artifact@v4'), 'site workflow does not publish clean thread routes');
+check(workflow.includes('actions/deploy-pages@v4') && workflow.includes('pages: write'), 'site workflow cannot deploy the refreshed snapshot');
 
 const snapshotFile = path.join(root, 'data', 'forum.json');
 check(fs.existsSync(snapshotFile), 'initial forum snapshot is missing');
