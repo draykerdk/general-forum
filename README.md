@@ -6,6 +6,8 @@ If you are unsure where something belongs, this is a reasonable place to say it 
 
 Official reading surface: **[forum.drayker.org](https://forum.drayker.org/)**. It brings the organization's public issues and merged pull requests into one readable forum while every post, reply and decision remains in its source repository on GitHub.
 
+Each discussion has a permanent forum URL such as `https://forum.drayker.org/t/uid/1/`. These pages are generated from the published snapshot with their own canonical, Open Graph and Twitter metadata; the daily snapshot workflow republishes the routes and sitemap whenever the public conversation changes. The forum can be searched across titles, text, labels, repositories, authors and issue numbers, then filtered by project, subject, status or reply state.
+
 ## Public entry routes
 
 - **Want to read or start a public conversation?** Begin at [forum.drayker.org](https://forum.drayker.org/). The site never creates an account or stores a submission; publishing always continues on GitHub under your own account.

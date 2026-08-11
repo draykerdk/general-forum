@@ -37,10 +37,12 @@ jobs:
                 user: (.user.login // ""), at: (.closed_at // .updated_at)
               }]
             }' > data/forum.json
+      - name: Publish clean thread routes and social metadata
+        run: node tools/prerender.js
       - name: Commit when it changed
         run: |
           git config user.name  'drayker-bot'
           git config user.email 'actions@users.noreply.github.com'
-          git add data/forum.json
+          git add data/forum.json sitemap.xml t
           git diff --cached --quiet || git commit -m 'forum snapshot'
           git push
