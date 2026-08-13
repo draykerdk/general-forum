@@ -32,12 +32,14 @@ check(html.includes('readRoute = () =>') && html.includes('window.history.pushSt
 check(!html.includes('syncHash = () =>'), 'legacy hash routing is still the primary router');
 
 for (const asset of [
-  'favicon.ico', 'assets/logo/drayker-favicon.svg', 'assets/logo/kit/favicon-32.png',
-  'assets/logo/kit/favicon-16.png', 'assets/logo/kit/apple-touch-icon.png', 'assets/forum-social.png', 'support.js', 'CNAME'
+  'assets/logo/drayker-icone.svg', 'assets/logo/escuro/drayker-icone.svg',
+  'assets/logo/kit/icon-512.png', 'assets/logo/kit/icon-512-escuro.png',
+  'assets/logo/kit/apple-touch-icon.png', 'assets/forum-social.png', 'support.js', 'CNAME'
 ]) check(fs.existsSync(path.join(root, asset)), 'missing required asset: ' + asset);
 
-const headIcons = ['favicon.ico', 'drayker-favicon.svg', 'favicon-32.png', 'favicon-16.png', 'apple-touch-icon.png'];
-for (const icon of headIcons) check(html.includes(icon + '?v=20260811'), 'head does not cache-bust ' + icon);
+const headIcons = ['drayker-icone.svg', 'escuro/drayker-icone.svg', 'icon-512.png', 'icon-512-escuro.png'];
+for (const icon of headIcons) check(html.includes(icon + '?v=20260813'), 'head does not cache-bust ' + icon);
+check(html.includes('prefers-color-scheme: light') && html.includes('prefers-color-scheme: dark'), 'favicon theme variants are incomplete');
 
 class DCLogic {
   setState(update, callback) {
@@ -172,7 +174,7 @@ if (fs.existsSync(snapshotFile)) {
     const escapedTitle = String(thread.title).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
     const twitterTitle = (page.match(/<meta name="twitter:title" content="([^"]*)">/) || [])[1] || '';
     check(twitterTitle.startsWith(escapedTitle.replace(/-/g, ' ').slice(0, 18)) && twitterTitle.includes('Drayker Forum'), 'thread Twitter title is not specific: ' + thread.repo + ' #' + thread.num);
-    check(page.includes('src="/support.js"') && page.includes('href="/favicon.ico'), 'thread asset paths are not route-safe: ' + thread.repo + ' #' + thread.num);
+    check(page.includes('src="/support.js"') && page.includes('href="/assets/logo/drayker-icone.svg'), 'thread asset paths are not route-safe: ' + thread.repo + ' #' + thread.num);
   }
 }
 
