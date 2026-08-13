@@ -57,17 +57,66 @@ const plain = (value) => String(value || '')
   .replace(/\s+/g, ' ')
   .trim();
 const urlFor = (route) => BASE + (route.path ? route.path + '/' : '');
+const compact = (value, max) => {
+  const text = plain(value);
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max - 1).replace(/\s+\S*$/, '');
+  return (cut || text.slice(0, max - 1)).replace(/[\s,;:.-]+$/, '') + '…';
+};
 
 function routeMeta(route) {
   if (!route.thread) return META[route.key];
   const thread = route.thread;
   const body = plain(thread.body);
   const lead = body || 'A public discussion in the Drayker organization.';
-  const clipped = lead.length > 176 ? lead.slice(0, 173).trim() + '…' : lead;
+  const clipped = compact(lead, 130);
   return {
-    t: thread.title + ' — Drayker Forum',
+    t: compact(thread.title, 42) + ' | Drayker Forum',
     d: clipped + ' · draykerdk/' + thread.repo + ' #' + thread.num
   };
+}
+
+function structuredData(route, meta, url) {
+  const websiteId = BASE + '#website';
+  const graph = [
+    {
+      '@type': 'Organization', '@id': 'https://drayker.com/#organization', name: 'Drayker',
+      url: 'https://drayker.com/',
+      logo: { '@type': 'ImageObject', url: 'https://drayker.org/assets/logo/kit/icon-512.png', width: 512, height: 512 },
+      sameAs: ['https://github.com/draykerdk', 'https://twitter.com/Draykerdk', 'https://medium.com/drayker']
+    },
+    {
+      '@type': 'WebSite', '@id': websiteId, name: 'Drayker Forum', alternateName: 'Drayker Public Forum',
+      url: BASE, publisher: { '@id': 'https://drayker.com/#organization' }, inLanguage: 'en'
+    }
+  ];
+  if (route.thread) {
+    const thread = route.thread;
+    graph.push({
+      '@type': 'DiscussionForumPosting', '@id': url + '#posting', url,
+      headline: compact(thread.title, 110), text: compact(thread.body, 1000),
+      datePublished: thread.at, commentCount: Number(thread.comments || 0),
+      author: { '@type': 'Person', name: thread.user, url: 'https://github.com/' + encodeURIComponent(thread.user) },
+      isPartOf: { '@id': websiteId }, mainEntityOfPage: { '@id': url + '#webpage' },
+      interactionStatistic: {
+        '@type': 'InteractionCounter', interactionType: 'https://schema.org/CommentAction',
+        userInteractionCount: Number(thread.comments || 0)
+      },
+      inLanguage: 'en'
+    });
+    graph.push({
+      '@type': 'WebPage', '@id': url + '#webpage', url, name: meta.t,
+      description: compact(meta.d, 160), isPartOf: { '@id': websiteId },
+      about: { '@id': url + '#posting' }, inLanguage: 'en'
+    });
+  } else {
+    graph.push({
+      '@type': route.key === 'list' ? 'CollectionPage' : 'WebPage', '@id': url + '#webpage',
+      url, name: meta.t, description: compact(meta.d, 160), isPartOf: { '@id': websiteId },
+      about: { '@id': 'https://drayker.com/#organization' }, inLanguage: 'en'
+    });
+  }
+  return JSON.stringify({ '@context': 'https://schema.org', '@graph': graph }).replace(/</g, '\\u003c');
 }
 
 function navigation() {
@@ -94,16 +143,19 @@ function fallback(route) {
 function documentFor(route) {
   const meta = routeMeta(route);
   const url = urlFor(route);
+  const description = compact(meta.d, 160);
+  const jsonLd = structuredData(route, meta, url);
   let html = source
     .replace(/<title>[\s\S]*?<\/title>/, '<title>' + esc(meta.t) + '</title>')
-    .replace(/(<meta name="description" content=")[^"]*(">)/, '$1' + esc(meta.d) + '$2')
+    .replace(/(<meta name="description" content=")[^"]*(">)/, '$1' + esc(description) + '$2')
     .replace(/(<link rel="canonical" href=")[^"]*(">)/, '$1' + url + '$2')
     .replace(/(<meta property="og:type" content=")[^"]*(">)/, '$1' + (route.thread ? 'article' : 'website') + '$2')
     .replace(/(<meta property="og:title" content=")[^"]*(">)/, '$1' + esc(meta.t) + '$2')
-    .replace(/(<meta property="og:description" content=")[^"]*(">)/, '$1' + esc(meta.d) + '$2')
+    .replace(/(<meta property="og:description" content=")[^"]*(">)/, '$1' + esc(description) + '$2')
     .replace(/(<meta property="og:url" content=")[^"]*(">)/, '$1' + url + '$2')
     .replace(/(<meta name="twitter:title" content=")[^"]*(">)/, '$1' + esc(meta.t) + '$2')
-    .replace(/(<meta name="twitter:description" content=")[^"]*(">)/, '$1' + esc(meta.d) + '$2');
+    .replace(/(<meta name="twitter:description" content=")[^"]*(">)/, '$1' + esc(description) + '$2')
+    .replace(/(<script id="drayker-structured-data" type="application\/ld\+json">)[\s\S]*?(<\/script>)/, '$1' + jsonLd + '$2');
   return html.replace('<body>', '<body>\n' + fallback(route));
 }
 
