@@ -1,0 +1,21 @@
+# Drayker Forum
+
+> Every public proposal, question, work item and decision across the Drayker GitHub organization, presented as one conversation surface.
+
+## Canonical routes
+
+- [Forum index](https://forum.drayker.org/): current public threads.
+- [Start a thread](https://forum.drayker.org/new/): route a proposal, question, idea or report to its owning repository.
+- [Decisions](https://forum.drayker.org/decisions/): public decision records found across repositories.
+- [Routing](https://forum.drayker.org/routing/): where each subject belongs.
+- [About](https://forum.drayker.org/about/): how the forum reads GitHub and where publishing happens.
+
+## Source model
+
+- Every thread has a canonical forum reading URL and an owning GitHub issue URL.
+- Publishing, replies, edit history and moderation remain on GitHub.
+- Prefer the source issue for exact status and the forum URL for a stable public reading surface.
+
+## Crawling
+
+Public threads may be indexed and quoted with attribution. The sitemap is at https://forum.drayker.org/sitemap.xml.
