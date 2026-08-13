@@ -23,6 +23,11 @@ check(html.includes("fetch('/data/forum.json'"), 'snapshot must use a root-absol
 check(html.includes('d3@7.9.0') && html.includes('topojson-client@3.1.0'), 'optional Earth renderer dependencies are missing');
 check(html.includes('meta name="twitter:card" content="summary_large_image"'), 'Twitter card metadata is missing');
 check(html.includes('meta property="og:image" content="https://forum.drayker.org/assets/forum-social.png"'), 'Open Graph image is missing');
+check(html.includes('meta property="og:site_name" content="Drayker Forum"'), 'Open Graph site name is missing');
+check(html.includes('id="drayker-structured-data"'), 'structured data placeholder is missing');
+check(html.includes('href="/llms.txt"'), 'llms.txt discovery link is missing');
+check(fs.existsSync(path.join(root, 'llms.txt')), 'llms.txt is missing');
+check(fs.readFileSync(path.join(root, 'robots.txt'), 'utf8').includes('OAI-SearchBot'), 'AI search crawler policy is missing');
 check(html.includes('readRoute = () =>') && html.includes('window.history.pushState'), 'clean History API routing is missing');
 check(!html.includes('syncHash = () =>'), 'legacy hash routing is still the primary router');
 
@@ -160,8 +165,13 @@ if (fs.existsSync(snapshotFile)) {
     const canonical = 'https://forum.drayker.org/t/' + encodeURIComponent(thread.repo) + '/' + thread.num + '/';
     check(page.includes('<link rel="canonical" href="' + canonical + '">'), 'wrong thread canonical: ' + thread.repo + ' #' + thread.num);
     check(page.includes('<meta property="og:type" content="article">'), 'thread social type is not article: ' + thread.repo + ' #' + thread.num);
+    const structured = page.match(/<script id="drayker-structured-data" type="application\/ld\+json">([\s\S]*?)<\/script>/);
+    let graph = [];
+    try { graph = JSON.parse(structured && structured[1])['@graph'] || []; } catch (_) { check(false, 'invalid thread JSON-LD: ' + thread.repo + ' #' + thread.num); }
+    check(graph.some((entry) => entry['@type'] === 'DiscussionForumPosting' && entry.url === canonical), 'thread schema is missing: ' + thread.repo + ' #' + thread.num);
     const escapedTitle = String(thread.title).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-    check(page.includes('<meta name="twitter:title" content="' + escapedTitle), 'thread Twitter title is not specific: ' + thread.repo + ' #' + thread.num);
+    const twitterTitle = (page.match(/<meta name="twitter:title" content="([^"]*)">/) || [])[1] || '';
+    check(twitterTitle.startsWith(escapedTitle.replace(/-/g, ' ').slice(0, 18)) && twitterTitle.includes('Drayker Forum'), 'thread Twitter title is not specific: ' + thread.repo + ' #' + thread.num);
     check(page.includes('src="/support.js"') && page.includes('href="/favicon.ico'), 'thread asset paths are not route-safe: ' + thread.repo + ' #' + thread.num);
   }
 }
