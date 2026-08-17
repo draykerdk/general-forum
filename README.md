@@ -27,7 +27,7 @@ Each discussion has a permanent forum URL such as `https://forum.drayker.org/t/u
 | The federation, resources or governance | [`daf`](https://github.com/draykerdk/daf) |
 | Proposing a new project | [`dfmpproject`](https://github.com/draykerdk/dfmpproject) |
 | Something with no home yet | [`emergence-initiative`](https://github.com/draykerdk/emergence-initiative) |
-| The volunteers portal itself | [`drayker.org`](https://github.com/draykerdk/drayker.org) |
+| The participation portal itself | [`drayker.org`](https://github.com/draykerdk/drayker.org) |
 
 ## Looking for something to work on?
 
@@ -35,4 +35,4 @@ Issues small enough for one person to finish carry the `open-function` label acr
 
 ---
 
-Drayker is an open, primarily volunteer R&D initiative. [DFMP](https://dfmp.drayker.org) and [DAF](https://daf.drayker.org) describe proposed collaboration and governance architecture. The current founding-phase governance is documented in [`draykerdk/.github`](https://github.com/draykerdk/.github/blob/master/GOVERNANCE.md).
+Drayker is civilizational infrastructure in a founding R&D phase, meant to be constituted by members; voluntary contribution is the public entry today. [DFMP](https://dfmp.drayker.org) describes the method and [DAF](https://daf.drayker.org) a transitional governance scaffold. The governance actually in force is documented in [`draykerdk/.github`](https://github.com/draykerdk/.github/blob/master/GOVERNANCE.md).
