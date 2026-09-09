@@ -84,6 +84,9 @@ vm.createContext(context);
 vm.runInContext(script + '\n;globalThis.__forum = { Component, PARTS, ROUTES, POST, META };', context);
 const bundle = context.__forum;
 check(bundle.PARTS.length === 20, 'expected the twenty system parts');
+check(html.includes('label="{{ o.t }}"'), 'dynamic option labels must remain visible in native selects');
+check(html.includes('aria-label="Filter by project"'), 'project select needs an accessible name');
+
 check(bundle.ROUTES.length === 9, 'routing table is incomplete');
 check(Object.keys(bundle.META).length === 6, 'route metadata is incomplete');
 check(bundle.PARTS.some((part) => part.name === 'Dknowledge' && part.repo === 'dknowledge'), 'Dknowledge naming is inconsistent');
