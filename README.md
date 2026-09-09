@@ -8,6 +8,13 @@ Official reading surface: **[forum.drayker.org](https://forum.drayker.org/)**. I
 
 Each discussion has a permanent forum URL such as `https://forum.drayker.org/t/uid/1/`. These pages are generated from the published snapshot with their own canonical, Open Graph and Twitter metadata. The daily snapshot workflow republishes the routes and sitemap whenever the public conversation changes. The forum can be searched across titles, text, labels, repositories, authors and issue numbers, then filtered by project, subject, status or reply state.
 
+## Deliberation Standard: Kind to people, relentless with ideas
+
+Public discussions across all issues, pull requests, and the forum adhere strictly to the foundational axiom formulated in *Do animal à superinteligência* (Principle 07):
+
+- **Kind to people:** Inalienable respect for the dignity and sovereignty of every participant. Ad hominem attacks, personal derision, bad-faith interpretations, and harassment are strictly barred.
+- **Relentless with ideas:** Scientific, technical, and architectural propositions are subjected to uncompromising empirical scrutiny and logical stress-testing. No idea, proposal, or authority is sacred or immune to falsification. Demanding proof, identifying errors, and challenging assumptions is an act of deep collaboration.
+
 ## Public entry routes
 
 - **Want to read or start a public conversation?** Begin at [forum.drayker.org](https://forum.drayker.org/). The site never creates an account or stores a submission. Publishing always continues on GitHub under your own account.
@@ -36,5 +43,3 @@ Issues small enough for one person to finish carry the `open-function` label acr
 ---
 
 Drayker is civilizational infrastructure in a founding R&D phase, meant to be constituted by members; voluntary contribution is the public entry today. [DFMP](https://dfmp.drayker.org) describes the method and [DAF](https://daf.drayker.org) a transitional governance scaffold. The governance actually in force is documented in [`draykerdk/.github`](https://github.com/draykerdk/.github/blob/master/GOVERNANCE.md).
-
-Site content is published under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The code is under the license in `LICENSE`.
