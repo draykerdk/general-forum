@@ -1,12 +1,10 @@
 # General Forum
 
-Announcements, ideas and work related to Drayker that do not fit the topic of any other repository.
+General Forum brings public issues and merged pull requests into one reading surface. Discussions remain connected to their source repositories, where replies and decisions are recorded.
 
-If you are unsure where something belongs, this is a reasonable place to say it out loud. If it turns out to belong to a project, it moves there.
+Search, project filters and permanent discussion pages help readers follow the public record and return to the original thread for participation.
 
-Official reading surface: **[forum.drayker.org](https://forum.drayker.org/)**. It brings the organization's public issues and merged pull requests into one readable forum while every post, reply and decision remains in its source repository on GitHub.
-
-Each discussion has a permanent forum URL such as `https://forum.drayker.org/t/uid/1/`. These pages are generated from the published snapshot with their own canonical, Open Graph and Twitter metadata. The daily snapshot workflow republishes the routes and sitemap whenever the public conversation changes. The forum can be searched across titles, text, labels, repositories, authors and issue numbers, then filtered by project, subject, status or reply state.
+A readable public conversation helps people understand how proposals evolve and where their own contribution can be useful.
 
 ## Deliberation Standard: Kind to people, relentless with ideas
 
