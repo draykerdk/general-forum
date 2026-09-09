@@ -1,6 +1,6 @@
 # Drayker Forum
 
-> Every public proposal, question, work item and decision across the Drayker GitHub organization, presented as one conversation surface.
+> General Forum brings public issues and merged pull requests into one reading surface. Discussions remain connected to their source repositories, where replies and decisions are recorded.
 
 ## Canonical routes
 
