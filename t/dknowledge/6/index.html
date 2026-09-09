@@ -61,6 +61,7 @@
   .dk-surf{animation:dk-surf 9s linear infinite}
   .dk-core{animation:dk-breathe 8s ease-in-out infinite;transform-box:view-box;transform-origin:0 0}
   .dk-page{animation:dk-fade .3s ease both}
+[role="button"]:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid #FF5500;outline-offset:3px}
 </style>
 </helmet>
 
@@ -68,7 +69,7 @@
 
   <header style="position:sticky;top:0;z-index:50;background:var(--hdr);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)">
     <div style="max-width:1320px;margin:0 auto;padding:13px clamp(16px,4vw,44px);display:flex;align-items:center;gap:clamp(14px,2.6vw,36px);flex-wrap:wrap">
-      <div onClick="{{ goHome }}" style="display:flex;align-items:center;gap:10px;cursor:pointer;flex-shrink:0">
+      <div onClick="{{ goHome }}" style="display:flex;align-items:center;gap:10px;cursor:pointer;flex-shrink:0" role="button" tabindex="0">
 <!-- Flat mark, identical geometry to the portal header: crossed ellipses = ring (#8585A0),
      solid circle = sphere (#FF5500), path = fixed shadow wedge (#000000). Never recolour the
      ring, the rim or the wedge — only the globe, and only with an approved scope colour. -->
@@ -84,14 +85,14 @@
 
       <nav style="display:flex;align-items:center;gap:clamp(9px,1.5vw,20px);flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;min-width:0;flex:{{ navFlex }};order:{{ navOrder }};width:{{ navWidth }}">
         <sc-for list="{{ nav }}" as="item" hint-placeholder-count="5">
-          <div onClick="{{ item.onClick }}" style="font-size:13.5px;font-weight:500;cursor:pointer;padding:5px 0;border-bottom:1px solid transparent;white-space:nowrap;color:{{ item.color }};border-bottom-color:{{ item.line }}" style-hover="color:var(--tx)">{{ item.label }}</div>
+          <div onClick="{{ item.onClick }}" style="font-size:13.5px;font-weight:500;cursor:pointer;padding:5px 0;border-bottom:1px solid transparent;white-space:nowrap;color:{{ item.color }};border-bottom-color:{{ item.line }}" style-hover="color:var(--tx)" role="button" tabindex="0">{{ item.label }}</div>
         </sc-for>
       </nav>
 
       <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;order:{{ ctrlOrder }};margin-left:{{ ctrlPush }}">
-        <div onClick="{{ toggleTheme }}" title="Switch light / dark" style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.1em;color:var(--tx3);border:1px solid var(--line2);padding:6px 10px;cursor:pointer" style-hover="border-color:#FF5500;color:#FF5500">{{ themeLabel }}</div>
+        <div onClick="{{ toggleTheme }}" title="Switch light / dark" style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.1em;color:var(--tx3);border:1px solid var(--line2);padding:6px 10px;cursor:pointer" style-hover="border-color:#FF5500;color:#FF5500" role="button" tabindex="0">{{ themeLabel }}</div>
         <a href="https://drayker.org" style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.1em;color:var(--tx3);border:1px solid var(--line2);padding:6px 10px" style-hover="border-color:#FF5500;color:#FF5500">DRAYKER.ORG →</a>
-        <div onClick="{{ goNew }}" style="background:#FF5500;color:#0A0A0C;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;box-shadow:0 0 16px rgba(255,85,0,0.2)" style-hover="background:#FF7A33">Start a thread</div>
+        <div onClick="{{ goNew }}" style="background:#FF5500;color:#0A0A0C;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;box-shadow:0 0 16px rgba(255,85,0,0.2)" style-hover="background:#FF7A33" role="button" tabindex="0">Start a thread</div>
       </div>
     </div>
   </header>
@@ -191,42 +192,42 @@
               <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.08em;color:var(--tx)">{{ stamp }}</div>
               <div style="font-size:12.5px;color:var(--tx3);margin-top:4px">{{ syncDetail }}</div>
             </div>
-            <div onClick="{{ refresh }}" style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.11em;color:#FF5500;cursor:pointer;white-space:nowrap">REFRESH NOW →</div>
+            <div onClick="{{ refresh }}" style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.11em;color:#FF5500;cursor:pointer;white-space:nowrap" role="button" tabindex="0">REFRESH NOW →</div>
           </div>
 
           <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px">
             <sc-for list="{{ types }}" as="f" hint-placeholder-count="6">
-              <div onClick="{{ f.pick }}" style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.1em;padding:8px 12px;cursor:pointer;border:1px solid var(--line2);background:{{ f.bg }};color:{{ f.fg }}" style-hover="border-color:#FF5500">{{ f.t }}</div>
+              <div onClick="{{ f.pick }}" style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.1em;padding:8px 12px;cursor:pointer;border:1px solid var(--line2);background:{{ f.bg }};color:{{ f.fg }}" style-hover="border-color:#FF5500" role="button" tabindex="0">{{ f.t }}</div>
             </sc-for>
           </div>
 
           <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:24px">
             <input value="{{ q }}" onChange="{{ setQ }}" placeholder="Search every thread…" style="flex:1;min-width:220px;background:var(--surf);border:1px solid var(--line2);color:var(--tx);padding:11px 13px;font-size:14px;outline:none" />
-            <select value="{{ part }}" onChange="{{ setPart }}" style="background:var(--surf);border:1px solid var(--line2);color:var(--tx);padding:11px 13px;font-size:14px;outline:none;min-width:220px">
+            <select aria-label="Filter by project" value="{{ part }}" onChange="{{ setPart }}" style="background:var(--surf);border:1px solid var(--line2);color:var(--tx);padding:11px 13px;font-size:14px;outline:none;min-width:220px">
               <sc-for list="{{ partOpts }}" as="o" hint-placeholder-count="4">
-                <option value="{{ o.v }}">{{ o.t }}</option>
+                <option label="{{ o.t }}" aria-label="{{ o.t }}" value="{{ o.v }}"></option>
               </sc-for>
             </select>
-            <select value="{{ status }}" onChange="{{ setStatus }}" style="background:var(--surf);border:1px solid var(--line2);color:var(--tx);padding:11px 13px;font-size:14px;outline:none;min-width:150px">
+            <select aria-label="Filter by discussion status" value="{{ status }}" onChange="{{ setStatus }}" style="background:var(--surf);border:1px solid var(--line2);color:var(--tx);padding:11px 13px;font-size:14px;outline:none;min-width:150px">
               <option value="all">Every status</option>
               <option value="open">Open</option>
               <option value="closed">Closed</option>
               <option value="answered">With replies</option>
             </select>
-            <select value="{{ sort }}" onChange="{{ setSort }}" style="background:var(--surf);border:1px solid var(--line2);color:var(--tx);padding:11px 13px;font-size:14px;outline:none;min-width:170px">
+            <select aria-label="Sort discussions" value="{{ sort }}" onChange="{{ setSort }}" style="background:var(--surf);border:1px solid var(--line2);color:var(--tx);padding:11px 13px;font-size:14px;outline:none;min-width:170px">
               <option value="recent">Recently active</option>
               <option value="oldest">Oldest activity</option>
               <option value="replies">Most replies</option>
               <option value="unanswered">Needs a reply</option>
             </select>
-            <div onClick="{{ toggleWait }}" style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.1em;padding:11px 13px;cursor:pointer;border:1px solid var(--line2);background:{{ waitBg }};color:{{ waitFg }};white-space:nowrap" style-hover="border-color:#FF5500">NOBODY ANSWERED YET</div>
-            <div onClick="{{ clearFilters }}" style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.1em;padding:11px 4px;cursor:pointer;color:var(--tx3);white-space:nowrap" style-hover="color:#FF5500">CLEAR</div>
+            <div onClick="{{ toggleWait }}" style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.1em;padding:11px 13px;cursor:pointer;border:1px solid var(--line2);background:{{ waitBg }};color:{{ waitFg }};white-space:nowrap" style-hover="border-color:#FF5500" role="button" tabindex="0">NOBODY ANSWERED YET</div>
+            <div onClick="{{ clearFilters }}" style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.1em;padding:11px 4px;cursor:pointer;color:var(--tx3);white-space:nowrap" style-hover="color:#FF5500" role="button" tabindex="0">CLEAR</div>
           </div>
 
           <sc-if value="{{ hasRows }}" hint-placeholder-val="{{ true }}">
             <div style="display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line)">
               <sc-for list="{{ rows }}" as="r" hint-placeholder-count="7">
-                <div onClick="{{ r.pick }}" style="background:var(--bg);padding:20px 24px;cursor:pointer;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px" style-hover="background:var(--surf2)">
+                <div onClick="{{ r.pick }}" style="background:var(--bg);padding:20px 24px;cursor:pointer;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px" style-hover="background:var(--surf2)" role="button" tabindex="0">
                   <div style="grid-column:span 2;min-width:0;display:flex;flex-direction:column;gap:8px">
                     <div style="font-size:17.5px;font-weight:600;letter-spacing:-0.02em;line-height:1.3;text-wrap:pretty">{{ r.title }}</div>
                     <div style="font-size:13.5px;color:var(--tx2)">{{ r.meta }}</div>
@@ -249,7 +250,7 @@
             <div style="border:1px solid var(--line2);background:var(--surf);padding:28px 26px">
               <div style="font-size:17px;font-weight:600;margin-bottom:8px">Nothing matches that.</div>
               <div style="font-size:14.5px;line-height:1.62;color:var(--tx2);max-width:60ch;margin-bottom:14px;text-wrap:pretty">These are real threads, so an empty result means nobody has raised this in public yet.</div>
-              <div onClick="{{ goNew }}" style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.12em;color:#FF5500;cursor:pointer">BE THE FIRST →</div>
+              <div onClick="{{ goNew }}" style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.12em;color:#FF5500;cursor:pointer" role="button" tabindex="0">BE THE FIRST →</div>
             </div>
           </sc-if>
 
@@ -264,7 +265,7 @@
             <div style="border:1px solid var(--line2);background:var(--surf);padding:28px 26px;margin-top:14px">
               <div style="font-size:17px;font-weight:600;margin-bottom:8px">GitHub could not be reached.</div>
               <div style="font-size:14.5px;line-height:1.62;color:var(--tx2);max-width:60ch;margin-bottom:14px;text-wrap:pretty">The conversation lives there, not here, so there is nothing cached that would still be true. The routing map is written down and stays correct either way.</div>
-              <div onClick="{{ refresh }}" style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.12em;color:#FF5500;cursor:pointer">TRY AGAIN →</div>
+              <div onClick="{{ refresh }}" style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.12em;color:#FF5500;cursor:pointer" role="button" tabindex="0">TRY AGAIN →</div>
             </div>
           </sc-if>
         </div>
@@ -276,7 +277,7 @@
       <div class="dk-page">
       <section>
         <div style="max-width:1320px;margin:0 auto;padding:clamp(26px,3.6vw,48px) clamp(16px,4vw,44px) clamp(40px,5vw,80px)">
-          <div onClick="{{ goHome }}" style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.14em;color:var(--tx3);cursor:pointer;margin-bottom:26px" style-hover="color:#FF5500">← ALL THREADS</div>
+          <div onClick="{{ goHome }}" style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.14em;color:var(--tx3);cursor:pointer;margin-bottom:26px" style-hover="color:#FF5500" role="button" tabindex="0">← ALL THREADS</div>
 
           <sc-if value="{{ tLoading }}" hint-placeholder-val="{{ false }}">
             <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.14em;color:var(--tx3)">READING THE THREAD…</div>
@@ -286,7 +287,7 @@
             <div style="border:1px solid var(--line2);background:var(--surf);padding:28px 26px;max-width:66ch">
               <div style="font-size:17px;font-weight:600;margin-bottom:8px">No thread with that address.</div>
               <div style="font-size:14.5px;line-height:1.62;color:var(--tx2);margin-bottom:14px;text-wrap:pretty">It may have been moved to the repository that owns the subject, which is normal here — or the link is wrong.</div>
-              <div onClick="{{ goHome }}" style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.12em;color:#FF5500;cursor:pointer">BACK TO EVERY THREAD →</div>
+              <div onClick="{{ goHome }}" style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.12em;color:#FF5500;cursor:pointer" role="button" tabindex="0">BACK TO EVERY THREAD →</div>
             </div>
           </sc-if>
 
@@ -390,12 +391,12 @@
             <h1 style="font-size:clamp(28px,3.6vw,48px);line-height:1.04;letter-spacing:-0.038em;font-weight:700;margin:0 0 18px;max-width:20ch;text-wrap:balance">Write it here. Publish it there, as yourself.</h1>
             <p style="font-size:16px;line-height:1.68;color:var(--tx2);margin:0 0 18px;max-width:56ch;text-wrap:pretty">This site sends you to the repository that owns the subject with the text already written — the routing is the organization's own, not a guess. You read it, edit it and publish it under your account. No email, no handle and no contact detail is collected here, and nothing is stored.</p>
             <p style="font-size:15px;line-height:1.66;color:var(--tx3);margin:0 0 24px;max-width:56ch;text-wrap:pretty">A proposal nobody can disagree with is not a proposal. The second question exists for that reason.</p>
-            <div onClick="{{ goRouting }}" style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.12em;color:#FF5500;cursor:pointer">SEE WHERE EACH SUBJECT BELONGS →</div>
+            <div onClick="{{ goRouting }}" style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.12em;color:#FF5500;cursor:pointer" role="button" tabindex="0">SEE WHERE EACH SUBJECT BELONGS →</div>
           </div>
           <div style="border:1px solid var(--line2);background:var(--surf);padding:clamp(20px,2.6vw,30px);display:flex;flex-direction:column;gap:18px">
             <div style="display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line)">
               <sc-for list="{{ kinds }}" as="k" hint-placeholder-count="4">
-                <div onClick="{{ k.pick }}" style="background:{{ k.bg }};padding:14px 16px;cursor:pointer;display:flex;flex-direction:column;gap:5px" style-hover="background:var(--surf2)">
+                <div onClick="{{ k.pick }}" style="background:{{ k.bg }};padding:14px 16px;cursor:pointer;display:flex;flex-direction:column;gap:5px" style-hover="background:var(--surf2)" role="button" tabindex="0">
                   <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.12em;color:{{ k.fg }}">{{ k.t }}</div>
                   <div style="font-size:13.5px;line-height:1.55;color:var(--tx2);text-wrap:pretty">{{ k.d }}</div>
                 </div>
@@ -409,7 +410,7 @@
               <label style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.14em;color:var(--tx3)">WHICH PART OF THE SYSTEM</label>
               <select value="{{ cPart }}" onChange="{{ setCPart }}" style="background:var(--bg);border:1px solid var(--line2);color:var(--tx);padding:12px 13px;font-size:14.5px;outline:none">
                 <sc-for list="{{ cPartOpts }}" as="o" hint-placeholder-count="4">
-                  <option value="{{ o.v }}">{{ o.t }}</option>
+                  <option label="{{ o.t }}" aria-label="{{ o.t }}" value="{{ o.v }}"></option>
                 </sc-for>
               </select>
             </div>
@@ -429,7 +430,7 @@
                 </sc-for>
               </div>
             </div>
-            <div onClick="{{ openPost }}" style="background:#FF5500;color:#0A0A0C;padding:16px;font-size:14px;font-weight:600;cursor:pointer;text-align:center;opacity:{{ cReady }};box-shadow:0 0 20px rgba(255,85,0,0.22)" style-hover="background:#FF7A33">Open it on GitHub →</div>
+            <div onClick="{{ openPost }}" style="background:#FF5500;color:#0A0A0C;padding:16px;font-size:14px;font-weight:600;cursor:pointer;text-align:center;opacity:{{ cReady }};box-shadow:0 0 20px rgba(255,85,0,0.22)" style-hover="background:#FF7A33" role="button" tabindex="0">Open it on GitHub →</div>
             <sc-if value="{{ cOpened }}" hint-placeholder-val="{{ false }}">
               <div style="border-top:1px solid var(--line2);padding-top:16px;display:flex;flex-direction:column;gap:8px">
                 <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.16em;color:#FF5500">OPENED ON GITHUB</div>
@@ -588,11 +589,11 @@
       <div>
         <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.16em;color:var(--tx3);margin-bottom:14px">THIS FORUM</div>
         <div style="display:flex;flex-direction:column;gap:10px">
-          <div onClick="{{ goHome }}" style="font-size:14px;cursor:pointer;color:var(--tx)" style-hover="color:#FF5500">Every thread</div>
-          <div onClick="{{ goNew }}" style="font-size:14px;cursor:pointer;color:var(--tx)" style-hover="color:#FF5500">Start a thread</div>
-          <div onClick="{{ goDecisions }}" style="font-size:14px;cursor:pointer;color:var(--tx)" style-hover="color:#FF5500">Decisions</div>
-          <div onClick="{{ goRouting }}" style="font-size:14px;cursor:pointer;color:var(--tx)" style-hover="color:#FF5500">Where things belong</div>
-          <div onClick="{{ goAbout }}" style="font-size:14px;cursor:pointer;color:var(--tx)" style-hover="color:#FF5500">About</div>
+          <div onClick="{{ goHome }}" style="font-size:14px;cursor:pointer;color:var(--tx)" style-hover="color:#FF5500" role="button" tabindex="0">Every thread</div>
+          <div onClick="{{ goNew }}" style="font-size:14px;cursor:pointer;color:var(--tx)" style-hover="color:#FF5500" role="button" tabindex="0">Start a thread</div>
+          <div onClick="{{ goDecisions }}" style="font-size:14px;cursor:pointer;color:var(--tx)" style-hover="color:#FF5500" role="button" tabindex="0">Decisions</div>
+          <div onClick="{{ goRouting }}" style="font-size:14px;cursor:pointer;color:var(--tx)" style-hover="color:#FF5500" role="button" tabindex="0">Where things belong</div>
+          <div onClick="{{ goAbout }}" style="font-size:14px;cursor:pointer;color:var(--tx)" style-hover="color:#FF5500" role="button" tabindex="0">About</div>
         </div>
       </div>
       <div>
@@ -1402,6 +1403,17 @@ class Component extends DCLogic {
     };
   }
 }
+</script>
+<script>
+// Custom component controls retain native keyboard activation semantics.
+document.addEventListener('keydown', function (event) {
+  var target = event.target;
+  if (!target || target.getAttribute('role') !== 'button' || target.tagName === 'BUTTON') return;
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    target.click();
+  }
+});
 </script>
 </body>
 </html>
