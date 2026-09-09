@@ -6,7 +6,7 @@ component:
   artifact_type: community-entrypoint
   problem: Give questions, volunteer introductions and proposals a public starting point when no component-specific route is clear.
   scope:
-    - Structured public issue intake and routing.
+    - Structured public issue intake and routing governed by Principle 07 (kind to people, relentless with ideas).
     - Volunteer introductions and partnership proposals.
     - A static reading surface over public issues and merged pull requests across the Drayker organization.
   non_scope:
@@ -34,4 +34,4 @@ component:
   source_of_truth:
     repository: https://github.com/draykerdk/general-forum
     path: README.md
-  last_reviewed: "2026-08-11"
+  last_reviewed: "2026-09-08"
