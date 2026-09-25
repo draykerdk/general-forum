@@ -8,7 +8,7 @@ A readable public conversation helps people understand how proposals evolve and 
 
 ## Deliberation Standard: Kind to people, relentless with ideas
 
-Public discussions across all issues, pull requests, and the forum adhere strictly to the foundational axiom formulated in *Do animal à superinteligência* (Principle 07):
+Public discussions across all issues, pull requests, and the forum adhere strictly to one principle: the system is kind to people, relentless with ideas.
 
 - **Kind to people:** Inalienable respect for the dignity and sovereignty of every participant. Ad hominem attacks, personal derision, bad-faith interpretations, and harassment are strictly barred.
 - **Relentless with ideas:** Scientific, technical, and architectural propositions are subjected to uncompromising empirical scrutiny and logical stress-testing. No idea, proposal, or authority is sacred or immune to falsification. Demanding proof, identifying errors, and challenging assumptions is an act of deep collaboration.
