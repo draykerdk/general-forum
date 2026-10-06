@@ -40,4 +40,4 @@ Issues small enough for one person to finish carry the `open-function` label acr
 
 ---
 
-Drayker is civilizational infrastructure in a founding R&D phase, meant to be constituted by members; voluntary contribution is the public entry today. [DFMP](https://dfmp.drayker.org) describes the method and [DAF](https://daf.drayker.org) a transitional governance scaffold. The governance actually in force is documented in [`draykerdk/.github`](https://github.com/draykerdk/.github/blob/master/GOVERNANCE.md).
+Drayker is a supersystem in a founding R&D phase, meant to be constituted by members; voluntary contribution is the public entry today. [DFMP](https://dfmp.drayker.org) describes the method and [DAF](https://daf.drayker.org) a transitional governance scaffold. The governance actually in force is documented in [`draykerdk/.github`](https://github.com/draykerdk/.github/blob/master/GOVERNANCE.md).
