@@ -1200,7 +1200,9 @@ class Component extends DCLogic {
       this.raf = requestAnimationFrame(tick);
     };
     this.paintMark();
-    this.raf = requestAnimationFrame(tick);
+    if (!window.matchMedia || !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      this.raf = requestAnimationFrame(tick);
+    }
     this.initEarth();
 
     this.onResize = () => {
