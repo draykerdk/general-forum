@@ -2,12 +2,14 @@
   "name": "drayker-general-forum",
   "private": true,
   "scripts": {
-    "snapshot": "node tools/build-forum-snapshot.js",
-    "prerender": "node tools/prerender.js",
-    "test": "node tools/forum-check.js",
+    "build": "npm run data && npm run prerender",
+    "build:fixture": "npm run data:fixture && npm run prerender",
     "data": "node tools/build-forum-snapshot.js --out _site",
     "data:fixture": "node tools/build-forum-snapshot.js --fixture test/fixtures/github --out _site",
+    "prerender": "node tools/prerender.js --out _site",
     "serve": "node tools/serve.js --dir _site --port 4321",
-    "test:build": "node tools/build-check.js"
+    "test": "node tools/test.js",
+    "test:build": "node tools/build-check.js",
+    "test:site": "node tools/forum-check.js"
   }
 }

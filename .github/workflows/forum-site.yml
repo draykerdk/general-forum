@@ -5,7 +5,7 @@ on:
     branches:
       - master
   schedule:
-    - cron: '17 4 * * *'
+    - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -20,54 +20,44 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      deploy: ${{ steps.decide.outputs.deploy }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Read the organization
+      - name: Build the snapshot from the GitHub API
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          mkdir -p data
-          gh api -X GET search/issues -f q='org:draykerdk is:issue' -f sort=updated -f order=desc -F per_page=60 > /tmp/issues.json
-          gh api -X GET search/issues -f q='org:draykerdk is:pr is:merged' -f sort=updated -f order=desc -F per_page=24 > /tmp/prs.json
-          jq -n \
-            --slurpfile i /tmp/issues.json \
-            --slurpfile p /tmp/prs.json \
-            --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            '{
-              generated_at: $now,
-              threads: [$i[0].items[] | {
-                num: .number, title: .title, url: .html_url,
-                repo: (.repository_url | split("/") | last),
-                labels: [.labels[].name | ascii_downcase],
-                user: (.user.login // ""), body: (.body // ""),
-                comments: .comments, at: .updated_at, open: (.state != "closed")
-              }],
-              decisions: [$p[0].items[] | {
-                num: .number, title: .title, url: .html_url,
-                repo: (.repository_url | split("/") | last),
-                user: (.user.login // ""), at: (.closed_at // .updated_at)
-              }]
-            }' > data/forum.json
-      - name: Generate routes and social metadata
-        run: node tools/prerender.js
-      - name: Validate forum
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node tools/build-forum-snapshot.js --out _site
+      - name: Prerender pages, sitemap and feeds
+        run: node tools/prerender.js --out _site
+      - name: Validate the site
         run: npm test
+      # push and workflow_dispatch always deploy. A scheduled run deploys only
+      # when content_hash or site_rev differ from the live data/meta.json.
+      - name: Decide whether to deploy
+        id: decide
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: node tools/deploy-decision.js --event "$EVENT_NAME" --meta _site/data/meta.json --live https://forum.drayker.org/data/meta.json
       - name: Configure GitHub Pages
+        if: steps.decide.outputs.deploy == 'true'
         uses: actions/configure-pages@v5
       - name: Upload GitHub Pages artifact
+        if: steps.decide.outputs.deploy == 'true'
         uses: actions/upload-pages-artifact@v4
         with:
-          path: .
+          path: _site
 
   deploy:
+    needs: build
+    if: needs.build.outputs.deploy == 'true'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    needs: build
     steps:
       - name: Deploy to GitHub Pages
         id: deployment

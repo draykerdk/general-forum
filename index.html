@@ -13,6 +13,8 @@
 <link rel="icon" href="/assets/logo/kit/icon-512-escuro.png?v=20260813" type="image/png" sizes="512x512" media="(prefers-color-scheme: dark)">
 <link rel="apple-touch-icon" href="/assets/logo/kit/apple-touch-icon.png?v=20260811" sizes="180x180">
 <link rel="alternate" type="text/plain" href="/llms.txt" title="AI-readable site summary">
+<link rel="alternate" type="application/atom+xml" href="/feed.xml" title="Drayker Forum threads">
+<link rel="alternate" type="application/atom+xml" href="/decisions/feed.xml" title="Drayker Forum decisions">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Drayker Forum">
 <meta property="og:title" content="Drayker Forum — every public thread">
@@ -30,7 +32,7 @@
 <script src="/support.js"></script>
 </head>
 <body>
-<!-- FORUM_PRERENDER_START --><noscript><div style="max-width:64ch;margin:0 auto;padding:40px 20px;font-family:Archivo,Helvetica,Arial,sans-serif;color:#EDECF0;background:#08080A"><h1>Drayker Forum — every public thread</h1><p>Every proposal, question and answer across github.com/draykerdk, read as conversation.</p><p>The forum reads public conversations from <a href="https://github.com/draykerdk">github.com/draykerdk</a>. Publishing and replying happen on GitHub.</p><ul><li><a href="https://forum.drayker.org/">Drayker Forum — every public thread</a></li><li><a href="https://forum.drayker.org/new/">Start a thread — Drayker Forum</a></li><li><a href="https://forum.drayker.org/decisions/">Decisions — Drayker Forum</a></li><li><a href="https://forum.drayker.org/routing/">Where a subject belongs — Drayker Forum</a></li><li><a href="https://forum.drayker.org/about/">About — Drayker Forum</a></li></ul></div></noscript><!-- FORUM_PRERENDER_END -->
+<!-- FORUM_STATIC_START --><!-- FORUM_STATIC_END -->
 <x-dc>
 <helmet>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -702,7 +704,8 @@ const META = {
   new: { t: 'Start a thread — Drayker Forum', d: 'Write a proposal, question, idea or report and publish it on GitHub under your own account.' },
   decisions: { t: 'Decisions — Drayker Forum', d: 'Every merged pull request across Drayker: how a decision enters the record in the founding phase.' },
   routing: { t: 'Where a subject belongs — Drayker Forum', d: 'Which repository owns which subject, and every repository this forum reads.' },
-  about: { t: 'About — Drayker Forum', d: 'A reading surface over a conversation that already exists on GitHub. No accounts, no database, no ranking, no moderation.' }
+  about: { t: 'About — Drayker Forum', d: 'A reading surface over a conversation that already exists on GitHub. No accounts, no database, no ranking, no moderation.' },
+  notfound: { t: 'Not in the forum — Drayker Forum', d: 'This page is not in the forum’s last update. A thread opened since then gets its page at the next update and can already be read on GitHub.' }
 };
 
 class Component extends DCLogic {

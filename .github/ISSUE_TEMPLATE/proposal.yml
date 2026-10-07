@@ -3,10 +3,10 @@
 # publication to GitHub.
 #
 # Field ids are the contract between this form and the site. Do not rename
-# summary / change / component without changing postUrl() in the component.
+# summary / change / component without changing the composer in index.html.
 
 name: Proposal
-description: Propose something the project should do, written so that it can be argued with.
+description: Propose something Drayker should do, written so that it can be argued with.
 title: "[Proposal] "
 labels:
   - motion
