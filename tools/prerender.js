@@ -68,7 +68,7 @@ function routeMeta(route) {
   if (!route.thread) return META[route.key];
   const thread = route.thread;
   const body = plain(thread.body);
-  const lead = body || 'A public discussion in the Drayker organization.';
+  const lead = body || 'A public discussion in Drayker.';
   const clipped = compact(lead, 130);
   return {
     t: compact(thread.title, 42) + ' | Drayker Forum',

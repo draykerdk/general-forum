@@ -8,7 +8,7 @@ component:
   scope:
     - Structured public issue intake and routing governed by Principle 07 (kind to people, relentless with ideas).
     - Volunteer introductions and partnership proposals.
-    - A static reading surface over public issues and merged pull requests across the Drayker organization.
+    - A static reading surface over public issues and merged pull requests across the draykerdk GitHub organization.
   non_scope:
     - Private applications or guaranteed placement.
     - Binding governance decisions or project management.
@@ -34,4 +34,4 @@ component:
   source_of_truth:
     repository: https://github.com/draykerdk/general-forum
     path: README.md
-  last_reviewed: "2026-09-08"
+  last_reviewed: "2026-10-07"
