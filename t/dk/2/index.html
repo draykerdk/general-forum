@@ -449,7 +449,7 @@
       <section>
         <div style="max-width:1320px;margin:0 auto;padding:clamp(32px,4.4vw,60px) clamp(16px,4vw,44px) clamp(40px,5vw,80px)">
           <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#FF5500;margin-bottom:20px">What was decided</div>
-          <h1 style="font-size:clamp(28px,3.6vw,48px);line-height:1.04;letter-spacing:-0.038em;font-weight:700;margin:0 0 18px;max-width:24ch;text-wrap:balance">A merged pull request is the only decision this organization makes.</h1>
+          <h1 style="font-size:clamp(28px,3.6vw,48px);line-height:1.04;letter-spacing:-0.038em;font-weight:700;margin:0 0 18px;max-width:24ch;text-wrap:balance">In the founding phase, a merged pull request is how a decision enters the record.</h1>
           <p style="font-size:16px;line-height:1.68;color:var(--tx2);margin:0 0 clamp(24px,3.2vw,36px);max-width:64ch;text-wrap:pretty">Not an announcement, not a roadmap, not a status somebody set. If something changed, it is in this list, and the discussion that produced it is one click away.</p>
           <div style="display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line)">
             <sc-for list="{{ decisions }}" as="d" hint-placeholder-count="8">
@@ -463,7 +463,7 @@
             </sc-for>
           </div>
           <sc-if value="{{ noDecisions }}" hint-placeholder-val="{{ false }}">
-            <div style="border:1px solid var(--line2);padding:26px 24px;font-size:15px;line-height:1.68;color:var(--tx2);max-width:64ch;text-wrap:pretty">No pull request has been merged in the public organization yet. The first one — a correction, a paper, a specification — is still available to whoever writes it.</div>
+            <div style="border:1px solid var(--line2);padding:26px 24px;font-size:15px;line-height:1.68;color:var(--tx2);max-width:64ch;text-wrap:pretty">No pull request has been merged in the public repositories yet. The first one — a correction, a paper, a specification — is still available to whoever writes it.</div>
           </sc-if>
         </div>
       </section>
@@ -698,9 +698,9 @@ const PROPOSAL_TEMPLATE = true;
 
 const META = {
   list: { t: 'Drayker Forum — every public thread', d: 'Every proposal, question and answer across github.com/draykerdk, read as conversation.' },
-  thread: { t: 'Thread — Drayker Forum', d: 'A public thread in the Drayker organization, read as conversation.' },
+  thread: { t: 'Thread — Drayker Forum', d: 'A public thread in Drayker, read as conversation.' },
   new: { t: 'Start a thread — Drayker Forum', d: 'Write a proposal, question, idea or report and publish it on GitHub under your own account.' },
-  decisions: { t: 'Decisions — Drayker Forum', d: 'Every merged pull request in the organization: the only decisions Drayker makes.' },
+  decisions: { t: 'Decisions — Drayker Forum', d: 'Every merged pull request across Drayker: how a decision enters the record in the founding phase.' },
   routing: { t: 'Where a subject belongs — Drayker Forum', d: 'Which repository owns which subject, and every repository this forum reads.' },
   about: { t: 'About — Drayker Forum', d: 'A reading surface over a conversation that already exists on GitHub. No accounts, no database, no ranking, no moderation.' }
 };
@@ -901,7 +901,7 @@ class Component extends DCLogic {
 
   socialDescription = (thread) => {
     const plain = this.mdInline(String(thread.body || '').replace(/[#>*_|`~\[\]()!-]/g, ' ').replace(/\s+/g, ' '));
-    const lead = plain || 'A public discussion in the Drayker organization.';
+    const lead = plain || 'A public discussion in Drayker.';
     return (lead.length > 176 ? lead.slice(0, 173).trim() + '…' : lead)
       + ' · ' + this.org + '/' + thread.repo + ' #' + thread.num;
   };
