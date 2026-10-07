@@ -129,7 +129,7 @@ const context = {
   }
 };
 vm.createContext(context);
-vm.runInContext(script + '\n;globalThis.__forum = { Component, PARTS, ROUTES, POST, META, TYPES };', context);
+vm.runInContext(script + '\n;globalThis.__forum = { Component, PARTS, ROUTES, POST, META, TYPES, composePost, componentFor, similarThreads, meaningfulWords, URL_MAX, TITLE_MIN };', context);
 const F = context.__forum;
 
 const flush = async () => { for (let i = 0; i < 12; i++) await new Promise((r) => setImmediate(r)); };
@@ -263,7 +263,9 @@ function checkBindings(vals, label) {
     assert(!/\{\{[^}]*(\?|&&|\|\||\(\s*\w+\s*\))[^}]*\}\}/.test(template), 'template expression uses unsupported syntax');
     assert.strictEqual(Object.keys(F.META).length, 7, 'META must have seven routes');
     assert(F.META.notfound && F.META.notfound.t && F.META.notfound.d, 'notfound META missing');
-    assert.strictEqual(F.PARTS.length, 20);
+    assert.strictEqual(F.PARTS.length, 26, 'one part per public repository');
+    assert.strictEqual(new Set(F.PARTS.map((p) => p.repo)).size, 26, 'parts map to distinct repositories');
+    assert.strictEqual(new Set(F.PARTS.map((p) => p.key)).size, 26, 'part keys are unique');
   });
 
   await check('list renders every thread with paging', async () => {
@@ -537,10 +539,9 @@ function checkBindings(vals, label) {
       checkBindings(v, p);
       assert(!env.calls.some((u) => u.startsWith('https://api.github.com/')), p + ' must make no API call');
       if (p === '/decisions/') {
-        assert.strictEqual(v.decisions.length, Math.min(40, DATA.decisions.length));
-        assert(v.decisions.every((d) => /^merged [0-9]/.test(d.meta)));
-        const linked = DATA.decisions.findIndex((d) => d.threads && d.threads.length);
-        if (linked >= 0 && linked < 40) assert(v.decisions[linked].threads[0].href.startsWith('/t/'));
+        const items = v.dec.groups.reduce((a, g) => a.concat(g.items), []);
+        assert.strictEqual(items.length, Math.min(50, DATA.decisions.length));
+        assert(items.every((d) => /^Merged [0-9]/.test(d.meta)));
       }
       if (p === '/nope/') assert(v.isNotFound && v.nf.ghHref === 'https://github.com/draykerdk');
     }
@@ -581,6 +582,316 @@ function checkBindings(vals, label) {
     const seen = [];
     for (let i = 0; i < 4; i++) { c.toggleTheme(); seen.push(c.renderVals().themeText); }
     assert.deepStrictEqual(seen, ['LIGHT', 'DARK', 'AUTO', 'LIGHT']);
+  });
+
+  // -------------------------------------------------------------------------
+  // Composer
+  // -------------------------------------------------------------------------
+  const qs = (url) => {
+    const out = {};
+    url.split('?')[1].split('&').forEach((kv) => { const i = kv.indexOf('='); out[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1)); });
+    return out;
+  };
+  const keys = (url) => url.split('?')[1].split('&').map((kv) => kv.split('=')[0]);
+  const TITLE = 'Specify how a veto reaches the kernel';
+  const PROPOSAL_FIELDS = { problem: '\n  \nThe problem.  \n', change: 'The change.', against: 'The objection.' };
+
+  await check('composer: general-forum proposal and every component mapping', () => {
+    const expected = {
+      dfmp: 'DFM Protocol', dk: 'Dk', bsdk: 'Base structure (BSDK)', 'dk-network': 'Dk Network', 'living-cryptography': 'Living Cryptography',
+      uid: 'Universal Identity (UID)', daf: 'DAF — the federation', dknowledge: 'Dknowledge', 'drayker.org': 'The public websites',
+      'drayker.com': 'The public websites', 'drayker-theme': 'The public websites', 'drayker-propagation': 'The public websites',
+      '': 'Not sure yet', 'general-forum': 'Something else', osdk: 'Something else', pap: 'Something else', '.github': 'Something else'
+    };
+    for (const [repo, option] of Object.entries(expected)) assert.strictEqual(F.componentFor(repo), option, 'component for ' + (repo || 'none'));
+    const options = fs.readFileSync(path.join(root, '.github', 'ISSUE_TEMPLATE', 'proposal.yml'), 'utf8').match(/options:\n((?:\s+- .+\n)+)/)[1]
+      .split('\n').map((l) => l.replace(/^\s+- /, '').trim()).filter(Boolean);
+    for (const option of new Set(Object.values(expected))) assert(options.includes(option), 'not a proposal.yml dropdown option: ' + option);
+    for (const [repo, component] of [['', 'Not sure yet'], ['general-forum', 'Something else']]) {
+      const p = F.composePost({ kind: 'proposal', repo, title: '  ' + TITLE + '  ', fields: PROPOSAL_FIELDS });
+      assert(p.url.startsWith('https://github.com/draykerdk/general-forum/issues/new?template=proposal.yml&title='), p.url);
+      assert.deepStrictEqual(keys(p.url), ['template', 'title', 'summary', 'change', 'against', 'component']);
+      assert.deepStrictEqual(qs(p.url), { template: 'proposal.yml', title: '[Proposal] ' + TITLE, summary: TITLE,
+        change: 'The problem.\n\nThe change.', against: 'The objection.', component });
+      assert.strictEqual(p.form, 'proposal.yml');
+      assert(!/labels=|body=/.test(p.url), 'no labels or body parameter');
+    }
+  });
+
+  await check('composer: motion form in repositories that inherit the org templates', () => {
+    const inherit = F.PARTS.map((x) => x.repo).filter((r) => ['general-forum', 'daf', 'drayker.org'].indexOf(r) < 0);
+    assert.strictEqual(inherit.length, 23);
+    for (const repo of inherit) {
+      const p = F.composePost({ kind: 'proposal', repo, title: TITLE, fields: PROPOSAL_FIELDS });
+      assert(p.url.startsWith('https://github.com/draykerdk/' + repo + '/issues/new?template=motion.yml&'), p.url);
+      assert.deepStrictEqual(qs(p.url), { template: 'motion.yml', title: '[Motion] ' + TITLE, problem: 'The problem.', proposal: 'The change.', alternatives: 'The objection.' });
+      assert(/known evidence/.test(p.left));
+    }
+    const partial = F.composePost({ kind: 'proposal', repo: 'dk', title: TITLE, fields: { change: 'Only the change.' } });
+    assert.deepStrictEqual(keys(partial.url), ['template', 'title', 'proposal'], 'empty motion fields omitted');
+  });
+
+  await check('composer: daf and drayker.org proposals are plain issues', () => {
+    for (const repo of ['daf', 'drayker.org']) {
+      const p = F.composePost({ kind: 'proposal', repo, title: TITLE, fields: PROPOSAL_FIELDS });
+      assert.deepStrictEqual(keys(p.url), ['title', 'body']);
+      assert(p.url.startsWith('https://github.com/draykerdk/' + repo + '/issues/new?title='));
+      assert.deepStrictEqual(qs(p.url), { title: '[Proposal] ' + TITLE,
+        body: '### What problem does it address?\n\nThe problem.\n\n### What exactly would change?\n\nThe change.\n\n### The strongest argument against it\n\nThe objection.' });
+      assert.strictEqual(p.form, '');
+    }
+  });
+
+  await check('composer: question, idea and report bodies, empty fields omitted', () => {
+    const cases = [
+      ['question', '[Question] ', { know: 'What is X?', tried: 'The README.' }, '### What do you want to know?\n\nWhat is X?\n\n### What have you already read or tried?\n\nThe README.'],
+      ['idea', '[Idea] ', { idea: 'Do Y.', matter: 'Because Z.' }, '### The idea\n\nDo Y.\n\n### Why it might matter\n\nBecause Z.'],
+      ['report', '[Report] ', { wrong: 'Broken link.', where: 'https://drayker.org/x' }, '### What happened or what is wrong?\n\nBroken link.\n\n### Where (link or page)\n\nhttps://drayker.org/x']
+    ];
+    for (const [kind, prefix, fields, body] of cases) {
+      for (const repo of ['', 'general-forum', 'uid', 'daf']) {
+        const p = F.composePost({ kind, repo, title: TITLE, fields });
+        assert(p.url.startsWith('https://github.com/draykerdk/' + (repo || 'general-forum') + '/issues/new?title='), p.url);
+        assert.deepStrictEqual(qs(p.url), { title: prefix + TITLE, body });
+      }
+      const empty = F.composePost({ kind, repo: 'dk', title: TITLE, fields: {} });
+      assert.deepStrictEqual(keys(empty.url), ['title'], 'no body when every field is empty');
+    }
+    const one = F.composePost({ kind: 'question', repo: '', title: TITLE, fields: { know: 'Only this.', tried: '   \n ' } });
+    assert.strictEqual(qs(one.url).body, '### What do you want to know?\n\nOnly this.');
+    const all = ['proposal', 'question', 'idea', 'report'].map((kind) => F.composePost({ kind, repo: 'uid', title: TITLE, fields: {} }).url).join(' ');
+    assert(!/writing this here|untitled|labels=|forum\.drayker\.org|collected/.test(decodeURIComponent(all)), 'no placeholder text, labels or footer line');
+  });
+
+  await check('composer: title rule, length guard and disabled state', async () => {
+    assert.strictEqual(F.TITLE_MIN, 8);
+    assert(F.composePost({ kind: 'idea', repo: '', title: '  1234567 ', fields: {} }).disabled, 'seven characters are not enough');
+    assert(!F.composePost({ kind: 'idea', repo: '', title: '12345678', fields: {} }).disabled);
+    assert(F.composePost({ kind: 'idea', repo: '', title: '', fields: {} }).disabled);
+    const big = (n) => F.composePost({ kind: 'idea', repo: '', title: TITLE, fields: { idea: 'x'.repeat(n) } });
+    let n = 3000;
+    while (big(n).url.length <= F.URL_MAX) n++;
+    assert(!big(n - 1).tooLong && !big(n - 1).disabled && big(n - 1).url.length === F.URL_MAX, 'exactly 3800 characters is allowed');
+    assert(big(n).tooLong && big(n).disabled, 'over 3800 characters disables the handover');
+    assert(/<button type="button" class="cta cta-lg cmp-go" onClick="\{\{ openPost \}\}" disabled="\{\{ cp\.disabled \}\}">/.test(template), 'submit control uses the disabled attribute');
+    assert(template.includes('Too long to hand over in a link. Shorten it here and continue writing on GitHub.'));
+    assert(template.includes('Everything you post is public on GitHub and mirrored here. Share only what you are comfortable publishing.'));
+    assert(template.includes('Kind to people, relentless with ideas.') && template.includes('not even Drayker’s own.') && template.includes('https://github.com/draykerdk/.github/blob/master/CONTRIBUTING.md'));
+    assert(template.includes('https://github.com/draykerdk/general-forum/issues/new?template=volunteer-introduction.yml') && template.includes('https://github.com/draykerdk/general-forum/issues/new?template=partnership.yml'));
+
+    const c = await boot('/new/');
+    const opened = [];
+    win.open = (u) => { opened.push(u); return null; };
+    let v = c.renderVals();
+    checkBindings(v, 'composer');
+    assert(v.cp.disabled);
+    v.openPost();
+    assert.strictEqual(opened.length, 0, 'nothing opens while invalid');
+    assert.strictEqual(v.cPartOpts.length, 1 + 26, 'Not sure yet plus every repository');
+    assert.strictEqual(v.cPartOpts[0].v, '');
+    v.setCTitle({ target: { value: TITLE } });
+    v = c.renderVals();
+    v.cFields[0].set({ target: { value: 'Problem text' } });
+    v = c.renderVals();
+    v.setCPart({ target: { value: 'metadfmp' } });
+    v = c.renderVals();
+    checkBindings(v, 'composer filled');
+    assert.deepStrictEqual(clone(v.cp.preview.map((r) => r.k)), ['Repository', 'Form', 'Title', 'Problem']);
+    assert.strictEqual(v.cp.preview[0].v, 'draykerdk/metadfmp');
+    v.openPost();
+    assert.strictEqual(opened.length, 1);
+    assert.strictEqual(opened[0], 'https://github.com/draykerdk/metadfmp/issues/new?template=motion.yml&title=%5BMotion%5D%20' + encodeURIComponent(TITLE) + '&problem=Problem%20text');
+    assert(c.renderVals().cOpened);
+    const q = v.kinds.find((k) => k.t === 'QUESTION');
+    q.pick();
+    v = c.renderVals();
+    assert.deepStrictEqual(clone(v.cFields.map((f) => f.q)), ['What do you want to know?', 'What have you already read or tried?']);
+    assert(!v.cOpened, 'changing the kind resets the opened note');
+    assert(!env.calls.some((u) => u.startsWith('https://api.github.com/')), 'the composer makes no API call');
+    win.open = () => {};
+  });
+
+  await check('composer: similar threads', async () => {
+    const threads = [
+      { slug: 'dk', num: 1, repo: 'dk', title: 'Specify one entry of the veto chain', text: 'kernel', at: '2026-01-01T00:00:00Z' },
+      { slug: 'dk', num: 2, repo: 'dk', title: 'Unrelated subject', text: 'mentions the veto once', at: '2026-02-01T00:00:00Z' },
+      { slug: 'uid', num: 3, repo: 'uid', title: 'Identity recovery path', text: 'nothing shared', at: '2026-03-01T00:00:00Z' },
+      { slug: 'dk', num: 4, repo: 'dk', title: 'Veto chains and kernel entries', text: '', at: '2026-04-01T00:00:00Z' }
+    ];
+    assert.deepStrictEqual(clone(F.meaningfulWords('The Veto of the Kernel, and its vetoes, Kernels and processes')), ['veto', 'kernel', 'process']);
+    assert.strictEqual(F.similarThreads('the veto', threads).show, false, 'one meaningful word is not enough');
+    assert.strictEqual(F.similarThreads('what is the drayker forum', threads).show, false, 'stop-words do not count');
+    const r = F.similarThreads('Veto chain entry', threads);
+    assert(r.show);
+    assert.deepStrictEqual(clone(r.items.map((t) => t.num)), [1, 4, 2]);
+    assert.deepStrictEqual(clone(F.similarThreads('Banana orchard planning', threads).items), []);
+    const many = Array.from({ length: 9 }, (_, i) => ({ slug: 'dk', num: i + 10, repo: 'dk', title: 'Veto kernel ' + i, at: '2026-01-01T00:00:00Z' }));
+    assert.strictEqual(F.similarThreads('veto kernel', many).items.length, 5, 'at most five');
+    const c = await boot('/new/');
+    const real = DATA.threads[0];
+    c.setState({ cTitle: real.title });
+    const v = c.renderVals();
+    checkBindings(v, 'composer similar');
+    if (F.meaningfulWords(real.title).length >= 2) assert(v.similar.show && v.similar.items[0].href === '/t/' + real.slug + '/' + real.num + '/', 'a thread matches its own title');
+  });
+
+  // -------------------------------------------------------------------------
+  // Decisions
+  // -------------------------------------------------------------------------
+  const MONTHS_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const monthOf = (iso) => { const d = new Date(iso); return MONTHS_LONG[d.getUTCMonth()] + ' ' + d.getUTCFullYear(); };
+  const decItems = (v) => v.dec.groups.reduce((a, g) => a.concat(g.items), []);
+
+  await check('decisions: month groups, paging and count', async () => {
+    const many = clone(DATA);
+    const base = { repo: 'dk', slug: 'dk', title: 'x', url: 'https://github.com/draykerdk/dk/pull/1', user: 'a', excerpt: 'Ex', threads: [] };
+    many.decisions = [];
+    for (let i = 0; i < 120; i++) many.decisions.push(Object.assign({}, base, { num: i + 1, title: 'Decision ' + i, merged: new Date(Date.UTC(2026, 9, 30) - i * 2 * 86400000).toISOString() }));
+    many.decisions.reverse();
+    many.counts = Object.assign({}, many.counts, { decisions: 120 });
+    const c = await boot('/decisions/', { data: many });
+    let v = c.renderVals();
+    checkBindings(v, 'decisions');
+    let items = decItems(v);
+    assert.strictEqual(items.length, 50);
+    assert.strictEqual(items[0].title, 'Decision 0', 'newest first');
+    assert.strictEqual(v.dec.groups[0].month, 'October 2026');
+    assert(v.dec.groups.every((g, i) => i === 0 || g.month !== v.dec.groups[i - 1].month), 'one heading per month');
+    const flat = many.decisions.slice().sort((a, b) => Date.parse(b.merged) - Date.parse(a.merged)).slice(0, 50);
+    v.dec.groups.forEach((g) => g.items.forEach((it) => { const d = flat.find((x) => x.title === it.title); assert.strictEqual(monthOf(d.merged), g.month); }));
+    assert.strictEqual(v.dec.showing, 'Showing 50 of 120 merged pull requests');
+    assert.strictEqual(v.dec.total, '120 merged pull requests across 1 repository in the last update');
+    assert(v.dec.hasMore && v.dec.moreLabel === 'Show more (50)');
+    v.decMore();
+    c.syncRoute();
+    assert.strictEqual(win.location.search, '?n=100');
+    v = c.renderVals();
+    assert.strictEqual(decItems(v).length, 100);
+    v.decMore();
+    v = c.renderVals();
+    assert(decItems(v).length === 120 && !v.dec.hasMore);
+    const again = await boot('/decisions/?n=100', { data: many });
+    assert.strictEqual(decItems(again.renderVals()).length, 100, 'n restored from the URL');
+  });
+
+  await check('decisions: rows, thread links, search and part filter in the URL', async () => {
+    const c = await boot('/decisions/');
+    let v = c.renderVals();
+    const items = decItems(v);
+    const first = DATA.decisions[0];
+    assert.strictEqual(items[0].url, first.url);
+    assert.strictEqual(items[0].where, '#' + first.num);
+    assert.strictEqual(items[0].partName, c.partName(first.repo));
+    assert(items[0].meta.indexOf('Merged ') === 0 && items[0].meta.endsWith(' · by ' + first.user));
+    const linked = DATA.decisions.findIndex((d) => d.threads && d.threads.length);
+    if (linked >= 0 && linked < 50) {
+      const t = DATA.decisions[linked].threads[0];
+      assert.strictEqual(items[linked].threads[0].href, '/t/' + t.slug + '/' + t.num + '/');
+      assert(template.includes('Discussed in:'));
+    }
+    assert(template.includes('In the founding phase, a merged pull request is how a decision enters the record.'));
+    assert(template.includes('If a change arrived as a pull request, it is in this list. Direct changes by the founding steward appear in each repository’s history.'));
+    const slug = first.slug;
+    v.setDpart({ target: { value: slug } });
+    c.syncRoute();
+    assert.strictEqual(win.location.search, '?part=' + slug);
+    v = c.renderVals();
+    assert.strictEqual(v.dec.groups.reduce((a, g) => a + g.items.length, 0), Math.min(50, DATA.decisions.filter((d) => d.slug === slug).length));
+    assert(v.dec.filtered && /matching$/.test(v.dec.showing));
+    assert.strictEqual(v.dec.partOpts.length - 1, new Set(DATA.decisions.map((d) => d.slug)).size);
+    const word = first.title.split(/\s+/).find((w) => w.length > 4) || first.title;
+    v.setDq({ target: { value: word.toUpperCase() } });
+    c.syncRoute();
+    assert(win.location.search.indexOf('q=') === 1 && win.location.search.indexOf('part=' + slug) > 0);
+    v = c.renderVals();
+    assert(decItems(v).some((d) => d.title === first.title), 'search is case-insensitive');
+    v.setDq({ target: { value: '#' + first.num } });
+    v = c.renderVals();
+    assert(decItems(v).every((d) => d.where === '#' + first.num));
+    v.setDq({ target: { value: 'zzzz-nothing-matches' } });
+    v = c.renderVals();
+    checkBindings(v, 'decisions no match');
+    assert(v.dec.noMatch && !decItems(v).length);
+    v.clearDec();
+    c.syncRoute();
+    assert.strictEqual(win.location.search, '');
+    const back = await boot('/decisions/?q=' + encodeURIComponent(word) + '&part=' + slug);
+    assert.deepStrictEqual([back.state.dq, back.state.dpart], [word, slug], 'filters restored from the URL');
+    const empty = await boot('/decisions/', { data: Object.assign(clone(DATA), { decisions: [] }) });
+    const ev = empty.renderVals();
+    checkBindings(ev, 'no decisions');
+    assert(ev.dec.none && !ev.dec.ready);
+  });
+
+  // -------------------------------------------------------------------------
+  // Routing, about and copy
+  // -------------------------------------------------------------------------
+  await check('routing: every repository from the snapshot', async () => {
+    const c = await boot('/routing/');
+    const v = c.renderVals();
+    checkBindings(v, 'routing');
+    assert.strictEqual(v.repoList.length, DATA.repos.length);
+    assert.strictEqual(v.repoCount, DATA.repos.length + ' public repositories with issues enabled');
+    for (const r of DATA.repos) {
+      const row = v.repoList.find((x) => x.repo === 'draykerdk/' + r.name);
+      assert(row, 'missing ' + r.name);
+      assert.strictEqual(row.name, c.partName(r.name));
+      assert.strictEqual(row.url, r.url);
+      assert.strictEqual(row.hasHome, /^https:\/\//.test(r.homepage || ''));
+      if (row.hasHome) assert.strictEqual(row.home, r.homepage);
+      assert(row.threads.startsWith(r.threads + ' thread'));
+      assert.strictEqual(row.hasThreads, r.threads > 0);
+      if (r.threads) assert.strictEqual(row.threadsHref, '/?part=' + r.slug);
+    }
+    const names = v.repoList.map((x) => x.name.toLowerCase());
+    assert.deepStrictEqual(names, names.slice().sort(), 'sorted by display name');
+    for (const r of DATA.repos) assert(F.PARTS.some((p) => p.repo === r.name), r.name + ' has a display name in PARTS');
+    assert.strictEqual(c.partName('metadfmp'), 'Meta DFM');
+    assert.deepStrictEqual(clone(v.routes.map((r) => r.repo.split('/')[1])), ['dfmp', 'dknowledge', 'dk', 'uid', 'daf', 'dfmpproject', 'emergence-initiative', 'drayker.org', 'general-forum']);
+    const loading = (await boot('/routing/', { data: false })).renderVals();
+    checkBindings(loading, 'routing loading');
+    assert(!loading.hasRepoList && loading.listLoading);
+  });
+
+  await check('about: repository count, feeds and refresh', async () => {
+    const v = (await boot('/about/')).renderVals();
+    assert.strictEqual(v.aboutLead, 'Drayker’s public discussion happens in the issues of its ' + DATA.counts.repos + ' public repositories.');
+    assert.strictEqual((await boot('/about/', { data: false })).renderVals().aboutLead, 'Drayker’s public discussion happens in the issues of its public repositories.');
+    for (const s of ['href="/feed.xml"', 'href="/decisions/feed.xml"', 'about every 15 minutes', 'It is the first step of the public contribution path.',
+      'Nothing here is decided in a private meeting or a private vote. In the founding phase the founding steward integrates changes in public, as <a href="https://github.com/draykerdk/.github/blob/master/GOVERNANCE.md">GOVERNANCE.md</a> documents.',
+      'The merge is how the decision enters the record.', 'Drayker’s code of conduct', 'where Drayker keeps its review history', 'https://drayker.org/fn/',
+      'CC BY 4.0 · PUBLIC DOCUMENTATION · NON-PROFIT', 'unpkg, jsDelivr', 'Google Fonts']) assert(template.includes(s), 'missing: ' + s);
+    assert(!template.includes('#org/fn'));
+  });
+
+  await check('no forbidden strings in user-visible text', async () => {
+    const FORBIDDEN = [/organi[sz]ation/i, /the project\b/i, /open[\s-]source/i, /Dknowledger/, /MetaDFMP/, /seventeen/i,
+      /transmits nothing/i, /collects? nothing/i, /stores nothing/i, /writes nothing/i, /READING THE ORGANIZATION/i, /no analytics|no tracking/i];
+    const visible = template.replace(/<!--[\s\S]*?-->/g, ' ').replace(/<style>[\s\S]*?<\/style>/g, ' ');
+    const text = visible.replace(/<[^>]+>/g, ' ');
+    const attrs = (visible.match(/\s(?:placeholder|aria-label|title|alt|label)="[^"]*"/g) || []).join(' ');
+    for (const re of FORBIDDEN) {
+      assert(!re.test(text), 'template text matches ' + re + ': ' + (text.match(new RegExp('.{0,40}' + re.source + '.{0,40}', re.flags)) || [''])[0]);
+      assert(!re.test(attrs), 'template attribute matches ' + re);
+    }
+    const strings = [];
+    const collect = (v, seen) => {
+      if (typeof v === 'string') strings.push(v);
+      else if (v && typeof v === 'object' && !seen.has(v)) { seen.add(v); Object.keys(v).forEach((k) => collect(v[k], seen)); }
+    };
+    for (const p of ['/', '/new/', '/decisions/', '/routing/', '/about/', '/nope/', '/t/' + DATA.threads[0].slug + '/' + DATA.threads[0].num + '/']) collect((await boot(p)).renderVals(), new Set());
+    collect(clone(F.META), new Set());
+    collect(clone(F.POST), new Set());
+    // Thread, decision and repository text is other people’s words, not this page’s copy.
+    const before = strings.length;
+    collect(DATA, new Set());
+    const dataStrings = strings.splice(before).map((d) => d.replace(/\s+/g, ' ')).filter((d) => d.length >= 8);
+    const own = strings.filter((s) => {
+      const bare = s.replace(/…$/, '').replace(/\s+/g, ' ');
+      return !dataStrings.some((d) => s.includes(d) || (bare.length >= 8 && d.includes(bare)));
+    });
+    for (const re of FORBIDDEN) { const hit = own.find((s) => re.test(s)); assert(!hit, 'rendered string matches ' + re + ': ' + hit); }
+    assert(!F.PARTS.some((p) => /MetaDFMP/.test(p.name)));
   });
 
   if (failures.length) {

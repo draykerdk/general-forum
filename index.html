@@ -327,15 +327,87 @@
   .nf{padding-top:clamp(40px,6vw,96px);padding-bottom:clamp(48px,7vw,110px)}
   .nf-links{display:flex;gap:18px 24px;flex-wrap:wrap;align-items:center}
 
+  /* Pages */
+  .page-sec{padding-top:clamp(32px,4.4vw,60px);padding-bottom:clamp(40px,5vw,80px)}
+
+  /* Composer */
+  .cmp{display:grid;grid-template-columns:minmax(0,0.85fr) minmax(0,1.15fr);gap:clamp(26px,4vw,60px);align-items:start;padding-top:clamp(32px,4.4vw,60px);padding-bottom:clamp(40px,5vw,80px)}
+  @media (max-width:939px){.cmp{grid-template-columns:minmax(0,1fr)}}
+  .cmp-intro{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:0}
+  .cmp-intro .page-h1{max-width:20ch}
+  .cmp-intro .lede{margin-bottom:14px;max-width:56ch}
+  .cmp-p{margin:0 0 22px;max-width:56ch}
+  .cmp-principle{margin:0 0 22px}
+  .cmp-principle a{white-space:nowrap}
+  .cmp-other{margin:0 0 22px;align-self:stretch}
+  .cmp-card{border:1px solid var(--line2);background:var(--surf);padding:clamp(18px,2.6vw,30px);display:flex;flex-direction:column;gap:18px;min-width:0}
+  .cmp-kinds{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line)}
+  @media (max-width:479px){.cmp-kinds{grid-template-columns:minmax(0,1fr)}}
+  .cmp-kind{background:var(--surf);padding:13px 15px;cursor:pointer;display:flex;flex-direction:column;gap:5px;border:0;text-align:left;color:var(--tx);width:100%;min-width:0}
+  .cmp-kind:hover{background:var(--surf2)}
+  .cmp-kind.on{background:var(--surf2);box-shadow:inset 3px 0 0 #FF5500}
+  .cmp-kind-t{font-size:10.5px;letter-spacing:0.12em;color:var(--tx)}
+  .cmp-kind.on .cmp-kind-t{color:var(--acc-tx)}
+  .cmp-kind-d{font-size:13px;line-height:1.5;color:var(--tx2);text-wrap:pretty}
+  .cmp-field{display:flex;flex-direction:column;gap:7px;min-width:0}
+  .cmp-k{font-size:10px;letter-spacing:0.14em;color:var(--tx2);text-transform:uppercase;font-weight:400;margin:0}
+  .cmp-field .field{background:var(--bg);font-size:14.5px;width:100%}
+  .cmp-ta{line-height:1.6;resize:vertical}
+  .cmp-hint{font-size:12.5px;line-height:1.5;color:var(--tx2)}
+  .cmp-hint.ok{color:var(--tx2)}
+  .cmp-small{font-size:13px;line-height:1.55;color:var(--tx2);margin:0;text-wrap:pretty}
+  .cmp-similar{border-left:2px solid var(--line3);padding:2px 0 2px 14px;display:flex;flex-direction:column;gap:10px}
+  .cmp-preview{border:1px solid var(--line2);background:var(--bg);padding:16px 18px;min-width:0;display:flex;flex-direction:column;gap:12px}
+  .cmp-dl{margin:0;display:flex;flex-direction:column;gap:10px}
+  .cmp-row{display:grid;grid-template-columns:minmax(0,150px) minmax(0,1fr);gap:4px 14px;align-items:baseline}
+  @media (max-width:559px){.cmp-row{grid-template-columns:minmax(0,1fr)}}
+  .cmp-row dt{font-size:10px;letter-spacing:0.1em;color:var(--tx2);text-transform:uppercase}
+  .cmp-row dd{margin:0;font-size:13.5px;line-height:1.55;color:var(--tx);white-space:pre-wrap;overflow-wrap:anywhere;min-width:0}
+  .cmp-public{font-size:13.5px;line-height:1.55;color:var(--tx);margin:0;border-left:2px solid #FF5500;padding:2px 0 2px 12px}
+  .cmp-warn{font-size:13.5px;line-height:1.55;color:var(--acc-tx);margin:0}
+  .cmp-go{text-align:center}
+  .cta[disabled]{opacity:0.45;cursor:not-allowed;box-shadow:none}
+  .cta[disabled]:hover{background:#FF5500}
+  .cmp-opened{border-top:1px solid var(--line2);padding-top:16px;display:flex;flex-direction:column;gap:8px}
+  .cmp-opened-k{font-size:10.5px;letter-spacing:0.16em;color:var(--acc-tx)}
+  .cmp-url{word-break:break-all}
+
   /* Decisions */
+  .dec-total{font-size:11px;letter-spacing:0.12em;color:var(--tx2);text-transform:uppercase;margin:0 0 22px}
+  .dec-filters .filter-main{max-width:720px}
+  .dec-selects{margin-top:12px}
+  .dec-month{margin:0 0 26px}
+  .dec-month-h{font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:var(--acc-tx);font-weight:500;margin:18px 0 10px}
   .dec{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line)}
-  .dec li{background:var(--bg);padding:16px 22px;display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:8px 24px}
-  .dec-title{font-size:16px;font-weight:500;line-height:1.45;color:var(--tx);text-wrap:pretty}
+  .dec li{background:var(--bg);padding:16px 22px}
+  .dec-main{min-width:0;display:flex;flex-direction:column;gap:6px;max-width:860px}
+  .dec-title{font-size:16.5px;font-weight:600;letter-spacing:-0.015em;line-height:1.4;color:var(--tx);text-wrap:pretty}
   .dec-title:hover{color:var(--acc-tx)}
-  .dec-meta{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--tx2)}
-  .dec-where{font-size:10.5px;letter-spacing:0.08em;color:var(--tx2)}
-  .dec-threads{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:var(--tx2)}
-  @media (max-width:719px){.dec li{grid-template-columns:1fr;padding:14px}}
+  .dec-meta{font-size:13px;color:var(--tx2)}
+  .dec-ex{font-size:14px;line-height:1.6;color:var(--tx2);margin:2px 0 0;overflow-wrap:anywhere;text-wrap:pretty}
+  .dec-threads{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13.5px;color:var(--tx2);margin-top:2px}
+  .dec-feed{margin-top:22px;font-size:14px}
+  @media (max-width:719px){.dec li{padding:14px}}
+
+  /* Routing */
+  .routes{list-style:none;margin:0 0 clamp(30px,4vw,52px);padding:0;display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line)}
+  .routes li{background:var(--bg);padding:16px 24px;display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:8px 24px;align-items:baseline}
+  .routes-about{min-width:0;font-size:15px;line-height:1.6;color:var(--tx);text-wrap:pretty}
+  .routes-repo{font-size:11.5px;letter-spacing:0.06em;color:var(--tx2);word-break:break-word}
+  .routes-repo:hover{color:var(--acc-tx)}
+  @media (max-width:719px){.routes li{grid-template-columns:minmax(0,1fr);padding:14px}}
+  .repos-h{font-weight:400}
+  .repos{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:1px;background:var(--line);border:1px solid var(--line)}
+  .repos li{background:var(--bg);padding:18px 20px;display:flex;flex-direction:column;gap:6px;min-width:0}
+  .repos-name{font-size:16px;font-weight:600;letter-spacing:-0.02em;margin:0;color:var(--tx)}
+  .repos-id{font-size:10.5px;letter-spacing:0.06em;color:var(--tx2);word-break:break-word}
+  .repos-desc{font-size:13.5px;line-height:1.55;color:var(--tx2);margin:2px 0 0;text-wrap:pretty}
+  .repos-links{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;margin-top:auto;padding-top:6px;color:var(--tx2)}
+  .repos-links a{overflow-wrap:anywhere}
+
+  /* About */
+  .about-feeds,.about-loads{font-size:15px;line-height:1.66;color:var(--tx2);margin:16px 0 0;max-width:66ch;text-wrap:pretty}
+  .about-loads{max-width:52ch;font-size:14px}
 
   /* Footer */
   .ftr{border-top:1px solid var(--line);background:var(--surf)}
@@ -391,7 +463,7 @@
         <div>
           <div class="eyebrow mono">The public conversation of Drayker</div>
           <h1 tabindex="-1" class="dk-glow hero-h1">Follow the conversations shaping Drayker.</h1>
-          <p class="hero-lede">Explore public questions, proposals and recorded changes across the Drayker repositories. Search by topic or part of the system, read the context and follow a discussion back to its source. Replies and new contributions are published on GitHub, where each repository keeps its review history.</p>
+          <p class="hero-lede">Explore public questions, proposals and recorded changes across the Drayker repositories. Search by topic or part of the system, read the context and follow a discussion back to its source. Replies and new contributions are published on GitHub, where Drayker keeps its review history.</p>
           <p class="hero-short">Public questions, proposals and changes across the Drayker repositories. Replies are published on GitHub.</p>
         </div>
         <sc-if value="{{ showMark }}">
@@ -782,61 +854,103 @@
 
     <sc-if value="{{ isNew }}">
       <div class="dk-page">
-      <section>
-        <div style="max-width:1320px;margin:0 auto;padding:clamp(32px,4.4vw,60px) clamp(16px,4vw,44px) clamp(40px,5vw,80px);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:clamp(26px,4vw,60px);align-items:start">
-          <div>
-            <div class="eyebrow mono">Start a thread</div>
-            <h1 tabindex="-1" style="font-size:clamp(28px,3.6vw,48px);line-height:1.04;letter-spacing:-0.038em;font-weight:700;margin:0 0 18px;max-width:20ch;text-wrap:balance">Write it here. Publish it there, as yourself.</h1>
-            <p style="font-size:16px;line-height:1.68;color:var(--tx2);margin:0 0 18px;max-width:56ch;text-wrap:pretty">This site sends you to the repository that owns the subject with the text already written — the routing is Drayker’s own, not a guess. You read it, edit it and publish it under your account. No email, no handle and no contact detail is collected here, and nothing is stored.</p>
-            <p style="font-size:15px;line-height:1.66;color:var(--tx2);margin:0 0 24px;max-width:56ch;text-wrap:pretty">A proposal nobody can disagree with is not a proposal. The second question exists for that reason.</p>
-            <a href="/routing/" class="link-mono">See where each subject belongs →</a>
+      <section class="wrap cmp">
+        <div class="cmp-intro">
+          <div class="eyebrow mono">Start a thread</div>
+          <h1 tabindex="-1" class="page-h1">Write it here. Publish it there, as yourself.</h1>
+          <p class="lede">This site sends you to the repository that owns the subject with the text already written — the routing is Drayker’s own, not a guess. You read it, edit it and publish it under your account. The forum keeps no accounts and no database, and sends nothing you type anywhere until you choose to continue on GitHub.</p>
+          <p class="muted cmp-p">A proposal nobody can disagree with is not a proposal. The field for the strongest argument against it exists for that reason.</p>
+          <section class="principle cmp-principle" aria-label="How threads are argued">
+            <p class="principle-a">Kind to people, relentless with ideas.</p>
+            <p class="principle-b">No idea is protected from grounded criticism, not even Drayker’s own. <a href="https://github.com/draykerdk/.github/blob/master/CONTRIBUTING.md">How to contribute →</a></p>
+          </section>
+          <section class="side-box cmp-other" aria-labelledby="cmp-other-h">
+            <h2 id="cmp-other-h" class="side-h mono">Other ways in</h2>
+            <ul class="side-links">
+              <li><a href="https://github.com/draykerdk/general-forum/issues/new?template=volunteer-introduction.yml">Introduce yourself as a volunteer →</a><span class="side-note">Say what you can do and how much time you have. The form opens on GitHub.</span></li>
+              <li><a href="https://github.com/draykerdk/general-forum/issues/new?template=partnership.yml">Propose a partnership →</a><span class="side-note">For a group or an institution that wants to work with Drayker. The form opens on GitHub.</span></li>
+            </ul>
+          </section>
+          <a href="/routing/" class="link-mono">See where each subject belongs →</a>
+        </div>
+
+        <div class="cmp-card">
+          <div role="group" aria-label="What kind of thread" class="cmp-kinds">
+            <sc-for list="{{ kinds }}" as="k">
+              <button type="button" class="{{ k.cls }}" onClick="{{ k.pick }}" aria-pressed="{{ k.pressed }}">
+                <span class="cmp-kind-t mono">{{ k.t }}</span>
+                <span class="cmp-kind-d">{{ k.d }}</span>
+              </button>
+            </sc-for>
           </div>
-          <div style="border:1px solid var(--line2);background:var(--surf);padding:clamp(20px,2.6vw,30px);display:flex;flex-direction:column;gap:18px;min-width:0">
-            <div role="group" aria-label="What kind of thread" style="display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line)">
-              <sc-for list="{{ kinds }}" as="k">
-                <button type="button" onClick="{{ k.pick }}" aria-pressed="{{ k.pressed }}" style="background:{{ k.bg }};padding:14px 16px;cursor:pointer;display:flex;flex-direction:column;gap:5px;border:0;text-align:left;color:var(--tx);width:100%" style-hover="background:var(--surf2)">
-                  <span class="mono" style="font-size:10.5px;letter-spacing:0.12em;color:{{ k.fg }}">{{ k.t }}</span>
-                  <span style="font-size:13.5px;line-height:1.55;color:var(--tx2);text-wrap:pretty">{{ k.d }}</span>
-                </button>
+
+          <div class="cmp-field">
+            <label for="c-title" class="cmp-k mono">Title</label>
+            <input id="c-title" class="field" value="{{ cTitle }}" onChange="{{ setCTitle }}" placeholder="The whole thing, said once." autocomplete="off" aria-describedby="c-title-hint" />
+            <span id="c-title-hint" class="{{ cp.titleHintCls }}">{{ cp.titleHint }}</span>
+          </div>
+
+          <sc-if value="{{ similar.show }}">
+            <section class="cmp-similar" aria-labelledby="cmp-similar-h">
+              <h2 id="cmp-similar-h" class="cmp-k mono">Before you post</h2>
+              <sc-if value="{{ similar.has }}">
+                <p class="cmp-small">These threads share words with your title. If one of them is the same subject, a reply there keeps the discussion in one place.</p>
+                <ul class="rel">
+                  <sc-for list="{{ similar.items }}" as="sm">
+                    <li><a href="{{ sm.href }}">{{ sm.title }}</a><span class="rel-meta">{{ sm.meta }}</span></li>
+                  </sc-for>
+                </ul>
+              </sc-if>
+              <sc-if value="{{ similar.none }}">
+                <p class="cmp-small">No thread in the forum’s last update shares those words.</p>
+              </sc-if>
+            </section>
+          </sc-if>
+
+          <div class="cmp-field">
+            <label for="c-part" class="cmp-k mono">Part of the system</label>
+            <select id="c-part" class="field" value="{{ cPart }}" onChange="{{ setCPart }}">
+              <sc-for list="{{ cPartOpts }}" as="o">
+                <option label="{{ o.t }}" aria-label="{{ o.t }}" value="{{ o.v }}"></option>
               </sc-for>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:8px">
-              <label for="c-title" class="mono" style="font-size:10px;letter-spacing:0.14em;color:var(--tx2)">IN ONE LINE</label>
-              <input id="c-title" value="{{ cTitle }}" onChange="{{ setCTitle }}" placeholder="The whole thing, said once." style="background:var(--bg);border:1px solid var(--line2);color:var(--tx);padding:12px 13px;font-size:14.5px" />
-            </div>
-            <div style="display:flex;flex-direction:column;gap:8px">
-              <label for="c-part" class="mono" style="font-size:10px;letter-spacing:0.14em;color:var(--tx2)">WHICH PART OF THE SYSTEM</label>
-              <select id="c-part" value="{{ cPart }}" onChange="{{ setCPart }}" style="background:var(--bg);border:1px solid var(--line2);color:var(--tx);padding:12px 13px;font-size:14.5px">
-                <sc-for list="{{ cPartOpts }}" as="o">
-                  <option label="{{ o.t }}" aria-label="{{ o.t }}" value="{{ o.v }}"></option>
-                </sc-for>
-              </select>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:8px">
-              <label for="c-what" class="mono" style="font-size:11px;letter-spacing:0.05em;color:var(--tx2)">{{ cQ1 }}</label>
-              <textarea id="c-what" value="{{ cWhat }}" onChange="{{ setCWhat }}" rows="4" placeholder="Plainly. Assume the reader has not read anything else." style="background:var(--bg);border:1px solid var(--line2);color:var(--tx);padding:12px 13px;font-size:14.5px;line-height:1.6;resize:vertical"></textarea>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:8px">
-              <label for="c-why" class="mono" style="font-size:11px;letter-spacing:0.05em;color:var(--tx2)">{{ cQ2 }}</label>
-              <textarea id="c-why" value="{{ cWhy }}" onChange="{{ setCWhy }}" rows="3" placeholder="What would be true afterwards that is not true now." style="background:var(--bg);border:1px solid var(--line2);color:var(--tx);padding:12px 13px;font-size:14.5px;line-height:1.6;resize:vertical"></textarea>
-            </div>
-            <div style="border:1px solid var(--line2);background:var(--bg);padding:18px;min-width:0">
-              <div class="mono" style="font-size:10px;letter-spacing:0.14em;color:var(--tx2);margin-bottom:12px">WHAT THE PUBLIC THREAD WILL CONTAIN</div>
-              <div style="display:flex;flex-direction:column;gap:8px">
-                <sc-for list="{{ cPreview }}" as="line">
-                  <div class="mono" style="font-size:11.5px;line-height:1.62;color:var(--tx2);word-break:break-word">{{ line }}</div>
-                </sc-for>
-              </div>
-            </div>
-            <button type="button" onClick="{{ openPost }}" class="cta cta-lg" style="text-align:center;opacity:{{ cReady }}">Open it on GitHub →</button>
-            <sc-if value="{{ cOpened }}">
-              <div role="status" style="border-top:1px solid var(--line2);padding-top:16px;display:flex;flex-direction:column;gap:8px">
-                <div class="mono" style="font-size:10.5px;letter-spacing:0.16em;color:var(--acc-tx)">OPENED ON GITHUB</div>
-                <div style="font-size:13.5px;line-height:1.6;color:var(--tx2);text-wrap:pretty">It is not published until you press the button there. If the tab did not open, use the link below.</div>
-                <a href="{{ cUrl }}" target="_blank" rel="noopener noreferrer" class="link-mono" style="word-break:break-all">Open the prefilled thread →</a>
-              </div>
-            </sc-if>
+            </select>
           </div>
+
+          <sc-for list="{{ cFields }}" as="f">
+            <div class="cmp-field">
+              <label for="{{ f.id }}" class="cmp-k mono">{{ f.q }}</label>
+              <textarea id="{{ f.id }}" class="field cmp-ta" value="{{ f.v }}" onChange="{{ f.set }}" rows="{{ f.rows }}" placeholder="{{ f.ph }}"></textarea>
+            </div>
+          </sc-for>
+
+          <section class="cmp-preview" aria-labelledby="cmp-preview-h">
+            <h2 id="cmp-preview-h" class="cmp-k mono">What will be sent to GitHub</h2>
+            <dl class="cmp-dl">
+              <sc-for list="{{ cp.preview }}" as="pv">
+                <div class="cmp-row">
+                  <dt class="mono">{{ pv.k }}</dt>
+                  <dd>{{ pv.v }}</dd>
+                </div>
+              </sc-for>
+            </dl>
+            <sc-if value="{{ cp.hasLeft }}">
+              <p class="cmp-small">{{ cp.left }}</p>
+            </sc-if>
+          </section>
+
+          <p class="cmp-public">Everything you post is public on GitHub and mirrored here. Share only what you are comfortable publishing.</p>
+
+          <sc-if value="{{ cp.tooLong }}">
+            <p class="cmp-warn" role="alert">Too long to hand over in a link. Shorten it here and continue writing on GitHub.</p>
+          </sc-if>
+          <button type="button" class="cta cta-lg cmp-go" onClick="{{ openPost }}" disabled="{{ cp.disabled }}">Continue on GitHub →</button>
+          <sc-if value="{{ cOpened }}">
+            <div role="status" class="cmp-opened">
+              <div class="mono cmp-opened-k">OPENED ON GITHUB</div>
+              <p class="cmp-small">It is not published until you press the button there. If the tab did not open, use the link below.</p>
+              <a href="{{ cp.url }}" target="_blank" rel="noopener noreferrer" class="link-mono cmp-url">Open the prefilled thread →</a>
+            </div>
+          </sc-if>
         </div>
       </section>
       </div>
@@ -844,10 +958,11 @@
 
     <sc-if value="{{ isDecisions }}">
       <div class="dk-page">
-      <section class="wrap" style="padding-top:clamp(32px,4.4vw,60px);padding-bottom:clamp(40px,5vw,80px)">
+      <section class="wrap page-sec">
         <div class="eyebrow mono">What was decided</div>
         <h1 tabindex="-1" class="page-h1">In the founding phase, a merged pull request is how a decision enters the record.</h1>
-        <p class="lede">Not an announcement, not a roadmap, not a status somebody set. If something changed, it is in this list, and the discussion that produced it is one click away.</p>
+        <p class="lede">If a change arrived as a pull request, it is in this list. Direct changes by the founding steward appear in each repository’s history.</p>
+        <p class="dec-total mono">{{ dec.total }}</p>
         <sc-if value="{{ listLoading }}">
           <div class="note mono" role="status">Reading the forum’s last update…</div>
         </sc-if>
@@ -857,35 +972,76 @@
             <p>{{ listErrorText }}</p>
             <div class="panel-actions">
               <button type="button" class="btn-ghost mono" onClick="{{ retryData }}">Try again</button>
+              <a class="link-mono" href="https://github.com/draykerdk">Read the repositories on GitHub →</a>
             </div>
           </div>
         </sc-if>
-        <sc-if value="{{ hasDecisions }}">
-          <div class="count mono" role="status">{{ decShowing }}</div>
-          <ul class="dec">
-            <sc-for list="{{ decisions }}" as="d">
-              <li>
-                <a class="dec-title" href="{{ d.url }}">{{ d.title }}</a>
-                <div class="dec-meta">
-                  <span class="dec-where mono">{{ d.where }}</span>
-                  <span>{{ d.meta }}</span>
-                </div>
-                <sc-if value="{{ d.hasThreads }}">
-                  <div class="dec-threads">
-                    <span>Thread:</span>
-                    <sc-for list="{{ d.threads }}" as="dt">
-                      <a href="{{ dt.href }}">{{ dt.t }}</a>
-                    </sc-for>
-                  </div>
-                </sc-if>
-              </li>
-            </sc-for>
-          </ul>
-          <sc-if value="{{ decHasMore }}">
-            <button type="button" class="btn-ghost mono more" onClick="{{ decMore }}">Show more decisions</button>
+        <sc-if value="{{ dec.ready }}">
+          <div class="filters dec-filters" role="search" aria-label="Search and filter decisions">
+            <div class="filter-main">
+              <label class="sr-only" for="dec-search">Search the decisions</label>
+              <input id="dec-search" type="search" class="field search" value="{{ dq }}" onChange="{{ setDq }}" placeholder="Search the decisions" autocomplete="off" spellcheck="false" />
+            </div>
+            <div class="selects dec-selects">
+              <label class="sel">
+                <span class="sel-k mono">Part of the system</span>
+                <select class="field" aria-label="Filter decisions by part of the system" value="{{ dpart }}" onChange="{{ setDpart }}">
+                  <sc-for list="{{ dec.partOpts }}" as="o">
+                    <option label="{{ o.t }}" aria-label="{{ o.t }}" value="{{ o.v }}"></option>
+                  </sc-for>
+                </select>
+              </label>
+              <sc-if value="{{ dec.filtered }}">
+                <button type="button" class="clear" onClick="{{ clearDec }}">Clear filters</button>
+              </sc-if>
+            </div>
+          </div>
+          <div class="count mono" role="status">{{ dec.showing }}</div>
+          <sc-for list="{{ dec.groups }}" as="g">
+            <section class="dec-month" aria-label="{{ g.month }}">
+              <h2 class="dec-month-h mono">{{ g.month }}</h2>
+              <ul class="dec">
+                <sc-for list="{{ g.items }}" as="d">
+                  <li>
+                    <div class="dec-main">
+                      <div class="row-kicker mono">
+                        <span>{{ d.partName }}</span>
+                        <span>{{ d.where }}</span>
+                      </div>
+                      <a class="dec-title" href="{{ d.url }}">{{ d.title }}</a>
+                      <div class="dec-meta">{{ d.meta }}</div>
+                      <sc-if value="{{ d.hasExcerpt }}">
+                        <p class="dec-ex">{{ d.excerpt }}</p>
+                      </sc-if>
+                      <sc-if value="{{ d.hasThreads }}">
+                        <div class="dec-threads">
+                          <span>Discussed in:</span>
+                          <sc-for list="{{ d.threads }}" as="dt">
+                            <a href="{{ dt.href }}">{{ dt.t }}</a>
+                          </sc-for>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </li>
+                </sc-for>
+              </ul>
+            </section>
+          </sc-for>
+          <sc-if value="{{ dec.hasMore }}">
+            <button type="button" class="btn-ghost mono more" onClick="{{ decMore }}">{{ dec.moreLabel }}</button>
           </sc-if>
+          <sc-if value="{{ dec.noMatch }}">
+            <div class="panel">
+              <h2 class="panel-h">No merged pull request matches that.</h2>
+              <p>The search covers titles, descriptions, repositories and authors of every merged pull request in the last update.</p>
+              <div class="panel-actions">
+                <button type="button" class="btn-ghost mono" onClick="{{ clearDec }}">Clear filters</button>
+              </div>
+            </div>
+          </sc-if>
+          <p class="muted dec-feed">Follow new decisions with the <a href="/decisions/feed.xml">Atom feed</a>.</p>
         </sc-if>
-        <sc-if value="{{ noDecisions }}">
+        <sc-if value="{{ dec.none }}">
           <div class="panel"><p>No pull request has been merged in the public repositories yet. The first one — a correction, a paper, a specification — is still available to whoever writes it.</p></div>
         </sc-if>
       </section>
@@ -894,29 +1050,51 @@
 
     <sc-if value="{{ isRouting }}">
       <div class="dk-page">
-      <section>
-        <div style="max-width:1320px;margin:0 auto;padding:clamp(32px,4.4vw,60px) clamp(16px,4vw,44px) clamp(40px,5vw,80px)">
-          <div class="eyebrow mono">Where a subject belongs</div>
-          <h1 tabindex="-1" style="font-size:clamp(28px,3.6vw,48px);line-height:1.04;letter-spacing:-0.038em;font-weight:700;margin:0 0 18px;max-width:22ch;text-wrap:balance">There is no single inbox, and that is deliberate.</h1>
-          <p style="font-size:16px;line-height:1.68;color:var(--tx2);margin:0 0 clamp(24px,3.2vw,36px);max-width:64ch;text-wrap:pretty">A conversation sitting beside the thing it is about survives; one piled into a general channel does not. This forum reads them all together, but each thread stays in the repository that owns it — and a thread that turns out to belong somewhere else is moved rather than closed.</p>
-          <ul style="list-style:none;margin:0 0 clamp(30px,4vw,52px);padding:0;display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line)">
-            <sc-for list="{{ routes }}" as="r">
-              <li style="background:var(--bg);padding:16px 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:12px;align-items:baseline">
-                <div style="grid-column:span 2;min-width:0;font-size:15px;line-height:1.6;color:var(--tx);text-wrap:pretty">{{ r.about }}</div>
-                <a href="{{ r.href }}" class="mono" style="font-size:11.5px;letter-spacing:0.06em;color:var(--tx2);word-break:break-word" style-hover="color:var(--acc-tx)">{{ r.repo }} →</a>
-              </li>
-            </sc-for>
-          </ul>
-          <h2 class="eyebrow mono" style="font-weight:400">Every repository this forum reads</h2>
-          <ul style="list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr));gap:1px;background:var(--line);border:1px solid var(--line)">
+      <section class="wrap page-sec">
+        <div class="eyebrow mono">Where a subject belongs</div>
+        <h1 tabindex="-1" class="page-h1">There is no single inbox, and that is deliberate.</h1>
+        <p class="lede">A conversation sitting beside the thing it is about survives; one piled into a general channel does not. This forum reads them all together, but each thread stays in the repository that owns it — and a thread that turns out to belong somewhere else is moved rather than closed.</p>
+        <ul class="routes">
+          <sc-for list="{{ routes }}" as="r">
+            <li>
+              <div class="routes-about">{{ r.about }}</div>
+              <a href="{{ r.href }}" class="routes-repo mono">{{ r.repo }} →</a>
+            </li>
+          </sc-for>
+        </ul>
+        <h2 class="eyebrow mono repos-h">Every repository this forum reads</h2>
+        <sc-if value="{{ listLoading }}">
+          <div class="note mono" role="status">Reading the forum’s last update…</div>
+        </sc-if>
+        <sc-if value="{{ listError }}">
+          <div class="panel" role="alert">
+            <p>{{ listErrorText }}</p>
+            <div class="panel-actions">
+              <button type="button" class="btn-ghost mono" onClick="{{ retryData }}">Try again</button>
+              <a class="link-mono" href="https://github.com/draykerdk">github.com/draykerdk →</a>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ hasRepoList }}">
+          <p class="count mono">{{ repoCount }}</p>
+          <ul class="repos">
             <sc-for list="{{ repoList }}" as="p">
-              <li style="background:var(--bg);padding:16px 20px;display:flex;flex-direction:column;gap:6px">
-                <a href="{{ p.issues }}" style="font-size:15px;font-weight:600;letter-spacing:-0.02em;color:var(--tx)" style-hover="color:var(--acc-tx)">{{ p.name }}</a>
-                <div class="mono" style="font-size:10.5px;letter-spacing:0.06em;color:var(--tx2);word-break:break-word">{{ p.repo }}</div>
+              <li>
+                <h3 class="repos-name">{{ p.name }}</h3>
+                <div class="repos-id mono">{{ p.repo }}</div>
+                <sc-if value="{{ p.hasDesc }}">
+                  <p class="repos-desc">{{ p.desc }}</p>
+                </sc-if>
+                <div class="repos-links">
+                  <sc-if value="{{ p.hasThreads }}"><a href="{{ p.threadsHref }}">{{ p.threads }}</a></sc-if>
+                  <sc-if value="{{ !p.hasThreads }}"><span>{{ p.threads }}</span></sc-if>
+                  <a href="{{ p.url }}">Repository →</a>
+                  <sc-if value="{{ p.hasHome }}"><a href="{{ p.home }}">{{ p.homeLabel }}</a></sc-if>
+                </div>
               </li>
             </sc-for>
           </ul>
-        </div>
+        </sc-if>
       </section>
       </div>
     </sc-if>
@@ -926,14 +1104,15 @@
       <section style="max-width:1320px;margin:0 auto;padding:clamp(32px,4.4vw,60px) clamp(16px,4vw,44px) clamp(24px,3vw,40px)">
         <div class="eyebrow mono">About this forum</div>
         <h1 tabindex="-1" style="font-size:clamp(28px,3.6vw,48px);line-height:1.04;letter-spacing:-0.038em;font-weight:700;margin:0 0 20px;max-width:22ch;text-wrap:balance">A reading surface over a conversation that already exists.</h1>
-        <p style="font-size:16.5px;line-height:1.7;color:var(--tx);max-width:66ch;margin:0 0 16px;text-wrap:pretty">Drayker’s discussion has always been public, in the issues of its repositories. That is the right place for it — a thread beside the code and documents it concerns survives, and can be argued with by whoever maintains them. It is also a place most people never look, and never think to answer in.</p>
-        <p style="font-size:16px;line-height:1.68;color:var(--tx2);max-width:66ch;margin:0;text-wrap:pretty">So this site reads all of it and presents it as what it is: conversation. It writes nothing, stores nothing and asks for nothing. Every reply, proposal and correction is published from your own GitHub account, in the repository where it belongs — which means this forum can disappear tomorrow without a single word of the discussion being lost.</p>
+        <p style="font-size:16.5px;line-height:1.7;color:var(--tx);max-width:66ch;margin:0 0 16px;text-wrap:pretty">{{ aboutLead }} That is the right place for it — a thread beside the code and documents it concerns survives, and can be argued with by whoever maintains them. It is also a place most people never look, and never think to answer in.</p>
+        <p style="font-size:16px;line-height:1.68;color:var(--tx2);max-width:66ch;margin:0;text-wrap:pretty">So this site reads all of it and presents it as what it is: conversation. It keeps no accounts and no database, and asks for nothing. Every reply, proposal and correction is published from your own GitHub account, in the repository where it belongs — which means this forum can disappear tomorrow without a single word of the discussion being lost.</p>
+        <p class="about-feeds">The forum refreshes from GitHub about every 15 minutes. To follow it without visiting, subscribe to the Atom feeds for <a href="/feed.xml">new threads (/feed.xml)</a> and for <a href="/decisions/feed.xml">decisions (/decisions/feed.xml)</a>.</p>
       </section>
 
       <section style="border-top:1px solid var(--line);background:var(--surf)">
         <div style="max-width:1320px;margin:0 auto;padding:clamp(34px,4.4vw,64px) clamp(16px,4vw,44px)">
-          <h2 style="font-size:clamp(23px,3vw,38px);line-height:1.06;letter-spacing:-0.035em;font-weight:600;margin:0 0 16px;max-width:26ch;text-wrap:balance">A thread is not chatter. It is the first step of the only process there is.</h2>
-          <p style="font-size:16px;line-height:1.68;color:var(--tx2);margin:0 0 clamp(24px,3.2vw,38px);max-width:64ch;text-wrap:pretty">Nothing here is decided by a meeting, a vote in private or a person with a title. A subject is said in the open, routed to whatever owns it, and if it becomes work it ends as a change anyone can read.</p>
+          <h2 style="font-size:clamp(23px,3vw,38px);line-height:1.06;letter-spacing:-0.035em;font-weight:600;margin:0 0 16px;max-width:26ch;text-wrap:balance">A thread is not chatter. It is the first step of the public contribution path.</h2>
+          <p style="font-size:16px;line-height:1.68;color:var(--tx2);margin:0 0 clamp(24px,3.2vw,38px);max-width:64ch;text-wrap:pretty">Nothing here is decided in a private meeting or a private vote. In the founding phase the founding steward integrates changes in public, as <a href="https://github.com/draykerdk/.github/blob/master/GOVERNANCE.md">GOVERNANCE.md</a> documents. A subject is said in the open, routed to whatever owns it, and if it becomes work it ends as a change anyone can read.</p>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(210px,100%),1fr));gap:1px;background:var(--line);border:1px solid var(--line)">
             <div style="background:var(--bg);padding:24px 22px;display:flex;flex-direction:column;gap:10px">
               <div class="mono" style="font-size:10.5px;letter-spacing:0.14em;color:var(--acc-tx)">01 · SAID IN THE OPEN</div>
@@ -953,7 +1132,7 @@
             </div>
             <div style="background:var(--bg);padding:24px 22px;display:flex;flex-direction:column;gap:10px">
               <div class="mono" style="font-size:10.5px;letter-spacing:0.14em;color:var(--acc-tx)">05 · MERGED, AND KEPT</div>
-              <div style="font-size:14.5px;line-height:1.62;color:var(--tx2);text-wrap:pretty">The merge is the decision. The thread stays where it is as the record of why it was taken — which is why none of this is deleted.</div>
+              <div style="font-size:14.5px;line-height:1.62;color:var(--tx2);text-wrap:pretty">The merge is how the decision enters the record. The thread stays where it is as the record of why it was taken — which is why none of this is deleted.</div>
             </div>
           </div>
         </div>
@@ -964,6 +1143,7 @@
           <div>
             <h2 style="font-size:clamp(21px,2.6vw,32px);line-height:1.08;letter-spacing:-0.03em;font-weight:600;margin:0 0 14px;max-width:22ch;text-wrap:balance">What this site does not have.</h2>
             <p style="font-size:15.5px;line-height:1.66;color:var(--tx2);margin:0;max-width:52ch;text-wrap:pretty">Every absence below is deliberate. A forum that keeps its own accounts, its own copies and its own moderation becomes a second source of truth — and then the argument is about the forum instead of about the work.</p>
+            <p class="about-loads">Your browser does load code libraries (unpkg, jsDelivr), fonts (Google Fonts), and avatars and images (GitHub), and a thread page may ask GitHub’s public API for replies newer than the last update.</p>
           </div>
           <dl style="margin:0;display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line)">
             <div style="background:var(--bg);padding:16px 20px;display:grid;grid-template-columns:minmax(0,150px) minmax(0,1fr);gap:14px;align-items:baseline">
@@ -972,7 +1152,7 @@
             </div>
             <div style="background:var(--bg);padding:16px 20px;display:grid;grid-template-columns:minmax(0,150px) minmax(0,1fr);gap:14px;align-items:baseline">
               <dt class="mono" style="font-size:10.5px;letter-spacing:0.1em;color:var(--tx2)">NO DATABASE</dt>
-              <dd style="margin:0;font-size:14.5px;line-height:1.6;color:var(--tx2);min-width:0;text-wrap:pretty">Static pages on GitHub Pages, reading the public API. Nothing is transmitted from here.</dd>
+              <dd style="margin:0;font-size:14.5px;line-height:1.6;color:var(--tx2);min-width:0;text-wrap:pretty">Static pages on GitHub Pages, rebuilt from GitHub’s public API about every 15 minutes. Nothing you type here is sent anywhere until you choose to continue on GitHub.</dd>
             </div>
             <div style="background:var(--bg);padding:16px 20px;display:grid;grid-template-columns:minmax(0,150px) minmax(0,1fr);gap:14px;align-items:baseline">
               <dt class="mono" style="font-size:10.5px;letter-spacing:0.1em;color:var(--tx2)">NO RANKING</dt>
@@ -980,7 +1160,7 @@
             </div>
             <div style="background:var(--bg);padding:16px 20px;display:grid;grid-template-columns:minmax(0,150px) minmax(0,1fr);gap:14px;align-items:baseline">
               <dt class="mono" style="font-size:10.5px;letter-spacing:0.1em;color:var(--tx2)">NO MODERATION</dt>
-              <dd style="margin:0;font-size:14.5px;line-height:1.6;color:var(--tx2);min-width:0;text-wrap:pretty">Whatever moderation exists is GitHub’s, in the repositories, under the code of conduct published in the draykerdk GitHub organization.</dd>
+              <dd style="margin:0;font-size:14.5px;line-height:1.6;color:var(--tx2);min-width:0;text-wrap:pretty">Whatever moderation exists is GitHub’s, in the repositories, under <a href="https://github.com/draykerdk/.github/blob/master/CODE_OF_CONDUCT.md">Drayker’s code of conduct</a>.</dd>
             </div>
             <div style="background:var(--bg);padding:16px 20px;display:grid;grid-template-columns:minmax(0,150px) minmax(0,1fr);gap:14px;align-items:baseline">
               <dt class="mono" style="font-size:10.5px;letter-spacing:0.1em;color:var(--tx2)">NO STATUS</dt>
@@ -1017,13 +1197,14 @@
           <li><a href="/routing/">Where things belong</a></li>
           <li><a href="/about/">About</a></li>
           <li><a href="/feed.xml">New threads feed (Atom)</a></li>
+          <li><a href="/decisions/feed.xml">Decisions feed (Atom)</a></li>
         </ul>
       </nav>
       <nav aria-label="The rest of Drayker">
         <h2 class="ftr-h mono">The rest of Drayker</h2>
         <ul class="ftr-links">
           <li><a href="https://drayker.org">Participation portal</a></li>
-          <li><a href="https://drayker.org/#org/fn">Open functions</a></li>
+          <li><a href="https://drayker.org/fn/">Open functions</a></li>
           <li><a href="https://drayker.com">drayker.com</a></li>
           <li><a href="https://dknowledge.drayker.org/">Dknowledge</a></li>
           <li><a href="https://github.com/draykerdk">github.com/draykerdk</a></li>
@@ -1045,7 +1226,7 @@
 // DRAYKER FORUM — a static site published from draykerdk/general-forum on GitHub
 // Pages at forum.drayker.org. It reads Drayker’s public conversation (issues
 // across every public repository) and its decisions (merged pull requests) from
-// a snapshot the site build writes to /data/. It writes nothing: every post and
+// a snapshot the site build writes to /data/. It keeps no accounts: every post and
 // reply opens GitHub under the reader’s own account.
 //
 // Clean static routes, so a thread has a durable, indexable address:
@@ -1068,7 +1249,7 @@ const API = 'https://api.github.com';
 const GH_FULL = 'application/vnd.github.full+json';
 const GH_TEXT = 'application/vnd.github.text+json';
 const PAGE_SIZE = 30;
-const DEC_PAGE = 40;
+const DEC_PAGE = 50;
 const FRESH_MS = 10 * 60 * 1000;
 const DATA_KEY = 'drayker-forum-v2';
 const CHECK_KEY = 'drayker-forum-check';
@@ -1077,8 +1258,9 @@ const D3_URL = 'https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js';
 const TOPO_URL = 'https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js';
 const ATLAS_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json';
 
-// The twenty parts of the system. `repo` is what the API returns; the last three
-// are declared concepts with no repository yet.
+// Every public repository in the draykerdk GitHub organization, with the display
+// names the drayker.org portal uses (its PROJECTS constant). `repo` is what the
+// API returns; `key` is what the composer's part select uses.
 const PARTS = [
   { key: 'dk', name: 'Dk', repo: 'dk' },
   { key: 'bsdk', name: 'BSDK', repo: 'bsdk' },
@@ -1087,7 +1269,7 @@ const PARTS = [
   { key: 'osdk', name: 'OSDK', repo: 'osdk' },
   { key: 'uid', name: 'UID', repo: 'uid' },
   { key: 'dfmp', name: 'DFMP', repo: 'dfmp' },
-  { key: 'metadfmp', name: 'MetaDFMP', repo: 'metadfmp' },
+  { key: 'metadfmp', name: 'Meta DFM', repo: 'metadfmp' },
   { key: 'daf', name: 'DAF', repo: 'daf' },
   { key: 'advices', name: 'Councils', repo: 'advices' },
   { key: 'emergence', name: 'Emergence Initiative', repo: 'emergence-initiative' },
@@ -1096,10 +1278,16 @@ const PARTS = [
   { key: 'general', name: 'General Forum', repo: 'general-forum' },
   { key: 'org', name: 'drayker.org', repo: 'drayker.org' },
   { key: 'com', name: 'drayker.com', repo: 'drayker.com' },
+  { key: 'propagation', name: 'Propagation', repo: 'drayker-propagation' },
   { key: 'theme', name: 'drayker-theme', repo: 'drayker-theme' },
-  { key: 'dsupport', name: 'Distributed support', repo: '' },
-  { key: 'openscience', name: 'Open science & health', repo: '' },
-  { key: 'valueunit', name: 'Value unit', repo: '' }
+  { key: 'dsupport', name: 'Distributed Support', repo: 'distributed-support' },
+  { key: 'openscience', name: 'Open science & health', repo: 'open-science' },
+  { key: 'valueunit', name: 'Dktron & value units', repo: 'value-unit' },
+  { key: 'pap', name: 'Projects & Applications', repo: 'pap' },
+  { key: 'personal', name: 'Dk Personal', repo: 'dk-personal' },
+  { key: 'academy', name: 'Dk Academy', repo: 'dk-academy' },
+  { key: 'stations', name: 'Stations & embassies', repo: 'stations' },
+  { key: 'dotgithub', name: '.github', repo: '.github' }
 ];
 
 // Kinds are the repositories’ own labels (draykerdk/.github labels.yml). A thread
@@ -1135,21 +1323,132 @@ const ROUTES = [
   { about: 'Anything you are not sure about', repo: 'general-forum' }
 ];
 
+// The composer. Each kind has its own fields; every field is optional except the
+// title, and an empty field is never sent.
 const POST = [
-  { id: 'proposal', label: 'A PROPOSAL', line: 'Something you want Drayker to do, written so that someone can disagree with it.',
-    prefix: '[Proposal] ', lab: 'motion', q1: 'What are you proposing?', q2: 'What would be different if it happened?' },
-  { id: 'question', label: 'A QUESTION', line: 'Something you could not find an answer to in the repositories.',
-    prefix: '[Question] ', lab: '', q1: 'What do you want to know?', q2: 'Where did you already look?' },
-  { id: 'idea', label: 'AN IDEA', line: 'Not a proposal yet — a direction that seems worth testing in the open.',
-    prefix: '[Idea] ', lab: '', q1: 'What is the idea?', q2: 'What makes you think it is worth trying?' },
-  { id: 'report', label: 'SOMETHING IS WRONG', line: 'A document that no longer matches reality, or a part that does not behave as written.',
-    prefix: '[Report] ', lab: 'documentation', q1: 'What is wrong?', q2: 'Where did you see it?' }
+  { id: 'proposal', label: 'PROPOSAL', line: 'Something you want Drayker to do, written so that someone can disagree with it.', prefix: '[Proposal] ',
+    fields: [
+      { id: 'problem', q: 'What problem does it address?', rows: 4, ph: 'Plainly. Assume the reader has not read anything else.' },
+      { id: 'change', q: 'What exactly would change?', rows: 4, ph: 'What would be true afterwards that is not true now.' },
+      { id: 'against', q: 'The strongest argument against it', rows: 3, ph: 'The best objection you can think of.' }
+    ] },
+  { id: 'question', label: 'QUESTION', line: 'Something you could not find an answer to in the repositories.', prefix: '[Question] ',
+    fields: [
+      { id: 'know', q: 'What do you want to know?', rows: 4, ph: 'The question, with the context it needs.' },
+      { id: 'tried', q: 'What have you already read or tried?', rows: 3, ph: 'Links or pages you already checked.' }
+    ] },
+  { id: 'idea', label: 'IDEA', line: 'Not a proposal yet — a direction that seems worth testing in the open.', prefix: '[Idea] ',
+    fields: [
+      { id: 'idea', q: 'The idea', rows: 4, ph: 'Plainly. Assume the reader has not read anything else.' },
+      { id: 'matter', q: 'Why it might matter', rows: 3, ph: 'What it could make possible, or what it could fix.' }
+    ] },
+  { id: 'report', label: 'REPORT', line: 'A document that no longer matches reality, or a part that does not behave as written.', prefix: '[Report] ',
+    fields: [
+      { id: 'wrong', q: 'What happened or what is wrong?', rows: 4, ph: 'What you expected and what you found.' },
+      { id: 'where', q: 'Where (link or page)', rows: 2, ph: 'https://…' }
+    ] }
 ];
 
-// general-forum publishes volunteer-introduction.yml and partnership.yml today.
-// proposal.yml is published in this repository. The composer can therefore fill
-// its canonical field ids when a proposal begins in the General Forum.
-const PROPOSAL_TEMPLATE = true;
+// Issue forms. general-forum publishes proposal.yml (field ids summary, change,
+// component, smallest_step, against, public). daf and drayker.org have their own
+// templates and no motion.yml. Every other repository inherits the motion form of
+// the draykerdk GitHub organization (draykerdk/.github: problem, known,
+// assumptions, proposal, alternatives, evidence_change).
+const FORUM_REPO = 'general-forum';
+const PLAIN_PROPOSAL_REPOS = ['daf', 'drayker.org'];
+// proposal.yml "component" dropdown, by repository.
+const COMPONENT = {
+  dfmp: 'DFM Protocol', dk: 'Dk', bsdk: 'Base structure (BSDK)', 'dk-network': 'Dk Network',
+  'living-cryptography': 'Living Cryptography', uid: 'Universal Identity (UID)', daf: 'DAF — the federation',
+  dknowledge: 'Dknowledge', 'drayker.org': 'The public websites', 'drayker.com': 'The public websites',
+  'drayker-theme': 'The public websites', 'drayker-propagation': 'The public websites'
+};
+const componentFor = (repo) => (!repo ? 'Not sure yet' : Object.prototype.hasOwnProperty.call(COMPONENT, repo) ? COMPONENT[repo] : 'Something else');
+const URL_MAX = 3800;
+const TITLE_MIN = 8;
+const oneLine = (v) => String(v == null ? '' : v).replace(/\s+/g, ' ').trim();
+const block = (v) => String(v == null ? '' : v).replace(/\r\n?/g, '\n').replace(/^\s*\n|\s+$/g, '');
+
+// o = { kind, repo ('' when not sure), title, fields: { id: text } }
+// Returns the target, the form, the exact parameters and the URL GitHub opens.
+function composePost(o) {
+  const kind = POST.filter((k) => k.id === o.kind)[0] || POST[0];
+  const part = String(o.repo || '');
+  const repo = part || FORUM_REPO;
+  const title = oneLine(o.title);
+  const f = {};
+  kind.fields.forEach((x) => { f[x.id] = block((o.fields || {})[x.id]); });
+  const params = [];
+  const shown = [];
+  const add = (key, value, label) => { if (value) { params.push([key, value]); if (label) shown.push({ k: label, v: value }); } };
+  const md = () => kind.fields.filter((x) => f[x.id]).map((x) => '### ' + x.q + '\n\n' + f[x.id]).join('\n\n');
+  let form = '', formLabel = 'No form: a plain issue', left = '';
+  if (kind.id === 'proposal' && repo === FORUM_REPO) {
+    form = 'proposal.yml';
+    formLabel = 'Proposal form (proposal.yml)';
+    params.push(['template', form]);
+    add('title', '[Proposal] ' + title, 'Title');
+    add('summary', title, 'What are you proposing?');
+    add('change', [f.problem, f.change].filter(Boolean).join('\n\n'), 'What would be different if it happened?');
+    add('against', f.against, 'The strongest argument against it');
+    add('component', componentFor(part), 'Which part of the system does it touch?');
+    left = 'On GitHub the form also offers an optional field for the smallest piece someone could finish, and asks you to tick two confirmations before posting.';
+  } else if (kind.id === 'proposal' && PLAIN_PROPOSAL_REPOS.indexOf(repo) < 0) {
+    form = 'motion.yml';
+    formLabel = 'Motion form (motion.yml)';
+    params.push(['template', form]);
+    add('title', '[Motion] ' + title, 'Title');
+    add('problem', f.problem, 'Problem');
+    add('proposal', f.change, 'Proposal');
+    add('alternatives', f.against, 'Alternatives and failure modes');
+    left = 'On GitHub the motion form also asks for known evidence, assumptions and uncertainty, and what evidence would change the proposal. Fill those in there.';
+  } else {
+    add('title', kind.prefix + title, 'Title');
+    add('body', md(), 'Body');
+  }
+  const url = 'https://github.com/' + ORG + '/' + repo + '/issues/new?' + params.map((kv) => kv[0] + '=' + encodeURIComponent(kv[1])).join('&');
+  const valid = title.length >= TITLE_MIN;
+  const tooLong = url.length > URL_MAX;
+  return {
+    repo, form, formLabel, title: params.filter((kv) => kv[0] === 'title')[0][1], params, url, valid, tooLong,
+    disabled: !valid || tooLong, left,
+    preview: [{ k: 'Repository', v: ORG + '/' + repo }, { k: 'Form', v: formLabel }].concat(shown)
+  };
+}
+
+// "Before you post": threads whose title or text share the most meaningful words
+// with the title being typed. Client side, over the snapshot only.
+const STOP_WORDS = new Set(('a about after again all also an and any are as at be because been before being both but by can could did do does each '
+  + 'few for from further had has have he her here him his how i if in into is it its just like make many may me might more most much must my need '
+  + 'new no not now of on only or other our out over own same she should so some such than that the their them then there these they this those '
+  + 'through to too under up us very was way we were what when where which while who why will with would you your '
+  + 'drayker forum thread threads proposal question idea report issue').split(' '));
+const meaningfulWords = (text) => {
+  const out = [];
+  fold(text).split(/[^a-z0-9]+/).forEach((w) => {
+    if (w.length < 3 || STOP_WORDS.has(w)) return;
+    const stem = w.length > 4 && /(ss|x|ch|sh|o)es$/.test(w) ? w.slice(0, -2) : w.length > 4 && /s$/.test(w) && !/ss$/.test(w) ? w.slice(0, -1) : w;
+    if (out.indexOf(stem) < 0) out.push(stem);
+  });
+  return out;
+};
+function similarThreads(title, threads, max) {
+  const q = meaningfulWords(title);
+  if (q.length < 2) return { show: false, items: [] };
+  const items = (threads || []).map((t) => {
+    const inTitle = meaningfulWords(t.title);
+    const inText = meaningfulWords(t.text || t.excerpt || '');
+    let score = 0, shared = 0;
+    q.forEach((w) => {
+      if (inTitle.indexOf(w) >= 0) { score += 2; shared++; } else if (inText.indexOf(w) >= 0) { score += 1; shared++; }
+    });
+    return { t, score, shared };
+  }).filter((x) => x.shared > 0)
+    .sort((a, b) => b.score - a.score || b.shared - a.shared || toMs(b.t.at) - toMs(a.t.at))
+    .slice(0, max || 5)
+    .map((x) => x.t);
+  return { show: true, items };
+}
 
 const META = {
   list: { t: 'Drayker Forum — every public thread', d: 'Every proposal, question and answer across github.com/draykerdk, read as conversation.' },
@@ -1165,6 +1464,7 @@ const META = {
 // Small helpers. Everything here is plain ECMAScript so tools/ui-check.js can
 // run the logic in a bare VM.
 // ---------------------------------------------------------------------------
+const MONTHS_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const fold = (s) => String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const repoSlug = (name) => (name === '.github' ? 'dot-github' : String(name || ''));
@@ -1380,8 +1680,9 @@ class Component extends DCLogic {
     check: { s: 'idle' },
     tState: 'idle', tKey: '', tErr: '', tReset: 0, tMissing: null,
     fresh: { key: '', s: 'idle' },
-    copied: '', copyFail: '', dN: DEC_PAGE, tick: 0,
-    cKind: 'proposal', cPart: '', cTitle: '', cWhat: '', cWhy: '', cOpened: false,
+    copied: '', copyFail: '', tick: 0,
+    dq: '', dpart: 'all', dN: DEC_PAGE,
+    cKind: 'proposal', cPart: '', cTitle: '', cF: {}, cOpened: false,
     themePref: 'auto', resolved: 'dark',
     vw: typeof window !== 'undefined' && window.innerWidth ? window.innerWidth : 1440
   };
@@ -1837,6 +2138,7 @@ class Component extends DCLogic {
       next = { page: 'notfound', tSlug: '', tNum: '' };
     }
     if (next.page === 'list') Object.assign(next, this.filtersFrom(parseQuery(window.location.search)));
+    if (next.page === 'decisions') Object.assign(next, this.decFrom(parseQuery(window.location.search)));
     if (next.page === 'thread') {
       const key = next.tSlug + '/' + next.tNum;
       if (key !== this.state.tKey || this.state.tState === 'missing') Object.assign(next, { tKey: key, tState: this.tcache[key] ? 'ready' : 'idle', tErr: '', tMissing: null });
@@ -1856,7 +2158,7 @@ class Component extends DCLogic {
     const s = this.state;
     const loc = window.location;
     const path = this.routePath();
-    const target = path + (s.page === 'list' ? this.listQuery(s) : '');
+    const target = path + (s.page === 'list' ? this.listQuery(s) : s.page === 'decisions' ? this.decQuery(s) : '');
     if (s.page === 'list') this.lastList = target;
     const current = (loc.pathname || '/') + (loc.search || '');
     if (current !== target && window.history) {
@@ -2005,39 +2307,71 @@ class Component extends DCLogic {
   // ==========================================================================
   // COMPOSER — prefilled GitHub issue under the reader’s own account.
   // ==========================================================================
-  postKind = () => POST.filter((k) => k.id === this.state.cKind)[0] || POST[0];
-
-  postRepo = () => {
-    const p = PARTS.filter((x) => x.key === this.state.cPart)[0];
-    return p && p.repo ? p.repo : 'general-forum';
-  };
-
-  postUrl = () => {
-    const k = this.postKind();
+  composed = () => {
     const s = this.state;
-    const part = PARTS.filter((x) => x.key === s.cPart)[0];
-    const title = k.prefix + (s.cTitle || 'untitled');
-    const body = [
-      k.q1, (s.cWhat || '(writing this here)'), '',
-      k.q2, (s.cWhy || '(writing this here)'), '',
-      part ? 'Part of the system: ' + part.name + '.' : 'Which part of the system: not sure yet.',
-      'Opened from forum.drayker.org — a public thread; the site collected nothing about the author.'
-    ].join('\n');
-    const u = 'https://github.com/' + this.org + '/' + this.postRepo() + '/issues/new';
-    if (PROPOSAL_TEMPLATE && k.id === 'proposal' && this.postRepo() === 'general-forum') {
-      return u + '?template=proposal.yml&title=' + encodeURIComponent(title)
-        + '&summary=' + encodeURIComponent(s.cWhat || '')
-        + '&change=' + encodeURIComponent(s.cWhy || '')
-        + '&component=' + encodeURIComponent(part ? part.name : 'Not sure yet');
-    }
-    return u + '?title=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(body)
-      + (k.lab ? '&labels=' + encodeURIComponent(k.lab) : '');
+    return composePost({ kind: s.cKind, repo: s.cPart, title: s.cTitle, fields: s.cF });
   };
 
   openPost = () => {
-    try { window.open(this.postUrl(), '_blank', 'noopener'); } catch (e) {}
+    const p = this.composed();
+    if (p.disabled) return;
+    try { window.open(p.url, '_blank', 'noopener'); } catch (e) {}
     this.setState({ cOpened: true });
   };
+
+  setCField = (id) => (e) => {
+    const v = e.target.value;
+    this.setState((st) => ({ cF: Object.assign({}, st.cF, { [id]: v }), cOpened: false }));
+  };
+
+  // Every repository the forum reads, by display name; PARTS first covers the
+  // known ones, the snapshot adds any repository created since.
+  composerRepos = () => {
+    const names = PARTS.map((x) => x.repo);
+    (this.state.repos || []).forEach((r) => { if (r && r.name && names.indexOf(r.name) < 0) names.push(r.name); });
+    return names.map((repo) => ({ v: repo, t: this.partName(repo) + ' (' + ORG + '/' + repo + ')' }))
+      .sort((a, b) => (fold(a.t) < fold(b.t) ? -1 : fold(a.t) > fold(b.t) ? 1 : 0));
+  };
+
+  // ==========================================================================
+  // DECISIONS — every merged pull request, filtered by search and part.
+  // ==========================================================================
+  decFrom = (o) => {
+    const n = parseInt(o.n, 10);
+    return {
+      dq: String(o.q || '').slice(0, 200),
+      dpart: o.part ? String(o.part).slice(0, 100) : 'all',
+      dN: isFinite(n) && n > DEC_PAGE ? Math.min(Math.ceil(n / DEC_PAGE) * DEC_PAGE, 100000) : DEC_PAGE
+    };
+  };
+
+  decQuery = (s) => {
+    const p = [];
+    if (s.dq) p.push('q=' + enc(s.dq));
+    if (s.dpart && s.dpart !== 'all') p.push('part=' + enc(s.dpart));
+    if (s.dN > DEC_PAGE) p.push('n=' + s.dN);
+    return p.length ? '?' + p.join('&') : '';
+  };
+
+  decFilter = (s) => {
+    const words = fold(s.dq).split(/\s+/).filter(Boolean);
+    const out = (s.decisions || []).filter((d) => {
+      if (!d) return false;
+      if (s.dpart !== 'all' && d.slug !== s.dpart) return false;
+      if (words.length) {
+        const hay = fold([d.title, d.excerpt, d.repo, this.partName(d.repo), d.user, '#' + d.num].join(' '));
+        for (const w of words) {
+          if (/^#[0-9]+$/.test(w)) { if (String(d.num) !== w.slice(1)) return false; }
+          else if (hay.indexOf(w) < 0) return false;
+        }
+      }
+      return true;
+    });
+    return out.sort((a, b) => toMs(b.merged) - toMs(a.merged) || (a.repo < b.repo ? -1 : a.repo > b.repo ? 1 : b.num - a.num));
+  };
+
+  setDec = (patch) => this.setState(Object.assign({ dN: DEC_PAGE }, patch));
+  clearDec = () => this.setDec({ dq: '', dpart: 'all' });
 
   // ==========================================================================
   // THEME — light → dark → auto, saved as 'drayker-theme'.
@@ -2644,31 +2978,126 @@ class Component extends DCLogic {
   decisionVals() {
     const s = this.state;
     const ready = s.dataState === 'ready';
-    const all = s.decisions || [];
-    const shown = all.slice(0, s.dN);
+    const all = ready ? s.decisions || [] : [];
+    const rows = ready ? this.decFilter(s) : [];
+    const shown = rows.slice(0, s.dN);
+    const monthOf = (iso) => { const t = toMs(iso); if (!t) return 'Date unknown'; const d = new Date(t); return MONTHS_LONG[d.getUTCMonth()] + ' ' + d.getUTCFullYear(); };
+    const groups = [];
+    let cur = null;
+    shown.forEach((d) => {
+      const month = monthOf(d.merged);
+      if (!cur || cur.month !== month) { cur = { month, items: [] }; groups.push(cur); }
+      const threads = (d.threads || []).filter((x) => x && x.slug && x.num).map((x) => {
+        const m = this.findThread(x.slug, x.num);
+        return { href: '/t/' + encodeURIComponent(x.slug) + '/' + x.num + '/', t: m ? m.title : (x.repo || x.slug) + ' #' + x.num };
+      });
+      const excerpt = clip(d.excerpt || '', 280);
+      cur.items.push({
+        title: d.title || '(untitled)', url: d.url || 'https://github.com/' + ORG + '/' + d.repo + '/pull/' + d.num,
+        partName: this.partName(d.repo), where: '#' + d.num,
+        meta: 'Merged ' + fmtDate(d.merged) + (d.user ? ' · by ' + d.user : ''),
+        excerpt, hasExcerpt: !!excerpt, threads, hasThreads: threads.length > 0
+      });
+    });
+    const per = {};
+    all.forEach((d) => { if (d && d.slug) { if (!per[d.slug]) per[d.slug] = { repo: d.repo, n: 0 }; per[d.slug].n++; } });
+    const repoN = Object.keys(per).length;
+    if (s.dpart !== 'all' && !per[s.dpart]) per[s.dpart] = { repo: this.repoForSlug(s.dpart), n: 0 };
+    const partOpts = [{ v: 'all', t: 'Every part of the system' }].concat(Object.keys(per)
+      .map((slug) => ({ v: slug, t: this.partName(per[slug].repo) + ' (' + per[slug].n + ')', k: fold(this.partName(per[slug].repo)) }))
+      .sort((a, b) => (a.k < b.k ? -1 : a.k > b.k ? 1 : 0))
+      .map((o) => ({ v: o.v, t: o.t })));
+    const filtered = !!s.dq || s.dpart !== 'all';
+    const total = s.counts && isFinite(s.counts.decisions) ? s.counts.decisions : all.length;
+    const left = rows.length - shown.length;
     return {
-      decisions: shown.map((d) => {
-        const threads = (d.threads || []).filter((x) => x && x.slug && x.num).map((x) => {
-          const m = this.findThread(x.slug, x.num);
-          return { href: '/t/' + encodeURIComponent(x.slug) + '/' + x.num + '/', t: m ? m.title : x.repo + ' #' + x.num };
-        });
-        return { title: d.title || '(untitled)', url: d.url || '', where: d.repo + ' #' + d.num,
-          meta: 'merged ' + fmtDate(d.merged) + (d.user ? ' · by ' + d.user : ''), threads, hasThreads: threads.length > 0 };
-      }),
-      hasDecisions: shown.length > 0,
-      decShowing: 'Showing ' + shown.length + ' of ' + plural(all.length, 'merged pull request', 'merged pull requests'),
-      decHasMore: all.length > shown.length,
-      decMore: () => this.setState((st) => ({ dN: st.dN + DEC_PAGE })),
-      noDecisions: ready && all.length === 0
+      dec: {
+        ready: ready && all.length > 0,
+        none: ready && all.length === 0,
+        total: ready ? plural(total, 'merged pull request', 'merged pull requests') + ' across ' + plural(repoN, 'repository', 'repositories') + ' in the last update' : '',
+        groups, partOpts, filtered,
+        showing: 'Showing ' + shown.length + ' of ' + (filtered ? rows.length + ' matching' : plural(rows.length, 'merged pull request', 'merged pull requests')),
+        hasMore: left > 0,
+        moreLabel: 'Show more (' + Math.min(DEC_PAGE, left) + ')',
+        noMatch: ready && all.length > 0 && rows.length === 0
+      },
+      dq: s.dq, setDq: (e) => this.setDec({ dq: e.target.value }),
+      dpart: s.dpart, setDpart: (e) => this.setDec({ dpart: e.target.value }),
+      clearDec: this.clearDec,
+      decMore: () => this.setState((st) => ({ dN: st.dN + DEC_PAGE }))
     };
+  }
+
+  composerVals() {
+    const s = this.state;
+    const kind = POST.filter((x) => x.id === s.cKind)[0] || POST[0];
+    const p = this.composed();
+    const len = oneLine(s.cTitle).length;
+    const sim = similarThreads(s.cTitle, s.dataState === 'ready' ? s.threads : [], 5);
+    return {
+      kinds: POST.map((x) => {
+        const on = s.cKind === x.id;
+        return { t: x.label, d: x.line, cls: on ? 'cmp-kind on' : 'cmp-kind', pressed: String(on),
+          pick: () => this.setState({ cKind: x.id, cOpened: false }) };
+      }),
+      cTitle: s.cTitle, setCTitle: (e) => this.setState({ cTitle: e.target.value, cOpened: false }),
+      cPart: s.cPart, setCPart: (e) => this.setState({ cPart: e.target.value, cOpened: false }),
+      cPartOpts: [{ v: '', t: 'Not sure yet (General Forum)' }].concat(this.composerRepos()),
+      cFields: kind.fields.map((f) => ({ id: 'c-' + f.id, q: f.q, rows: f.rows, ph: f.ph, v: (s.cF || {})[f.id] || '', set: this.setCField(f.id) })),
+      cp: {
+        url: p.url, disabled: p.disabled, tooLong: p.tooLong,
+        preview: p.preview, left: p.left, hasLeft: !!p.left,
+        titleHint: len >= TITLE_MIN ? 'One line. GitHub shows it as the thread title.' : 'At least ' + TITLE_MIN + ' characters (' + len + ' so far).',
+        titleHintCls: 'cmp-hint'
+      },
+      similar: {
+        show: sim.show, has: sim.items.length > 0, none: sim.show && !sim.items.length,
+        items: sim.items.map((t) => ({ href: '/t/' + encodeURIComponent(t.slug) + '/' + t.num + '/', title: t.title || '(untitled)',
+          meta: this.partName(t.repo) + ' · ' + this.stateText(t) + ' · ' + plural(t.comments || 0, 'reply', 'replies') }))
+      },
+      cOpened: s.cOpened, openPost: this.openPost
+    };
+  }
+
+  routingVals() {
+    const s = this.state;
+    const ready = s.dataState === 'ready';
+    const repos = ready ? (s.repos || []).filter((r) => r && r.name) : [];
+    const list = repos.map((r) => {
+      const home = isHttps(r.homepage) ? r.homepage : '';
+      let homeLabel = '';
+      if (home) { try { homeLabel = new URL(home).host + ' →'; } catch (e) { homeLabel = 'Website →'; } }
+      const n = Number(r.threads) || 0;
+      const slug = r.slug || repoSlug(r.name);
+      return {
+        name: this.partName(r.name), repo: ORG + '/' + r.name, k: fold(this.partName(r.name)),
+        desc: r.description || '', hasDesc: !!r.description,
+        threads: plural(n, 'thread', 'threads') + (n ? ' →' : ''), hasThreads: n > 0, threadsHref: '/?part=' + enc(slug),
+        url: isHttps(r.url) ? r.url : 'https://github.com/' + ORG + '/' + r.name,
+        home, hasHome: !!home, homeLabel
+      };
+    }).sort((a, b) => (a.k < b.k ? -1 : a.k > b.k ? 1 : 0))
+      .map((x) => { delete x.k; return x; });
+    return {
+      routes: ROUTES.map((r) => ({
+        about: r.about, repo: this.org + '/' + r.repo,
+        href: 'https://github.com/' + this.org + '/' + r.repo + '/issues'
+      })),
+      repoList: list, hasRepoList: list.length > 0,
+      repoCount: plural(list.length, 'public repository', 'public repositories') + ' with issues enabled'
+    };
+  }
+
+  aboutVals() {
+    const c = this.state.counts;
+    const n = this.state.dataState === 'ready' && c && isFinite(c.repos) && c.repos > 0 ? c.repos : 0;
+    return { aboutLead: 'Drayker’s public discussion happens in the issues of its ' + (n ? n + ' ' : '') + 'public repositories.' };
   }
 
   renderVals() {
     const s = this.state;
     const p = s.page;
     const missing = p === 'thread' && s.tState === 'missing';
-    const k = this.postKind();
-    const postPart = PARTS.filter((x) => x.key === s.cPart)[0];
     const navItems = [
       { id: 'list', label: 'Threads', href: '/' },
       { id: 'decisions', label: 'Decisions', href: '/decisions/' },
@@ -2696,36 +3125,7 @@ class Component extends DCLogic {
       markRef: this.markRef, shadowRef: this.shadowRef, ringOverRef: this.ringOverRef,
       ringOutRef: this.ringOutRef, ringBackRef: this.ringBackRef, landRef: this.landRef,
 
-      kinds: POST.map((x) => {
-        const on = s.cKind === x.id;
-        return { t: x.label, d: x.line, fg: on ? 'var(--acc-tx)' : 'var(--tx)', bg: on ? 'var(--surf2)' : 'var(--surf)', pressed: String(on),
-          pick: () => this.setState({ cKind: x.id, cOpened: false }) };
-      }),
-      cQ1: k.q1, cQ2: k.q2,
-      cPartOpts: [{ v: '', t: 'I am not sure which part yet' }].concat(PARTS.map((x) => ({ v: x.key, t: x.name }))),
-      cPart: s.cPart, setCPart: (e) => this.setState({ cPart: e.target.value, cOpened: false }),
-      cTitle: s.cTitle, setCTitle: (e) => this.setState({ cTitle: e.target.value, cOpened: false }),
-      cWhat: s.cWhat, setCWhat: (e) => this.setState({ cWhat: e.target.value, cOpened: false }),
-      cWhy: s.cWhy, setCWhy: (e) => this.setState({ cWhy: e.target.value, cOpened: false }),
-      cPreview: [
-        'REPOSITORY  ' + this.org + '/' + this.postRepo(),
-        'TITLE       ' + k.prefix + (s.cTitle || 'untitled'),
-        'ABOUT       ' + (postPart ? postPart.name : 'not tied to a part yet'),
-        'AUTHOR      your own GitHub account',
-        'NOT SENT    this site transmits nothing — GitHub opens with the text filled in'
-      ],
-      cReady: s.cTitle.trim() ? '1' : '0.55',
-      cOpened: s.cOpened, cUrl: this.postUrl(), openPost: this.openPost,
-
-      routes: ROUTES.map((r) => ({
-        about: r.about, repo: this.org + '/' + r.repo,
-        href: 'https://github.com/' + this.org + '/' + r.repo + '/issues'
-      })),
-      repoList: PARTS.filter((x) => x.repo).map((x) => ({
-        name: x.name, repo: this.org + '/' + x.repo,
-        issues: 'https://github.com/' + this.org + '/' + x.repo + '/issues'
-      }))
-    }, this.listVals(), this.threadVals(), this.decisionVals());
+    }, this.listVals(), this.threadVals(), this.decisionVals(), this.composerVals(), this.routingVals(), this.aboutVals());
   }
 }
 </script>
