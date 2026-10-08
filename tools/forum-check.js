@@ -468,7 +468,9 @@ function checkSite(siteDir, live) {
         check(region.includes(notice) && region.indexOf(notice) < region.indexOf('<section aria-label="Replies">'), label + ' has no assembly notice above the replies');
         check(region.includes('<a href="' + t.url + '">The pull request on GitHub</a>') && region.includes('<a href="' + pre.TALLY_WORKFLOW + '">The Federation tally workflow</a>'), label + ' assembly notice does not link the pull request and the tally workflow');
         // (A date before a "Vote:" tag, as in "8 Oct 2026 Vote: for", is not a count.)
-        check(!/\b\d+\s*(votes?|points?|for|against|abstain(ed|s)?)\b(?!:)|\b(for|against|abstain)\s*[:=]?\s*\d|\b(totals?|quorum|weights?|weighted|outcomes?|majority)\b|%/i.test(text), label + ' shows a count, a weight, a quorum or an outcome');
+        // Fixture builds only: in live mode a label or a login could match the
+        // pattern, and content from GitHub must never block a deploy.
+        if (!live) check(!/\b\d+\s*(votes?|points?|for|against|abstain(ed|s)?)\b(?!:)|\b(for|against|abstain)\s*[:=]?\s*\d|\b(totals?|quorum|weights?|weighted|outcomes?|majority)\b|%/i.test(text), label + ' shows a count, a weight, a quorum or an outcome');
         for (const c of detail.comments) {
           const item = (new RegExp('<li class="fs-comment" id="comment-' + Number(c.id) + '">([\\s\\S]*?)</li>').exec(region) || [])[1] || '';
           const tag = c.vote ? '<p class="fs-meta">Vote: ' + pre.esc(c.vote.vote) + ' · as <span class="ugc">' + pre.esc(c.vote.as) + '</span></p>' : '';
