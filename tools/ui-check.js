@@ -128,7 +128,7 @@ function setLocation(target) {
 const context = {
   DCLogic,
   React: { createRef: () => ({ current: null }) },
-  console, setTimeout, clearTimeout, Promise, Date, Math, JSON, Intl,
+  console, setTimeout, clearTimeout, Promise, Date, Math, JSON, Intl, URL,
   requestAnimationFrame: () => 1, cancelAnimationFrame: () => {},
   performance: { now: () => 0 },
   localStorage: memoryStorage(),
@@ -155,7 +155,7 @@ const context = {
   }
 };
 vm.createContext(context);
-vm.runInContext(script + '\n;globalThis.__forum = { Component, PARTS, ROUTES, POST, META, TYPES, titleOf, composePost, componentFor, similarThreads, meaningfulWords, URL_MAX, TITLE_MIN };', context);
+vm.runInContext(script + '\n;globalThis.__forum = { Component, PARTS, ROUTES, POST, META, TYPES, titleOf, clip, sanHref, hiddenReason, composePost, componentFor, similarThreads, meaningfulWords, URL_MAX, TITLE_MIN };', context);
 const F = context.__forum;
 
 const flush = async () => { for (let i = 0; i < 12; i++) await new Promise((r) => setImmediate(r)); };
@@ -311,7 +311,9 @@ function checkBindings(vals, label) {
     assert.strictEqual(v.showing, 'Showing ' + v.rows.length + ' of ' + DATA.threads.length + ' threads');
     assert.deepStrictEqual(clone(v.stats.map((s) => s.v)), [DATA.counts.threads, DATA.counts.open, DATA.counts.unanswered, DATA.counts.decisions].map(String));
     assert(v.rows.every((r) => /^\/t\/[^/]+\/[0-9]+\/$/.test(r.href)), 'row links must be clean thread paths');
-    assert(/^Last change picked up from GitHub .+ \(([0-9]+ [A-Z][a-z]{2} [0-9]{4}, )?[0-9]{2}:[0-9]{2} UTC\) · GitHub is checked about every 15 minutes$/.test(v.sync.stamp), v.sync.stamp);
+    assert(/^Last published .+ \(([0-9]+ [A-Z][a-z]{2} [0-9]{4}, )?[0-9]{2}:[0-9]{2} UTC\) · GitHub is checked about every 15 minutes; the site is republished when something changes and at least once a day$/.test(v.sync.stamp), v.sync.stamp);
+    assert(!/picked up|last change/i.test(v.sync.stamp), 'the stamp does not claim a change on GitHub');
+    assert.strictEqual(v.sync.note, '', 'no check note before a check');
     assert(!/newer than that/.test(v.sync.detail), 'no claim of newer threads before a check found any');
     assert.strictEqual(v.countCls, 'count mono');
     assert(!env.calls.some((u) => u.startsWith('https://api.github.com/')), 'list must make no API call on load');
@@ -517,7 +519,7 @@ function checkBindings(vals, label) {
     assert.strictEqual(v.tv.replyUrl, withComments.url + '#new_comment_field');
     assert.strictEqual(v.stands[0].t.indexOf('Opened '), 0);
     if (!withComments.open) assert(v.stands.some((s) => /^Closed/.test(s.t)), 'closed state listed');
-    assert(v.stands.every((s) => /^(Opened|Waiting|No replies|[0-9]+ repl|Claimed|Pull request|Referenced in|Closed|Replies not loaded)/.test(s.t)), 'only data-backed stages');
+    assert(v.stands.every((s) => /^(Opened|Waiting|No replies|[0-9]+ repl|Claimed|Locked on GitHub|Pull request|Referenced in|Closed|Replies not loaded)/.test(s.t)), 'only data-backed stages');
     assert(!v.tLive);
     // The snapshot is older than 10 minutes in this check, so exactly one call is made
     // for newer comments, and its failure is shown as a failure.
@@ -688,10 +690,11 @@ function checkBindings(vals, label) {
     const c = await boot('/t/' + t.slug + '/' + t.num + '/', { api: () => Promise.resolve(response(200, [])) });
     let v = c.renderVals();
     assert.deepStrictEqual(clone(v.nav.map((n) => n.current + ':' + n.cls)), ['true:on', 'false:', 'false:', 'false:'], 'Threads is the current section on a thread page');
-    assert(/^Checked GitHub just now: nothing new since the last update\.$/.test(v.fresh.text), v.fresh.text);
-    c.setState({ fresh: Object.assign({}, c.state.fresh, { at: Date.now() - 5 * 60000 }) });
+    assert(/^Checked GitHub at [0-9]{2}:[0-9]{2} UTC: nothing new since the last update\.$/.test(v.fresh.text), v.fresh.text);
+    const at = Date.UTC(2026, 9, 8, 14, 5);
+    c.setState({ fresh: Object.assign({}, c.state.fresh, { at }) });
     v = c.renderVals();
-    assert(/^Checked GitHub 5 min ago: /.test(v.fresh.text), 'the checked time is relative to now: ' + v.fresh.text);
+    assert.strictEqual(v.fresh.text, 'Checked GitHub at 14:05 UTC: nothing new since the last update.', 'the live note carries the clock time of the check');
     const missing = (await boot('/t/dfmp/99999/', { api: () => Promise.resolve(response(404, {})) })).renderVals();
     assert.deepStrictEqual(clone(missing.nav.map((n) => n.current + ':' + n.cls)), ['false:', 'false:', 'false:', 'false:'], 'a missing thread is no section');
   });
@@ -837,9 +840,15 @@ function checkBindings(vals, label) {
     for (const [repo, component] of [['', 'Not sure yet'], ['general-forum', 'Something else']]) {
       const p = F.composePost({ kind: 'proposal', repo, title: '  ' + TITLE + '  ', fields: PROPOSAL_FIELDS });
       assert(p.url.startsWith('https://github.com/draykerdk/general-forum/issues/new?template=proposal.yml&title='), p.url);
-      assert.deepStrictEqual(keys(p.url), ['template', 'title', 'summary', 'change', 'against', 'component']);
+      assert.deepStrictEqual(keys(p.url), ['template', 'title', 'summary', 'problem', 'change', 'against', 'component']);
       assert.deepStrictEqual(qs(p.url), { template: 'proposal.yml', title: '[Proposal] ' + TITLE, summary: TITLE,
-        change: 'The problem.\n\nThe change.', against: 'The objection.', component });
+        problem: 'The problem.', change: 'The change.', against: 'The objection.', component });
+      // The preview uses the form's own labels, one row per field.
+      assert.deepStrictEqual(clone(p.preview.map((r) => r.k)), ['Repository', 'Form', 'Title', 'What are you proposing?', 'What problem does it address?',
+        'What would be different if it happened?', 'The strongest argument against it', 'Which part of the system does it touch?']);
+      const onlyChange = F.composePost({ kind: 'proposal', repo, title: TITLE, fields: { change: 'Only the change.' } });
+      assert.strictEqual(qs(onlyChange.url).change, 'Only the change.', 'the change field carries only the change');
+      assert(!keys(onlyChange.url).includes('problem'), 'an empty problem field is not sent');
       assert.strictEqual(p.form, 'proposal.yml');
       assert(!/labels=|body=/.test(p.url), 'no labels or body parameter');
     }
@@ -988,7 +997,7 @@ function checkBindings(vals, label) {
     const flat = many.decisions.slice().sort((a, b) => Date.parse(b.merged) - Date.parse(a.merged)).slice(0, 50);
     v.dec.groups.forEach((g) => g.items.forEach((it) => { const d = flat.find((x) => x.title === it.title); assert.strictEqual(monthOf(d.merged), g.month); }));
     assert.strictEqual(v.dec.showing, 'Showing 50 of 120 merged pull requests');
-    assert.strictEqual(v.dec.total, '120 merged pull requests across 1 repository in the last update');
+    assert.strictEqual(v.dec.total, '120 pull requests merged into a main branch, across 1 repository, in the last update');
     assert(v.dec.hasMore && v.dec.moreLabel === 'Show more (50)');
     v.decMore();
     assert.strictEqual(c.focusDec, 50, 'Show more moves focus to the first revealed decision');
@@ -1024,7 +1033,9 @@ function checkBindings(vals, label) {
       assert(template.includes('Discussed in:'));
     }
     assert(template.includes('In the founding phase, a merged pull request is how a decision enters the record.'));
-    assert(template.includes('If a change arrived as a pull request, it is in this list. Direct changes by the founding steward appear in each repository’s history.'));
+    assert(template.includes('Every pull request merged into a repository’s main branch is in this list. Direct changes by the founding steward, and older merges into review branches, appear in each repository’s history.'));
+    assert(!/every merged pull request|If a change arrived as a pull request/i.test(template + JSON.stringify(clone(F.META))), 'no claim that every merged pull request is listed');
+    assert(typeof F.META.decisions.d === 'string' && F.META.decisions.d.length <= 160 && /main branch/.test(F.META.decisions.d), 'META.decisions.d: plain, at most 160 characters, main branch');
     const slug = first.slug;
     v.setDpart({ target: { value: slug } });
     c.syncRoute();
@@ -1080,15 +1091,21 @@ function checkBindings(vals, label) {
     assert.strictEqual(c.partName('zz-repository-created-later'), 'zz-repository-created-later', 'unknown repositories fall back to their name');
     assert.strictEqual(c.partName('metadfmp'), 'Meta DFM');
     // The routing table mirrors the README table row for row, plus the forum row.
+    // Apostrophes are compared as one character: the README uses ' and the page ’.
+    const apos = (x) => String(x).replace(/['’]/g, '’');
     const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
     const table = readme.slice(readme.indexOf('| If it is about'));
     const rows = table.split('\n').slice(2).filter((l) => /^\|/.test(l)).map((l) => {
       const cells = l.split('|').slice(1, -1).map((x) => x.trim());
-      return { about: cells[0].replace(/'/g, '’'), repos: (cells[1].match(/`[^`]+`/g) || []).map((x) => x.slice(1, -1)) };
+      return { about: apos(cells[0]), repos: (cells[1].match(/`[^`]+`/g) || []).map((x) => x.slice(1, -1)) };
     });
     assert(rows.length >= 8, 'README routing table not found');
-    const routes = v.routes.map((r) => ({ about: r.about, repos: r.repos.map((x) => x.repo.split('/')[1]) }));
+    const routes = v.routes.map((r) => ({ about: apos(r.about), repos: r.repos.map((x) => x.repo.split('/')[1]) }));
     assert.deepStrictEqual(clone(routes), rows.concat([{ about: 'This forum, or anything you are not sure about', repos: ['general-forum'] }]));
+    // Method, protocol and constitutional proposals go through DFMP; daf owns the federation.
+    assert.deepStrictEqual(clone(F.ROUTES[0]), { about: 'The method, a protocol, the constitution, or a proposal’s path', repos: ['dfmp'] });
+    assert(F.ROUTES.some((r) => r.about === 'The federation and its resources' && r.repos.join() === 'daf'));
+    assert(!F.ROUTES.some((r) => /governance/i.test(r.about) && r.repos.includes('daf')), 'governance proposals are not routed to daf');
     assert(v.routes.every((r) => r.repos.every((x) => x.href === 'https://github.com/' + x.repo + '/issues')));
     const loading = (await boot('/routing/', { data: false })).renderVals();
     checkBindings(loading, 'routing loading');
@@ -1100,11 +1117,18 @@ function checkBindings(vals, label) {
     assert.strictEqual(v.aboutLead, 'Drayker’s public discussion happens in the issues of its ' + DATA.counts.repos + ' public repositories.');
     assert.strictEqual((await boot('/about/', { data: false })).renderVals().aboutLead, 'Drayker’s public discussion happens in the issues of its public repositories.');
     assert(!/rebuilt from GitHub’s public API about every 15 minutes|refreshes from GitHub about every 15 minutes/.test(template), 'old refresh claim');
-    for (const s of ['href="/feed.xml"', 'href="/decisions/feed.xml"', 'GitHub is checked about every 15 minutes; the site is republished when something changed.', 'It is the first step of the public contribution path.',
+    for (const s of ['href="/feed.xml"', 'href="/decisions/feed.xml"', 'GitHub is checked about every 15 minutes; the site is republished when something changed, and at least once a day.', 'It is the first step of the public contribution path.',
+      'The thread stays where it is as the record of why it was taken.</div>',
+      'A thread page may ask GitHub’s public API for replies newer than the last update, a thread opened after the last update is read live from GitHub, and the list asks GitHub’s search API for newer activity only when you press Check GitHub.',
+      'Say what you would like to help with and what you can contribute now. The form opens on GitHub.',
       'Nothing here is decided in a private meeting or a private vote. In the founding phase the founding steward integrates changes in public, as <a href="https://github.com/draykerdk/.github/blob/master/GOVERNANCE.md">GOVERNANCE.md</a> documents.',
       'The merge is how the decision enters the record.', 'Drayker’s code of conduct', 'where Drayker keeps its review history', 'https://drayker.org/fn/',
       'CC BY 4.0 · PUBLIC DOCUMENTATION · NON-PROFIT', 'unpkg, jsDelivr', 'Google Fonts']) assert(template.includes(s), 'missing: ' + s);
     assert(!template.includes('#org/fn'));
+    assert(!/none of this is deleted|how much time you have/.test(template), 'retired copy');
+    const llms = fs.readFileSync(path.join(root, 'llms.txt'), 'utf8');
+    assert(!/every merged pull request/i.test(llms + fs.readFileSync(path.join(root, 'README.md'), 'utf8')), 'README and llms.txt do not claim every merged pull request');
+    assert(llms.includes('the site is republished when something changed, and at least once a day.'), 'llms.txt republish wording');
   });
 
   await check('no forbidden strings in user-visible text', async () => {
@@ -1135,6 +1159,283 @@ function checkBindings(vals, label) {
     });
     for (const re of FORBIDDEN) { const hit = own.find((s) => re.test(s)); assert(!hit, 'rendered string matches ' + re + ': ' + hit); }
     assert(!F.PARTS.some((p) => /MetaDFMP/.test(p.name)));
+  });
+
+  // -------------------------------------------------------------------------
+  // Second-round fixes
+  // -------------------------------------------------------------------------
+  await check('titles: XML-invalid characters only are untitled', async () => {
+    for (const t of ['\u0001', '￿', '￾', ' \u0001\u0008 ', '\u001F\u000B']) assert.strictEqual(F.titleOf(t), '(untitled)', JSON.stringify(t));
+    assert.strictEqual(F.titleOf('a\u0001b'), 'ab');
+    assert.strictEqual(F.titleOf('Ação'), 'Ação');
+    const data = clone(DATA);
+    data.threads[0].title = '\u0001';
+    const c = await boot('/', { data });
+    const row = c.renderVals().rows.find((r) => r.href === '/t/' + encodeURIComponent(data.threads[0].slug) + '/' + data.threads[0].num + '/');
+    assert.strictEqual(row.title, '(untitled)');
+  });
+
+  await check('clip never splits a surrogate pair', () => {
+    const emoji = '😀'.repeat(300);
+    for (const max of [176, 280, 299, 7]) {
+      const out = F.clip(emoji, max);
+      assert(!/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(^|[^\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(out), 'lone surrogate at ' + max);
+      assert(out.endsWith('…') && Array.from(out).length <= max, 'clipped to ' + max + ' code points');
+    }
+    assert.strictEqual(F.clip('short text', 280), 'short text');
+    assert.strictEqual(F.clip('one two three four', 10), 'one two…');
+    const c = new F.Component();
+    const desc = c.socialDescription({ excerpt: emoji, repo: 'lab', num: 2 });
+    assert(!/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/.test(desc), 'social description keeps whole emoji');
+  });
+
+  await check('sanitizer: build-written thread links with any hash the build accepts', async () => {
+    const t = DATA.threads[0];
+    const c = await boot('/');
+    const ctx = c.sanCtx('snapshot');
+    const base = '/t/' + encodeURIComponent(t.slug) + '/' + t.num + '/';
+    for (const hash of ['', '#', '#c-12', '#user-content-a%C3%A7%C3%A3o', '#:~:text=veto%20chain', '#a.b~c=d']) {
+      assert.strictEqual(F.sanHref(base + hash, ctx), base + hash, 'kept as written: ' + hash);
+    }
+    // Never resolved against github.com as a path.
+    assert(!/^https:\/\/github\.com\/t\//.test(F.sanHref(base + '#user-content-a%C3%A7%C3%A3o', ctx)));
+    // A /t/ link to a thread the snapshot does not have goes to the issue on GitHub.
+    const unknown = F.sanHref('/t/uid/987654/#user-content-x%20y', ctx);
+    assert.strictEqual(unknown, 'https://github.com/draykerdk/uid/issues/987654#user-content-x%20y');
+    assert.strictEqual(F.sanHref('/t/dot-github/987654/', ctx), 'https://github.com/draykerdk/.github/issues/987654');
+    // Without the snapshot loaded, a build-written link is kept.
+    const bare = await boot('/', { data: false });
+    assert.strictEqual(F.sanHref('/t/uid/987654/#x%41', bare.sanCtx('snapshot')), '/t/uid/987654/#x%41');
+    // Characters outside the grammar never pass as internal links.
+    for (const bad of ['/t/uid/1/#a b', '/t/uid/1/#a"b', '/t/uid/1/#a<b', '/t/uid/1/#a`b', '/t/u"id/1/', '/t/uid/1x/']) {
+      assert.notStrictEqual(F.sanHref(bad, ctx), bad, bad);
+    }
+    // Live HTML never gets the internal shortcut.
+    assert.strictEqual(F.sanHref(base, c.sanCtx('live')), 'https://github.com' + base);
+  });
+
+  await check('comments hidden on GitHub: placeholder, no content', async () => {
+    assert.strictEqual(F.hiddenReason(null), null);
+    assert.strictEqual(F.hiddenReason({ reason: 'off-topic' }), 'off-topic');
+    assert.strictEqual(F.hiddenReason({ reason: 'OFF_TOPIC' }), 'off-topic');
+    assert.strictEqual(F.hiddenReason({}), 'hidden');
+    assert.strictEqual(F.hiddenReason(true), 'hidden');
+    const c0 = new F.Component();
+    const live = c0.apiComment({ id: 5, user: { login: 'x', id: 9 }, created_at: '2026-10-01T00:00:00Z', updated_at: '2026-10-01T00:00:00Z',
+      body_html: '<p>SECRET-MARKER</p>', html_url: 'u', minimized: { reason: 'abuse' } });
+    assert(live.hidden === 'abuse' && live.html === '', 'a minimized live comment keeps no content');
+    assert.strictEqual(c0.apiComment({ id: 6, body_html: '<p>ok</p>', minimized: null }).hidden, null);
+    // A snapshot thread file carrying one hidden comment and one visible one.
+    const t = DATA.threads.find((x) => x.comments > 0) || DATA.threads[0];
+    const realFetch = context.fetch;
+    context.fetch = (url) => (String(url).startsWith('/data/t/')
+      ? realFetch(url).then((r) => r.json()).then((j) => {
+        j.comments = [
+          { id: 101, user: 'hider', user_id: 3, created: '2026-01-02T00:00:00Z', updated: '2026-01-02T00:00:00Z', hidden: 'spam', html: '' },
+          { id: 102, user: 'visible', user_id: 4, created: '2026-01-03T00:00:00Z', updated: '2026-01-03T00:00:00Z', hidden: null, html: '<p>shown</p>' },
+          { id: 103, user: 'plain', user_id: 5, created: '2026-01-04T00:00:00Z', updated: '2026-01-04T00:00:00Z', html: '<p>no hidden field</p>' }
+        ];
+        return response(200, j);
+      })
+      : realFetch(url));
+    const c = await boot('/t/' + t.slug + '/' + t.num + '/', { api: () => Promise.resolve(response(200, [])) });
+    context.fetch = realFetch;
+    const v = c.renderVals();
+    checkBindings(v, 'hidden comment');
+    const [h, s1, s2] = v.cmts;
+    assert(h.hidden && h.hiddenText === 'Hidden on GitHub (spam)' && h.user === 'hider' && h.abs && h.rel, 'placeholder with author and date');
+    assert(h.slot === '' && !Object.keys(c.slots).some((k) => k.indexOf('c|101|') === 0), 'no body slot for a hidden comment');
+    assert(/^Hidden reply by hider, /.test(h.aria) && !h.edited);
+    assert(!s1.hidden && s1.hiddenText === '' && c.slots[s1.slot].html === '<p>shown</p>');
+    assert(!s2.hidden && c.slots[s2.slot], 'a thread file without the hidden field still renders');
+    assert(/<sc-if value="\{\{ c\.hidden \}\}">\s*<p class="cmt-hidden">\{\{ c\.hiddenText \}\}<\/p>\s*<\/sc-if>/.test(template), 'placeholder markup');
+    assert(/<sc-if value="\{\{ !c\.hidden \}\}">\s*<div class="md" data-slot="\{\{ c\.slot \}\}"><\/div>\s*<\/sc-if>/.test(template), 'no body container for a hidden comment');
+    assert(/<sc-if value="\{\{ !c\.hidden \}\}">\s*<button type="button" class="\{\{ c\.copyCls \}\}"/.test(template), 'no copy-link control for a hidden comment');
+    // A reason-less hide reads "Hidden on GitHub"; hiding found later replaces the shown copy.
+    c.mergeComments(c.tcache[t.slug + '/' + t.num], [{ id: 102, user: { login: 'visible', id: 4 }, created_at: '2026-01-03T00:00:00Z', updated_at: '2026-01-03T00:00:00Z', body_html: '<p>shown</p>', minimized: {} }]);
+    const after = c.renderVals().cmts.find((x) => x.anchor === 'c-102');
+    assert(after.hidden && after.hiddenText === 'Hidden on GitHub', after.hiddenText);
+  });
+
+  await check('locked threads: kind, row, waiting filter, replies note and side panel', async () => {
+    const data = clone(DATA);
+    const t = data.threads.find((x) => x.open && !x.comments && (x.labels || []).some((l) => ['open-function', 'help wanted', 'good first issue'].includes(l)))
+      || data.threads.find((x) => x.open && !x.comments) || data.threads[0];
+    t.locked = true;
+    const c = await boot('/', { data });
+    assert.strictEqual(c.kindOf({ labels: ['open-function'], open: true, state: 'open', locked: true }), 'function', 'a locked function is not work to pick up');
+    assert.strictEqual(c.kindOf({ labels: ['claimed'], open: true, state: 'open', locked: true }), 'function');
+    c.setState({ n: 100000 });
+    const row = c.renderVals().rows.find((r) => r.href === '/t/' + encodeURIComponent(t.slug) + '/' + t.num + '/');
+    if (!t.comments) assert(row.last === 'locked on GitHub' && row.lastCls === '', row.last);
+    c.setState({ status: 'waiting' });
+    assert(!c.filterList(c.state).some((x) => x.slug === t.slug && x.num === t.num), 'a locked thread is not waiting for a reply');
+    const realFetch = context.fetch;
+    context.fetch = (url) => (String(url).startsWith('/data/t/')
+      ? realFetch(url).then((r) => r.json()).then((j) => response(200, Object.assign(j, { locked: true, lock_reason: 'resolved', comments: [] })))
+      : realFetch(url));
+    const v = (await boot('/t/' + t.slug + '/' + t.num + '/', { data, api: () => Promise.resolve(response(200, [])) })).renderVals();
+    context.fetch = realFetch;
+    checkBindings(v, 'locked thread page');
+    assert.strictEqual(v.cmtNote.text, 'No replies. The conversation is locked on GitHub.');
+    assert(v.stands.some((x) => x.t === 'Locked on GitHub' && x.sub === 'reason: resolved'), 'side panel says locked');
+    assert(!v.stands.some((x) => /^Waiting/.test(x.t)), 'no waiting stage on a locked thread');
+    assert(v.tv.kindLabel !== 'WORK TO PICK UP');
+  });
+
+  await check('freshen: partial failures keep what loaded and are retried', async () => {
+    const t = DATA.threads[DATA.threads.length - 1];
+    const tPath = '/t/' + encodeURIComponent(t.slug) + '/' + t.num + '/';
+    const newComment = [{ id: 4242, user: { login: 'late', id: 7 }, created_at: '2031-01-01T00:00:00Z', updated_at: '2031-01-01T00:00:00Z', body_html: '<p>late</p>', html_url: 'u' }];
+    const searchItem = { repository_url: 'https://api.github.com/repos/draykerdk/' + t.repo, number: t.num, title: 'Renamed', html_url: t.url, user: { login: t.user, id: 1 },
+      labels: [], state: 'open', created_at: t.created, updated_at: '2031-01-01T00:00:00Z', comments: (t.comments || 0) + 1, body_text: 'x' };
+    let issueFails = true;
+    const c = await boot('/');
+    env.api = (url) => {
+      if (/\/search\/issues/.test(url)) return Promise.resolve(response(200, { items: [searchItem] }));
+      if (/\/comments\?since=/.test(url)) return Promise.resolve(response(200, newComment));
+      if (url.endsWith('/issues/' + t.num)) return issueFails ? Promise.resolve(response(403, {}, { 'x-ratelimit-remaining': '10' })) : Promise.resolve(response(200, { number: t.num, title: 'Renamed', state: 'open', body_html: '<p>b</p>', updated_at: '2031-01-01T00:00:00Z' }));
+      return Promise.reject(new TypeError('unexpected ' + url));
+    };
+    c.checkGitHub();
+    await flush();
+    c.navigate(tPath);
+    await flush();
+    let v = c.renderVals();
+    const key = t.slug + '/' + t.num;
+    assert(v.cmts.some((x) => x.anchor === 'c-4242'), 'the comments that loaded are kept');
+    assert(/^1 new since the last update\. The opening post could not be read again just now \(HTTP 403\)/.test(v.fresh.text), v.fresh.text);
+    assert(!c.tcache[key].freshened, 'a partial failure is not a completed check');
+    // Revisit: both calls again; this time they succeed and the check is complete.
+    issueFails = false;
+    env.calls = [];
+    c.navigate('/');
+    c.navigate(tPath);
+    await flush();
+    v = c.renderVals();
+    assert.strictEqual(env.calls.filter((u) => u.startsWith('https://api.github.com/')).length, 2, 'retried on the next visit');
+    assert(c.tcache[key].freshened && /shown as they are on GitHub now\.$/.test(v.fresh.text), v.fresh.text);
+    // Comments call fails: error note, not marked checked, retried on the next visit.
+    const t2 = DATA.threads[0];
+    const c2 = await boot('/t/' + t2.slug + '/' + t2.num + '/', { api: () => Promise.resolve(response(500, {})) });
+    const k2 = t2.slug + '/' + t2.num;
+    assert(/^Could not check GitHub for newer replies \(HTTP 500\)/.test(c2.renderVals().fresh.text) && !c2.tcache[k2].freshened);
+    env.calls = [];
+    env.api = () => Promise.resolve(response(200, []));
+    c2.navigate('/');
+    c2.navigate('/t/' + t2.slug + '/' + t2.num + '/');
+    await flush();
+    assert.strictEqual(env.calls.filter((u) => /\/comments\?since=/.test(u)).length, 1, 'an error is retried on the next visit');
+    assert(c2.tcache[k2].freshened && /^Checked GitHub at /.test(c2.renderVals().fresh.text));
+    // Rate limited before the call: nothing is marked, and the next visit after the reset checks.
+    setLocation('/t/' + t2.slug + '/' + t2.num + '/');
+    const c3 = new F.Component();
+    c3.props = {};
+    context.sessionStorage.setItem('drayker-gh-rate', JSON.stringify({ core: { remaining: 1, reset: Date.now() + 600000 } }));
+    env.calls = [];
+    c3.readRoute();
+    c3.setData(clone(DATA), 'published');
+    await flush();
+    assert(c3.state.fresh.s === 'limited' && !c3.tcache[k2].freshened);
+    context.sessionStorage.clear();
+    c3.navigate('/');
+    c3.navigate('/t/' + t2.slug + '/' + t2.num + '/');
+    await flush();
+    assert.strictEqual(env.calls.filter((u) => /\/comments\?since=/.test(u)).length, 1, 'checked once the limit is over');
+  });
+
+  await check('a transfer onto a thread with a permanent page reads no comments', async () => {
+    const dest = DATA.threads.find((x) => x.comments > 0) || DATA.threads[0];
+    const api = (url) => (url.endsWith('/repos/draykerdk/emergence-initiative/issues/88888')
+      ? Promise.resolve(response(200, { number: dest.num, title: dest.title, html_url: dest.url, repository_url: 'https://api.github.com/repos/draykerdk/' + dest.repo,
+        user: { login: 'a', id: 1 }, labels: [], state: 'open', created_at: dest.created, updated_at: dest.at, comments: 3, body_html: '<p>b</p>' }))
+      : Promise.resolve(response(200, [])));
+    const data = Object.assign(clone(DATA), { generated_at: new Date(Date.now() - 60000).toISOString() });
+    const c = await boot('/t/emergence-initiative/88888/', { data, api });
+    const calls = env.calls.filter((u) => u.startsWith('https://api.github.com/'));
+    assert.deepStrictEqual(calls, ['https://api.github.com/repos/draykerdk/emergence-initiative/issues/88888'], 'one issue call, no comments call: ' + calls.join(' '));
+    assert.strictEqual(win.location.pathname, '/t/' + encodeURIComponent(dest.slug) + '/' + dest.num + '/');
+    const v = c.renderVals();
+    assert(v.tReadyBody && !v.tLive && v.cmts.length === dest.comments, 'the permanent page’s file supplies the replies');
+  });
+
+  await check('decisions search reads the description text when the snapshot has it', async () => {
+    const data = clone(DATA);
+    const base = { repo: 'dk', slug: 'dk', url: 'https://github.com/draykerdk/dk/pull/1', user: 'a', threads: [], merged: '2026-10-01T00:00:00Z' };
+    data.decisions = [
+      Object.assign({}, base, { num: 1, title: 'With text', excerpt: 'Opening only.', text: 'Opening only. Much later the word zebracatalog appears.' }),
+      Object.assign({}, base, { num: 2, title: 'Excerpt only', excerpt: 'Mentions zebracatalog early.' }),
+      Object.assign({}, base, { num: 3, title: 'Neither', excerpt: 'Nothing here.' })
+    ];
+    const c = await boot('/decisions/?q=zebracatalog', { data });
+    const v = c.renderVals();
+    checkBindings(v, 'decisions text search');
+    assert.deepStrictEqual(clone(decItems(v).map((d) => d.title).sort()), ['Excerpt only', 'With text']);
+    assert(decItems(v).every((d) => !/Much later/.test(d.excerpt)), 'the excerpt, not the full text, is displayed');
+  });
+
+  await check('live regions announce action results only, never the clock', async () => {
+    // Every element that is a live region in the template, and the bindings inside it.
+    const live = [];
+    const tagRe = /<(\/?)([a-z][a-z0-9-]*)((?:\s+[^\s=>]+(?:="[^"]*")?)*)\s*(\/?)>/g;
+    const VOID = new Set(['img', 'input', 'br', 'hr', 'meta', 'link', 'source', 'circle', 'ellipse', 'path', 'rect', 'stop']);
+    const stack = [];
+    let m;
+    while ((m = tagRe.exec(template))) {
+      const [whole, close, name, attrs, self] = m;
+      if (close) {
+        for (let i = stack.length - 1; i >= 0; i--) {
+          if (stack[i].name === name) {
+            const open = stack.splice(i)[0];
+            if (open.live) live.push({ name, attrs: open.attrs, inner: template.slice(open.end, m.index) });
+            break;
+          }
+        }
+        continue;
+      }
+      if (self || VOID.has(name)) continue;
+      stack.push({ name, attrs, end: m.index + whole.length, live: /\srole="(status|alert|log|timer|marquee)"|\saria-live="(polite|assertive)"/.test(attrs) });
+    }
+    assert(live.length >= 8, 'live regions found: ' + live.length);
+    const inner = live.map((r) => r.inner).join('\n');
+    const exprs = new Set((inner.match(/\{\{\s*([^}]+?)\s*\}\}/g) || []).map((x) => x.replace(/[{}\s!]/g, '')));
+    assert(!/<sc-for/.test(inner), 'no list inside a live region');
+    assert(exprs.has('sync.note') && exprs.has('fresh.text') && !exprs.has('sync.stamp') && !exprs.has('sync.detail'), 'the stamp is outside, the notes inside: ' + Array.from(exprs).join(' '));
+    // Render the states that fill those regions, then again three hours later.
+    const realNow = Date.now;
+    const snap = (c) => { const v = c.renderVals(); const out = {}; exprs.forEach((e) => { const x = getPath(v, e.split('.')); if (typeof x !== 'function') out[e] = x === undefined ? null : clone(x); }); return { out, v }; };
+    const later = (c) => { Date.now = () => realNow() + 3 * 3600 * 1000; try { return snap(c); } finally { Date.now = realNow; } };
+    const states = [];
+    const list = await boot('/');
+    env.api = () => Promise.resolve(response(200, { items: [] }));
+    list.checkGitHub();
+    await flush();
+    states.push(['list after a check', list]);
+    const tt = DATA.threads[0];
+    states.push(['thread after a check', await boot('/t/' + tt.slug + '/' + tt.num + '/', { api: () => Promise.resolve(response(200, [])) })]);
+    states.push(['thread check failed', await boot('/t/' + tt.slug + '/' + tt.num + '/')]);
+    states.push(['decisions', await boot('/decisions/')]);
+    for (const [label, c] of states) {
+      const a = snap(c), b = later(c);
+      if (label === 'list after a check') assert.notStrictEqual(a.v.sync.stamp, b.v.sync.stamp, 'the clock moved');
+      for (const e of exprs) assert.deepStrictEqual(b.out[e], a.out[e], label + ': live binding {{ ' + e + ' }} changed with the clock');
+    }
+    assert(/^Checked GitHub at [0-9]{2}:[0-9]{2} UTC: /.test(list.renderVals().sync.note), list.renderVals().sync.note);
+  });
+
+  await check('decorative mark: throttled frames and a rest when idle', () => {
+    assert(/const MARK_FRAME_MS = 33;/.test(script) && /const EARTH_FRAME_MS = 100;/.test(script) && /const ANIM_REST_MS = 20000;/.test(script));
+    assert(!/this\.frame % 2/.test(script), 'no per-frame Earth repaint');
+    assert(/\.dk-rest \.dk-surf,\.dk-rest \.dk-core\{animation-play-state:paused\}/.test(html), 'CSS motion pauses while the mark rests');
+    const c = new F.Component();
+    c.state = Object.assign({}, c.state, { page: 'list', vw: 1440 });
+    c.markRef.current = { classList: { add: () => {}, remove: () => {} } };
+    c.markOn = true;
+    assert(c.wantAnim(), 'runs on the list');
+    c.resting = true;
+    assert(!c.wantAnim(), 'a resting mark requests no frames');
+    c.wakeMark(true);
+    assert(!c.resting && c.wantAnim(), 'a pointer move wakes it');
   });
 
   if (failures.length) {
