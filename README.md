@@ -29,7 +29,7 @@ Public discussions across issues, pull requests and the forum follow the princip
 | Papers, roadmap or the knowledge base | [`dknowledge`](https://github.com/draykerdk/dknowledge) |
 | The kernel, its structure, network or security | [`dk`](https://github.com/draykerdk/dk), [`bsdk`](https://github.com/draykerdk/bsdk), [`dk-network`](https://github.com/draykerdk/dk-network), [`living-cryptography`](https://github.com/draykerdk/living-cryptography) |
 | Identity and applications | [`uid`](https://github.com/draykerdk/uid) |
-| The federation and its resources | [`daf`](https://github.com/draykerdk/daf) |
+| The federation and its resources | [`daf`](https://github.com/draykerdk/daf), or [claim a delivered function](https://github.com/draykerdk/daf/issues/new?template=claim.yml) |
 | Proposing a new project | [`dfmpproject`](https://github.com/draykerdk/dfmpproject) |
 | Something with no home yet | [`emergence-initiative`](https://github.com/draykerdk/emergence-initiative) |
 | The participation portal itself | [`drayker.org`](https://github.com/draykerdk/drayker.org) |
@@ -41,9 +41,10 @@ Issues small enough for one person to finish carry the `open-function` label acr
 ## How the forum works
 
 - **No server.** About every 15 minutes, the *Forum site* workflow in this repository reads the issues and comments of every public `draykerdk` repository, and the pull requests merged into each repository's main branch, through the GitHub API. It sanitizes the content, writes a static page for every thread, the feeds and the sitemap, and publishes to GitHub Pages when something changed, and at least once a day.
+- **Assembly reports.** An open assembly report of the federation (a pull request titled *Assembly YYYY-MM* in `daf`) is published as a thread while it is open, and keeps its page once merged; each comment that holds a vote is tagged with that vote and never counted. The count is the federation's, computed on GitHub by its *Federation tally* workflow, and nothing in a report is in the record until the assembly accepts it.
 - **Publishing stays on GitHub.** The forum keeps no accounts and no database. Posts and replies are written on GitHub under each person's own account; edits and deletions made there reach the forum at the next update.
 - **In the browser.** Pages read the published files. A thread page may make one public GitHub API call to show replies posted since the last update, and a thread opened after the last update is read live from GitHub until its page is published.
-- **Public files.** `/data/forum.json` (threads, decisions and repositories), `/data/t/<repository>/<number>.json` (one thread with its replies), `/feed.xml` (new threads), `/decisions/feed.xml` (pull requests merged into a main branch), `/sitemap.xml` and `/llms.txt`. The `.github` repository appears under the path name `dot-github`.
+- **Public files.** `/data/forum.json` (threads, decisions and repositories), `/data/t/<repository>/<number>.json` (one thread with its replies, including the federation's assembly reports, which are pull requests), `/feed.xml` (new threads), `/decisions/feed.xml` (pull requests merged into a main branch), `/sitemap.xml` and `/llms.txt`. The `.github` repository appears under the path name `dot-github`.
 
 ### Working on the site
 

@@ -8,6 +8,11 @@
  *   <out>/data/t/<slug>/<num>.json   one file per thread with sanitized HTML and comments
  *   <out>/data/meta.json             generation time, content hash, site revision, counts
  *
+ * Threads are issues (kind 'issue'), plus the federation's assembly reports in
+ * the daf repository (kind 'pr'): a pull request titled "Assembly YYYY-MM" that
+ * is open, or merged into the default branch. On those, a comment that holds a
+ * vote is tagged with it (see lib/vote.js); nothing is ever counted.
+ *
  * Usage: node tools/build-forum-snapshot.js [--out _site] [--fixture <dir> | --record <dir>]
  */
 
@@ -17,8 +22,11 @@ const crypto = require('crypto');
 const { execFileSync } = require('child_process');
 const { createClient } = require('./lib/github');
 const { sanitizeHtml, htmlToText, tokenize } = require('./lib/sanitize');
+const { voteOf, ASSEMBLY_TITLE, TALLY_MARKER } = require('./lib/vote');
 
 const ORG = 'draykerdk';
+const FEDERATION_REPO = 'daf';
+const SCHEMA = 3;
 const ROOT = path.join(__dirname, '..');
 const EXCERPT_MAX = 280;
 const TEXT_MAX = 2000;
@@ -147,12 +155,30 @@ async function readOrg(gh) {
   return result;
 }
 
+// A merged pull request counts as merged into the default branch when the pull
+// request data names that branch as its base. Without pull data for it, it is kept.
+function defaultBranchCheck(repo, pulls) {
+  const baseByNum = new Map((pulls || []).map((p) => [p.number, p && p.base ? p.base.ref : null]));
+  return (num) => !repo.default_branch || !baseByNum.has(num) || !baseByNum.get(num) || baseByNum.get(num) === repo.default_branch;
+}
+
+// An assembly report of the federation: a pull request in daf titled
+// "Assembly YYYY-MM" that is open, or merged into the default branch. It is
+// published as a thread (kind 'pr'); a merged one is still a decision too.
+function isAssemblyReport(repo, item, intoDefault) {
+  if (!item || !item.pull_request || repo.name !== FEDERATION_REPO) return false;
+  if (!ASSEMBLY_TITLE.test(String(item.title || ''))) return false;
+  if (item.state === 'open') return true;
+  return Boolean(item.pull_request.merged_at) && intoDefault(item.number);
+}
+
 function buildSnapshot(org, generatedAt) {
-  // Index every issue first so that links can be rewritten and references resolved.
+  // Index every thread first so that links can be rewritten and references resolved.
   const threadIndex = new Map(); // key -> { repo, slug, num }
-  for (const { repo, items } of org) {
+  for (const { repo, items, pulls } of org) {
+    const intoDefault = defaultBranchCheck(repo, pulls);
     for (const item of items) {
-      if (item.pull_request) continue;
+      if (item.pull_request && !isAssemblyReport(repo, item, intoDefault)) continue;
       threadIndex.set(keyFor(repo.name, item.number), { repo: repo.name, slug: slugFor(repo.name), num: item.number });
     }
   }
@@ -171,10 +197,8 @@ function buildSnapshot(org, generatedAt) {
 
   for (const { repo, items, comments, pulls } of org) {
     const slug = slugFor(repo.name);
-    const baseByNum = new Map((pulls || []).map((p) => [p.number, p && p.base ? p.base.ref : null]));
     // A merged pull request is a decision when it went into the default branch.
-    // Without pull data for it, it is kept.
-    const intoDefault = (num) => !repo.default_branch || !baseByNum.has(num) || !baseByNum.get(num) || baseByNum.get(num) === repo.default_branch;
+    const intoDefault = defaultBranchCheck(repo, pulls);
     const commentsByNum = new Map();
     for (const comment of comments) {
       const num = numFromIssueUrl(comment.issue_url);
@@ -199,22 +223,25 @@ function buildSnapshot(org, generatedAt) {
 
       if (isPr) {
         const merged = item.pull_request.merged_at || null;
-        if (!merged || !intoDefault(item.number)) continue;
-        const html = clean(item.body_html, item.body, repo.name + '#' + item.number);
-        const plain = htmlToText(html);
-        decisions.push({
-          repo: repo.name, slug, num: item.number, title: item.title, url: item.html_url,
-          user: login(item.user), merged,
-          excerpt: clip(plain, EXCERPT_MAX),
-          text: clip(plain, TEXT_MAX),
-          threads: findReferences(item.body_html)
-            .map((ref) => threadIndex.get(keyFor(ref.repo, ref.num)))
-            .filter(Boolean)
-            .map((t) => ({ repo: t.repo, slug: t.slug, num: t.num }))
-        });
-        continue;
+        if (merged && intoDefault(item.number)) {
+          const html = clean(item.body_html, item.body, repo.name + '#' + item.number);
+          const plain = htmlToText(html);
+          decisions.push({
+            repo: repo.name, slug, num: item.number, title: item.title, url: item.html_url,
+            user: login(item.user), merged,
+            excerpt: clip(plain, EXCERPT_MAX),
+            text: clip(plain, TEXT_MAX),
+            threads: findReferences(item.body_html)
+              .map((ref) => threadIndex.get(keyFor(ref.repo, ref.num)))
+              .filter(Boolean)
+              .map((t) => ({ repo: t.repo, slug: t.slug, num: t.num }))
+          });
+        }
+        // Every other pull request is read only for its references.
+        if (!isAssemblyReport(repo, item, intoDefault)) continue;
       }
 
+      const kind = isPr ? 'pr' : 'issue';
       repoThreads++;
       const open = item.state === 'open';
       if (open) repoOpen++;
@@ -230,6 +257,7 @@ function buildSnapshot(org, generatedAt) {
         repo: repo.name,
         slug,
         num: item.number,
+        kind,
         title: item.title,
         url: item.html_url,
         user: login(item.user),
@@ -255,6 +283,9 @@ function buildSnapshot(org, generatedAt) {
         html,
         comments: itemComments.map((c) => {
           const hidden = hiddenReason(c);
+          // On an assembly report, the federation's own tally comment keeps its
+          // place, author and date, but its count is never published here.
+          const withheld = !hidden && kind === 'pr' && TALLY_MARKER.test(String(c.body || ''));
           return {
             id: c.id,
             user: login(c.user),
@@ -262,8 +293,11 @@ function buildSnapshot(org, generatedAt) {
             created: c.created_at,
             updated: c.updated_at,
             hidden,
-            html: hidden ? '' : clean(c.body_html, c.body, repo.name + '#' + item.number + ' comment ' + c.id),
-            url: c.html_url
+            html: hidden || withheld ? '' : clean(c.body_html, c.body, repo.name + '#' + item.number + ' comment ' + c.id),
+            url: c.html_url,
+            // The vote a comment holds, read with DAF's parser, on assembly
+            // reports only; never for hidden content.
+            vote: kind === 'pr' && !hidden && !withheld ? voteOf(c.body) : null
           };
         })
       });
@@ -322,7 +356,7 @@ function buildSnapshot(org, generatedAt) {
     decisions: decisions.length
   };
 
-  const forum = { schema: 2, generated_at: generatedAt, org: ORG, repos, threads, decisions, counts };
+  const forum = { schema: SCHEMA, generated_at: generatedAt, org: ORG, repos, threads, decisions, counts };
 
   const threadFiles = [];
   for (const thread of threads) {
@@ -395,4 +429,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { buildSnapshot, findReferences, sanitizeFragment, clip, hiddenReason, contentHash, slugFor };
+module.exports = { buildSnapshot, findReferences, sanitizeFragment, clip, hiddenReason, contentHash, slugFor, isAssemblyReport, SCHEMA };
