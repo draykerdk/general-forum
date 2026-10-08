@@ -1,0 +1,30 @@
+{
+ "url": "https://api.github.com/repos/draykerdk/lab/pulls?state=closed&per_page=100",
+ "link": null,
+ "body": [
+  {
+   "number": 7,
+   "state": "closed",
+   "merged_at": "2026-03-12T00:00:00Z",
+   "base": {
+    "ref": "main"
+   }
+  },
+  {
+   "number": 5,
+   "state": "closed",
+   "merged_at": "2026-03-11T00:00:00Z",
+   "base": {
+    "ref": "side"
+   }
+  },
+  {
+   "number": 4,
+   "state": "closed",
+   "merged_at": "2026-03-10T00:00:00Z",
+   "base": {
+    "ref": "main"
+   }
+  }
+ ]
+}
