@@ -1,13 +1,13 @@
 # Drayker Forum
 
-> Drayker Forum brings the public issues, replies and merged pull requests of every public draykerdk repository into one reading surface. Discussions remain connected to their source repositories, where replies and decisions are recorded.
+> Drayker Forum brings the public issues and replies of every public draykerdk repository, and the pull requests merged into each repository's main branch, into one reading surface. Discussions remain connected to their source repositories, where replies and decisions are recorded.
 
 ## Canonical routes
 
 - [Forum index](https://forum.drayker.org/): every public thread, with search and filters by part of the system, label and status.
 - [Thread pages](https://forum.drayker.org/t/dfmp/1/): one page per issue at /t/<repository>/<number>/, with the full conversation.
 - [Start a thread](https://forum.drayker.org/new/): route a proposal, question, idea or report to its owning repository.
-- [Decisions](https://forum.drayker.org/decisions/): every merged pull request across the repositories, newest first.
+- [Decisions](https://forum.drayker.org/decisions/): the pull requests merged into each repository's main branch, newest first. Direct changes by the founding steward, and older merges into review branches, are in each repository's history.
 - [Routing](https://forum.drayker.org/routing/): where each subject belongs, and every repository the forum reads.
 - [About](https://forum.drayker.org/about/): how the forum reads GitHub and where publishing happens.
 
@@ -20,7 +20,7 @@
 ## Source model
 
 - Every thread has a canonical forum reading URL and an owning GitHub issue URL.
-- GitHub is checked about every 15 minutes; the site is republished when something changed.
+- GitHub is checked about every 15 minutes; the site is republished when something changed, and at least once a day.
 - Publishing, replies, edit history and moderation remain on GitHub.
 - Prefer the source issue for exact status and the forum URL for a stable public reading surface.
 

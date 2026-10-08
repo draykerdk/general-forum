@@ -1,6 +1,6 @@
 # General Forum
 
-General Forum brings the public issues, replies and merged pull requests of every public `draykerdk` repository into one reading surface at [forum.drayker.org](https://forum.drayker.org/). Discussions remain connected to their source repositories, where replies and decisions are recorded.
+General Forum brings the public issues and replies of every public `draykerdk` repository, and the pull requests merged into each repository's main branch, into one reading surface at [forum.drayker.org](https://forum.drayker.org/). Discussions remain connected to their source repositories, where replies and decisions are recorded.
 
 Search, filters by part of the system, label and status, and a permanent page for every thread help readers follow the public record and return to the original thread to take part.
 
@@ -25,11 +25,11 @@ Public discussions across issues, pull requests and the forum follow the princip
 
 | If it is about… | Open it in |
 | --- | --- |
-| The collaboration method or a proposal's path | [`dfmp`](https://github.com/draykerdk/dfmp) |
+| The method, a protocol, the constitution, or a proposal's path | [`dfmp`](https://github.com/draykerdk/dfmp) |
 | Papers, roadmap or the knowledge base | [`dknowledge`](https://github.com/draykerdk/dknowledge) |
 | The kernel, its structure, network or security | [`dk`](https://github.com/draykerdk/dk), [`bsdk`](https://github.com/draykerdk/bsdk), [`dk-network`](https://github.com/draykerdk/dk-network), [`living-cryptography`](https://github.com/draykerdk/living-cryptography) |
 | Identity and applications | [`uid`](https://github.com/draykerdk/uid) |
-| The federation, resources or governance | [`daf`](https://github.com/draykerdk/daf) |
+| The federation and its resources | [`daf`](https://github.com/draykerdk/daf) |
 | Proposing a new project | [`dfmpproject`](https://github.com/draykerdk/dfmpproject) |
 | Something with no home yet | [`emergence-initiative`](https://github.com/draykerdk/emergence-initiative) |
 | The participation portal itself | [`drayker.org`](https://github.com/draykerdk/drayker.org) |
@@ -40,10 +40,10 @@ Issues small enough for one person to finish carry the `open-function` label acr
 
 ## How the forum works
 
-- **No server.** About every 15 minutes, the *Forum site* workflow in this repository reads the issues, comments and merged pull requests of every public `draykerdk` repository through the GitHub API. It sanitizes the content, writes a static page for every thread, the feeds and the sitemap, and publishes to GitHub Pages when something changed, and at least once a day.
+- **No server.** About every 15 minutes, the *Forum site* workflow in this repository reads the issues and comments of every public `draykerdk` repository, and the pull requests merged into each repository's main branch, through the GitHub API. It sanitizes the content, writes a static page for every thread, the feeds and the sitemap, and publishes to GitHub Pages when something changed, and at least once a day.
 - **Publishing stays on GitHub.** The forum keeps no accounts and no database. Posts and replies are written on GitHub under each person's own account; edits and deletions made there reach the forum at the next update.
 - **In the browser.** Pages read the published files. A thread page may make one public GitHub API call to show replies posted since the last update, and a thread opened after the last update is read live from GitHub until its page is published.
-- **Public files.** `/data/forum.json` (threads, decisions and repositories), `/data/t/<repository>/<number>.json` (one thread with its replies), `/feed.xml` (new threads), `/decisions/feed.xml` (merged pull requests), `/sitemap.xml` and `/llms.txt`. The `.github` repository appears under the path name `dot-github`.
+- **Public files.** `/data/forum.json` (threads, decisions and repositories), `/data/t/<repository>/<number>.json` (one thread with its replies), `/feed.xml` (new threads), `/decisions/feed.xml` (pull requests merged into a main branch), `/sitemap.xml` and `/llms.txt`. The `.github` repository appears under the path name `dot-github`.
 
 ### Working on the site
 
