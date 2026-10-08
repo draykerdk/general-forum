@@ -16,6 +16,10 @@
  *
  * All text is escaped. The only HTML inserted as-is is issue and comment HTML,
  * which is passed through the sanitizer again here.
+ *
+ * A thread of kind 'pr' is an assembly report of the federation (daf): its page
+ * carries the fixed assembly notice and tags each comment that holds a vote. No
+ * page ever counts votes or shows a total, a weight, a quorum or an outcome.
  */
 
 const fs = require('fs');
@@ -50,8 +54,19 @@ const NAV = [
   { href: '/about/', label: 'About', key: 'about' },
   { href: '/new/', label: 'Start a thread', key: 'new' }
 ];
+const SCHEMA = 3;
 const DESCRIPTION_MAX = 180;
 const FEED_MAX = 50;
+// The assembly notice, word for word as index.html shows it.
+const ASSEMBLY_NOTICE = 'Assembly report, proposed: nothing in it is in the record until the assembly accepts it. Voting is transitional. The tally is computed on GitHub by the federation’s Federation tally workflow, from the comments there, not from this page.';
+const TALLY_WORKFLOW = 'https://github.com/' + ORG + '/daf/actions/workflows/federation-tally.yml';
+const HIDDEN_VOTE_NOTE = 'Whether it holds a vote is not shown on this page.';
+const WITHHELD_NOTE = 'Not shown on the forum. Read this reply on GitHub.';
+// A merged assembly report on the Decisions page and in its feed: it is merged
+// whether the assembly passed or failed, so no outcome is implied by the merge.
+const ASSEMBLY_DECISION_NOTE = 'An assembly report is merged whether the assembly passed or failed. The outcome is written in the report on GitHub.';
+const ASSEMBLY_TITLE = /^Assembly \d{4}-(0[1-9]|1[0-2])$/;
+const isAssemblyDecision = (d) => d.repo === 'daf' && ASSEMBLY_TITLE.test(String(d.title || ''));
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 // ---------------------------------------------------------------- text helpers
@@ -130,15 +145,16 @@ const byCreatedDesc = (a, b) => (a.created < b.created ? 1 : a.created > b.creat
 
 // ------------------------------------------------------------------- template
 
-// Returns the source of the object literal that follows `const <name> =`,
-// skipping strings, template literals and comments while matching braces.
-function objectLiteral(source, name) {
-  const decl = new RegExp('const\\s+' + name + '\\s*=\\s*\\{');
+// Returns the source of the object (or array) literal that follows
+// `const <name> =`, skipping strings, template literals and comments while
+// matching brackets.
+function literal(source, name, open, close) {
+  const decl = new RegExp('const\\s+' + name + '\\s*=\\s*\\' + open);
   const m = decl.exec(source);
-  if (!m) throw new Error('const ' + name + ' = { … } not found in index.html');
-  const open = m.index + m[0].length - 1;
+  if (!m) throw new Error('const ' + name + ' = ' + open + ' … ' + close + ' not found in index.html');
+  const start = m.index + m[0].length - 1;
   let depth = 0;
-  for (let i = open; i < source.length; i++) {
+  for (let i = start; i < source.length; i++) {
     const c = source[i];
     if (c === '"' || c === "'" || c === '`') {
       for (i++; i < source.length && source[i] !== c; i++) if (source[i] === '\\') i++;
@@ -146,11 +162,13 @@ function objectLiteral(source, name) {
     }
     if (c === '/' && source[i + 1] === '/') { i = source.indexOf('\n', i); if (i < 0) break; continue; }
     if (c === '/' && source[i + 1] === '*') { i = source.indexOf('*/', i + 2) + 1; if (i <= 0) break; continue; }
-    if (c === '{') depth++;
-    else if (c === '}' && --depth === 0) return source.slice(open, i + 1);
+    if (c === open) depth++;
+    else if (c === close && --depth === 0) return source.slice(start, i + 1);
   }
   throw new Error('const ' + name + ' in index.html is not balanced');
 }
+const objectLiteral = (source, name) => literal(source, name, '{', '}');
+const arrayLiteral = (source, name) => literal(source, name, '[', ']');
 
 function readMeta(source) {
   const literal = objectLiteral(source, 'META');
@@ -162,6 +180,22 @@ function readMeta(source) {
     }
   }
   return meta;
+}
+
+// The routing table of index.html (ROUTES): [{ about, repos, form? }], where
+// form is { label, href } for a route that also offers an issue form.
+function readRoutes(source) {
+  const routes = vm.runInNewContext('(' + arrayLiteral(source, 'ROUTES') + ')', Object.create(null), { timeout: 1000 });
+  if (!Array.isArray(routes) || !routes.length) throw new Error('ROUTES is empty in index.html');
+  for (const r of routes) {
+    if (!r || typeof r.about !== 'string' || !Array.isArray(r.repos) || !r.repos.length || !r.repos.every((x) => typeof x === 'string')) {
+      throw new Error('every ROUTES entry needs about and repos in index.html');
+    }
+    if (r.form !== undefined && !(r.form && typeof r.form.label === 'string' && /^https:\/\/github\.com\/[^\s"<>]+$/.test(String(r.form.href)))) {
+      throw new Error('ROUTES form for "' + r.about + '" needs a label and a github.com href');
+    }
+  }
+  return routes;
 }
 
 function checkTemplate(source) {
@@ -188,7 +222,7 @@ function readSnapshot(dataDir) {
   const file = path.join(dataDir, 'forum.json');
   if (!fs.existsSync(file)) throw new Error('snapshot not found: ' + file + ' (run the data build first)');
   const forum = JSON.parse(fs.readFileSync(file, 'utf8'));
-  if (forum.schema !== 2) throw new Error('unsupported snapshot schema: ' + forum.schema);
+  if (forum.schema !== SCHEMA) throw new Error('unsupported snapshot schema: ' + forum.schema);
   const details = new Map();
   for (const thread of forum.threads) {
     const threadFile = path.join(dataDir, 't', thread.slug, thread.num + '.json');
@@ -401,14 +435,25 @@ function threadMain(forum, thread, detail, resanitize) {
   ].join(' · ');
   const labels = thread.labels && thread.labels.length ? '<p class="fs-meta">Labels: <span class="ugc">' + esc(thread.labels.join(', ')) + '</span></p>' : '';
   const body = detail.html ? resanitize(detail.html) : '<p><em>No description was written.</em></p>';
-  // A comment hidden on GitHub shows only its author, date and the reason.
+  const assembly = thread.kind === 'pr';
+  // A comment hidden on GitHub shows only its author, date and the reason. On
+  // an assembly report, a comment that holds a vote is tagged with it; a
+  // comment with nothing to show (the federation's tally) points to GitHub.
   const comments = detail.comments.map((c) => '<li class="fs-comment" id="comment-' + Number(c.id) + '"><article>'
     + '<header>' + person(c.user) + ' · <a href="' + esc(c.url) + '">' + time(c.created) + '</a>'
     + (!c.hidden && c.updated && c.updated !== c.created ? ' · edited' : '') + '</header>'
     + (c.hidden
       ? '<p class="fs-meta">' + esc('Hidden on GitHub (' + c.hidden + ')') + '</p>'
-      : '<div class="fs-body ugc">' + resanitize(c.html) + '</div>')
+        + (assembly ? '<p class="fs-meta">' + esc(HIDDEN_VOTE_NOTE) + '</p>' : '')
+      : assembly && !c.html
+        ? '<p class="fs-meta">' + esc(WITHHELD_NOTE) + '</p>'
+        : (assembly && c.vote ? '<p class="fs-meta">' + esc('Vote: ' + c.vote.vote + ' · as ') + '<span class="ugc">' + esc(c.vote.as) + '</span></p>' : '')
+          + '<div class="fs-body ugc">' + resanitize(c.html) + '</div>')
     + '</article></li>').join('');
+  const notice = assembly
+    ? '<section aria-label="Assembly report"><p>' + esc(ASSEMBLY_NOTICE) + '</p>'
+      + '<p class="fs-meta"><a href="' + esc(thread.url) + '">The pull request on GitHub</a> · <a href="' + esc(TALLY_WORKFLOW) + '">The Federation tally workflow</a></p></section>'
+    : '';
   const refs = (thread.refs || []).map((r) => {
     const local = r.kind === 'issue' ? lookup.get(String(r.repo).toLowerCase() + '#' + r.num) : null;
     const href = local ? threadPath(local.slug, local.num) : r.url;
@@ -427,6 +472,7 @@ function threadMain(forum, thread, detail, resanitize) {
         + '<a class="fs-button" href="' + esc(thread.url) + '">Read on GitHub</a></p>'
       : '<p class="fs-actions"><a class="fs-button" href="' + esc(thread.url) + '#new_comment_field">Reply on GitHub</a>'
         + '<a href="' + esc(thread.url) + '">Read on GitHub</a></p>')
+    + notice
     + '<section aria-label="Replies"><h2>' + esc(plural(detail.comments.length, 'reply', 'replies')) + '</h2>'
     + (comments ? '<ol class="fs-comments">' + comments + '</ol>' : '<p class="fs-meta">No replies yet.</p>') + '</section>'
     + (refs ? '<section aria-label="Referenced by"><h2>Referenced by</h2><ul class="fs-list">' + refs + '</ul></section>' : '');
@@ -447,6 +493,7 @@ function decisionsMain(forum, meta) {
         .map((t) => '<li>Thread: <a class="ugc" href="' + threadPath(t.slug, t.num) + '">' + esc(titleText(t.title)) + '</a></li>').join('');
       return '<li><a class="ugc" href="' + esc(d.url) + '">' + esc(titleText(d.title)) + '</a>'
         + '<p class="fs-meta">' + esc(d.repo) + ' #' + d.num + ' · merged ' + time(d.merged) + ' · by <span class="ugc">' + esc(d.user) + '</span></p>'
+        + (isAssemblyDecision(d) ? '<p>' + esc(ASSEMBLY_DECISION_NOTE) + '</p>' : '')
         + (threads ? '<ul class="fs-sub">' + threads + '</ul>' : '') + '</li>';
     }).join('') + '</ul></section>').join('');
   return '<h1>' + esc(heading(meta.decisions)) + '</h1>'
@@ -455,7 +502,12 @@ function decisionsMain(forum, meta) {
     + body;
 }
 
-function routingMain(forum, meta) {
+function routingMain(forum, meta, routes) {
+  const routeRows = routes.map((r) => {
+    const links = r.repos.map((repo) => '<a href="https://github.com/' + ORG + '/' + esc(repo) + '/issues">' + esc(ORG + '/' + repo) + '</a>');
+    if (r.form) links.push('<a href="' + esc(r.form.href) + '">' + esc('or ' + r.form.label) + '</a>');
+    return '<li><p>' + esc(r.about) + '</p><p class="fs-meta">' + links.join(' · ') + '</p></li>';
+  }).join('');
   const rows = forum.repos.map((r) => {
     const links = [
       '<a href="' + esc(r.url) + '/issues">Issues on GitHub</a>',
@@ -468,6 +520,9 @@ function routingMain(forum, meta) {
   }).join('');
   return '<h1>' + esc(heading(meta.routing)) + '</h1>'
     + '<p class="fs-lead">' + esc(meta.routing.d) + '</p>'
+    + '<h2>Where each subject belongs</h2>'
+    + '<ul class="fs-list">' + routeRows + '</ul>'
+    + '<h2>Every repository this forum reads</h2>'
     + '<ul class="fs-list">' + rows + '</ul>';
 }
 
@@ -557,6 +612,7 @@ function decisionFeed(forum) {
       return {
         id: d.url, title: titleText(d.title), link: d.url, published: d.merged, updated: d.merged, author: d.user, categories: [d.repo],
         content: (d.excerpt ? '<p>' + esc(d.excerpt) + '</p>' : '') + '<p>' + esc(d.repo + ' #' + d.num) + ', merged ' + esc(fmtDate(d.merged)) + '.</p>'
+          + (isAssemblyDecision(d) ? '<p>' + esc(ASSEMBLY_DECISION_NOTE) + '</p>' : '')
           + (threads ? '<p>Threads:</p><ul>' + threads + '</ul>' : '')
       };
     })
@@ -607,12 +663,12 @@ function pagesFor(forum, details, meta) {
   return pages;
 }
 
-function mainFor(page, forum, meta, resanitize) {
+function mainFor(page, forum, meta, resanitize, routes) {
   switch (page.kind) {
     case 'list': return listMain(forum, meta);
     case 'thread': return threadMain(forum, page.thread, page.detail, resanitize);
     case 'decisions': return decisionsMain(forum, meta);
-    case 'routing': return routingMain(forum, meta);
+    case 'routing': return routingMain(forum, meta, routes);
     case 'notfound': return notFoundMain(forum, meta);
     default: return textMain(meta, page.key);
   }
@@ -627,6 +683,7 @@ function build(args) {
   const template = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
   checkTemplate(template);
   const meta = readMeta(template);
+  const routes = readRoutes(template);
   const { forum, details } = readSnapshot(dataDir);
   const resanitize = makeResanitize(forum);
 
@@ -645,7 +702,7 @@ function build(args) {
 
   const pages = pagesFor(forum, details, meta);
   for (const page of pages) {
-    const regionHtml = region(forum, page.key, mainFor(page, forum, meta, resanitize));
+    const regionHtml = region(forum, page.key, mainFor(page, forum, meta, resanitize, routes));
     const html = rewriteHead(template, page).replace(EMPTY_REGION, () => START + regionHtml + END);
     const target = path.join(out, page.file);
     fs.mkdirSync(path.dirname(target), { recursive: true });
@@ -675,6 +732,7 @@ if (require.main === module) {
 }
 
 module.exports = {
-  plain, titleText, xmlText, compact, clipText, esc, objectLiteral, readMeta, makeResanitize, threadPath,
-  BASE, START, END, EMPTY_REGION, META_KEYS, DESCRIPTION_MAX, FEED_MAX
+  plain, titleText, xmlText, compact, clipText, esc, objectLiteral, arrayLiteral, readMeta, readRoutes, makeResanitize, threadPath,
+  BASE, START, END, EMPTY_REGION, META_KEYS, DESCRIPTION_MAX, FEED_MAX, SCHEMA,
+  ASSEMBLY_NOTICE, TALLY_WORKFLOW, HIDDEN_VOTE_NOTE, WITHHELD_NOTE, ASSEMBLY_DECISION_NOTE, isAssemblyDecision
 };

@@ -374,6 +374,7 @@ function checkSite(siteDir, live) {
   pages.push({ file: '404.html', url: null, kind: 'notfound' });
 
   const resanitize = pre.makeResanitize(forum);
+  const routes = pre.readRoutes(read(path.join(ROOT, 'index.html')));
   for (const p of pages) {
     const label = '/' + p.file;
     if (!check(exists(at(p.file)), 'missing page ' + label)) continue;
@@ -457,6 +458,29 @@ function checkSite(siteDir, live) {
         check(region.includes('href="' + t.url + '#new_comment_field">Reply on GitHub</a>'), label + ' has no Reply on GitHub link');
       }
       check((region.match(/<li class="fs-comment"/g) || []).length === detail.comments.length, label + ' does not show every comment');
+      check(t.kind === 'issue' || t.kind === 'pr', label + ' has no thread kind');
+      check(t.url === 'https://github.com/' + 'draykerdk/' + t.repo + (t.kind === 'pr' ? '/pull/' : '/issues/') + t.num, label + ' thread url does not match its kind');
+      const notice = '<section aria-label="Assembly report"><p>' + pre.esc(pre.ASSEMBLY_NOTICE) + '</p>';
+      if (t.kind === 'pr') {
+        // An assembly report of the federation: the notice above the replies, a
+        // tag for each vote, and never a count, a weight, a quorum or an outcome.
+        check(t.repo === 'daf', label + ' is a pull request thread outside daf');
+        check(region.includes(notice) && region.indexOf(notice) < region.indexOf('<section aria-label="Replies">'), label + ' has no assembly notice above the replies');
+        check(region.includes('<a href="' + t.url + '">The pull request on GitHub</a>') && region.includes('<a href="' + pre.TALLY_WORKFLOW + '">The Federation tally workflow</a>'), label + ' assembly notice does not link the pull request and the tally workflow');
+        // (A date before a "Vote:" tag, as in "8 Oct 2026 Vote: for", is not a count.)
+        // Fixture builds only: in live mode a label or a login could match the
+        // pattern, and content from GitHub must never block a deploy.
+        if (!live) check(!/\b\d+\s*(votes?|points?|for|against|abstain(ed|s)?)\b(?!:)|\b(for|against|abstain)\s*[:=]?\s*\d|\b(totals?|quorum|weights?|weighted|outcomes?|majority)\b|%/i.test(text), label + ' shows a count, a weight, a quorum or an outcome');
+        for (const c of detail.comments) {
+          const item = (new RegExp('<li class="fs-comment" id="comment-' + Number(c.id) + '">([\\s\\S]*?)</li>').exec(region) || [])[1] || '';
+          const tag = c.vote ? '<p class="fs-meta">Vote: ' + pre.esc(c.vote.vote) + ' · as <span class="ugc">' + pre.esc(c.vote.as) + '</span></p>' : '';
+          check(c.vote ? item.includes(tag) && !c.hidden : !item.includes('>Vote: '), label + ' comment ' + c.id + ' vote tag does not match the data');
+          if (c.hidden) check(item.includes('<p class="fs-meta">' + pre.esc(pre.HIDDEN_VOTE_NOTE) + '</p>'), label + ' hidden comment ' + c.id + ' does not say its vote is not shown');
+        }
+        check((region.match(/>Vote: /g) || []).length === detail.comments.filter((c) => c.vote).length, label + ' tags a comment that holds no vote');
+      } else {
+        check(!region.includes('aria-label="Assembly report"') && !region.includes('>Vote: ') && detail.comments.every((c) => c.vote === null), label + ' is an issue with assembly markup or votes');
+      }
       for (const c of detail.comments) {
         if (c.hidden === null) continue;
         check(typeof c.hidden === 'string' && /^[a-z][a-z-]*$/.test(c.hidden) && c.html === '', label + ' hidden comment ' + c.id + ' keeps content or has a bad reason');
@@ -476,9 +500,24 @@ function checkSite(siteDir, live) {
     }
     if (p.kind === 'decisions') {
       for (const d of forum.decisions) check(region.includes('href="' + d.url + '"'), label + ' does not link decision ' + d.repo + '#' + d.num);
+      // A merged assembly report carries the note that the merge is not the outcome, and only it does.
+      const note = '<p>' + pre.esc(pre.ASSEMBLY_DECISION_NOTE) + '</p>';
+      for (const d of forum.decisions) {
+        const at = region.indexOf('<li><a class="ugc" href="' + pre.esc(d.url) + '">');
+        const item = at < 0 ? '' : region.slice(at, region.indexOf('</li>', region.indexOf('</p>', at) + 4) + 5);
+        check(item.includes(note) === pre.isAssemblyDecision(d), label + ' decision ' + d.repo + '#' + d.num + (pre.isAssemblyDecision(d) ? ' lacks' : ' has') + ' the assembly note');
+      }
+      check(region.split(note).length - 1 === forum.decisions.filter(pre.isAssemblyDecision).length, label + ' assembly note count is wrong');
     }
     if (p.kind === 'routing') {
       for (const r of forum.repos) check(region.includes('href="' + r.url + '"'), label + ' does not list repository ' + r.name);
+      // The routing table of index.html, row for row, with its form links.
+      for (const r of routes) {
+        check(region.includes('<li><p>' + pre.esc(r.about) + '</p>'), label + ' does not list the route ' + r.about);
+        for (const repo of r.repos) check(region.includes('<a href="https://github.com/draykerdk/' + repo + '/issues">draykerdk/' + repo + '</a>'), label + ' route ' + r.about + ' does not link ' + repo);
+        if (r.form) check(region.includes('<a href="' + pre.esc(r.form.href) + '">' + pre.esc('or ' + r.form.label) + '</a>'), label + ' route ' + r.about + ' does not link its form');
+      }
+      check(routes.some((r) => r.repos.join() === 'daf' && r.form && r.form.href === 'https://github.com/draykerdk/daf/issues/new?template=claim.yml'), 'the federation route does not offer the claim form');
     }
     if (p.kind === 'new' || p.kind === 'about') {
       check(region.includes('https://github.com/draykerdk/general-forum/issues/new/choose'), label + ' does not link the GitHub issue forms');
@@ -516,7 +555,8 @@ function checkSite(siteDir, live) {
 
   // Feeds.
   const feeds = [
-    { file: 'feed.xml', count: Math.min(pre.FEED_MAX, forum.threads.length), idRe: /^https:\/\/github\.com\/draykerdk\/[^/]+\/issues\/\d+$/ },
+    // Thread entries are issues, or assembly reports of the federation (daf pull requests).
+    { file: 'feed.xml', count: Math.min(pre.FEED_MAX, forum.threads.length), idRe: /^https:\/\/github\.com\/draykerdk\/(?:[^/]+\/issues|daf\/pull)\/\d+$/ },
     { file: 'decisions/feed.xml', count: Math.min(pre.FEED_MAX, forum.decisions.length), idRe: /^https:\/\/github\.com\/draykerdk\/[^/]+\/pull\/\d+$/ }
   ];
   for (const f of feeds) {
@@ -540,6 +580,14 @@ function checkSite(siteDir, live) {
         check(!script.length, f.file + ' entry content contains script: ' + id + ': ' + script.join(', '));
         if (!live) check(!/<script\b/i.test(html) && !/\son[a-z]+\s*=/i.test(html) && !/javascript:/i.test(html), f.file + ' entry content text mentions script: ' + id);
         for (const url of markupUrls(html)) check(/^(https?:\/\/|mailto:|#)/.test(url), f.file + ' entry content has a relative URL: ' + url);
+      }
+    }
+    if (f.file === 'decisions/feed.xml') {
+      for (const e of entries) {
+        const id = decode((/<id>([^<]*)<\/id>/.exec(e) || [])[1] || '');
+        const d = forum.decisions.find((x) => x.url === id);
+        const content = decode((/<content type="html">([\s\S]*?)<\/content>/.exec(e) || [])[1] || '');
+        if (d) check(content.includes('<p>' + pre.esc(pre.ASSEMBLY_DECISION_NOTE) + '</p>') === pre.isAssemblyDecision(d), f.file + ' entry ' + id + ' assembly note does not match');
       }
     }
     const own = [(/<title>([^<]*)<\/title>/.exec(xml) || [])[1] || '', (/<subtitle>([^<]*)<\/subtitle>/.exec(xml) || [])[1] || ''];

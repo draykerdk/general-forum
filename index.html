@@ -267,6 +267,11 @@
   .btn-link:hover{color:var(--acc-tx)}
   .btn-link.done{color:var(--acc-tx)}
   .cmt-hidden{margin:0;font-size:14px;line-height:1.55;color:var(--tx2);border-left:2px solid var(--line3);padding:2px 0 2px 12px}
+  .cmt-note{margin-top:6px}
+  .vote-tag{display:inline-block;margin:0 0 10px;font-size:11.5px;letter-spacing:0.02em;border:1px solid var(--line3);padding:2px 8px;color:var(--tx2)}
+  .assembly-note{border:1px solid var(--line3);border-left:2px solid #FF5500;background:var(--surf);padding:12px 14px;margin:32px 0 0;font-size:14px;line-height:1.55;color:var(--tx)}
+  .assembly-note p{margin:0;text-wrap:pretty}
+  .assembly-links{display:flex;flex-wrap:wrap;gap:4px 18px;margin-top:8px!important;font-size:13.5px}
   .reply{display:flex;gap:16px 22px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--line2);margin-top:34px;padding-top:24px}
   .reply p{font-size:13.5px;color:var(--tx2);max-width:44ch;line-height:1.55;margin:0;text-wrap:pretty}
   .side{display:flex;flex-direction:column;gap:18px;min-width:0}
@@ -279,6 +284,8 @@
   .stands-sub{display:block;font-size:12.5px;color:var(--tx2);margin-top:2px}
   .side-links{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;font-size:14px}
   .side-note{display:block;font-size:12.5px;color:var(--tx2);margin-top:3px;line-height:1.45}
+  .side-links-daf{margin-top:16px;padding-top:14px;border-top:1px solid var(--line2)}
+  .side-note-daf{margin:10px 0 0}
   .rel{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
   .rel a{color:var(--tx);font-size:14px;line-height:1.4;font-weight:500}
   .rel a:hover{color:var(--acc-tx)}
@@ -410,6 +417,8 @@
   .routes-repos{display:flex;flex-wrap:wrap;gap:4px 16px;min-width:0}
   .routes-repo{display:inline-block;padding:5px 0;line-height:14px;font-size:11.5px;letter-spacing:0.06em;color:var(--tx2);word-break:break-word}
   .routes-repo:hover{color:var(--acc-tx)}
+  .routes-form{display:inline-block;padding:5px 0;line-height:14px;font-size:13px;color:var(--tx2)}
+  .routes-form:hover{color:var(--acc-tx)}
   @media (max-width:719px){.routes li{grid-template-columns:minmax(0,1fr);padding:14px}}
   .repos-h{font-weight:400}
   .repos{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:1px;background:var(--line);border:1px solid var(--line)}
@@ -780,6 +789,12 @@
                 <p class="muted">This thread was opened with a title and nothing else.</p>
               </sc-if>
 
+              <sc-if value="{{ tv.isAssembly }}">
+                <section class="assembly-note" aria-label="Assembly report">
+                  <p>Assembly report, proposed: nothing in it is in the record until the assembly accepts it. Voting is transitional. The tally is computed on GitHub by the federation’s Federation tally workflow, from the comments there, not from this page.</p>
+                  <p class="assembly-links"><a href="{{ tv.url }}">The pull request on GitHub →</a><a href="https://github.com/draykerdk/daf/actions/workflows/federation-tally.yml">The Federation tally workflow →</a></p>
+                </section>
+              </sc-if>
               <h2 class="cmts-h">{{ tv.repliesHeading }}</h2>
               <sc-if value="{{ cmtNote.show }}">
                 <p class="muted cmts-note">{{ cmtNote.text }}</p>
@@ -802,6 +817,12 @@
                   </div>
                   <sc-if value="{{ c.hidden }}">
                     <p class="cmt-hidden">{{ c.hiddenText }}</p>
+                  </sc-if>
+                  <sc-if value="{{ c.hasNote }}">
+                    <p class="cmt-hidden cmt-note">{{ c.note }}</p>
+                  </sc-if>
+                  <sc-if value="{{ c.hasVote }}">
+                    <p class="vote-tag mono">{{ c.voteText }}</p>
                   </sc-if>
                   <sc-if value="{{ !c.hidden }}">
                     <div class="md" data-slot="{{ c.slot }}"></div>
@@ -898,6 +919,12 @@
               <li><a href="https://github.com/draykerdk/general-forum/issues/new?template=volunteer-introduction.yml">Introduce yourself as a volunteer →</a><span class="side-note">Say what you would like to help with and what you can contribute now. The form opens on GitHub.</span></li>
               <li><a href="https://github.com/draykerdk/general-forum/issues/new?template=partnership.yml">Propose a partnership →</a><span class="side-note">For a group or an institution that wants to work with Drayker. The form opens on GitHub.</span></li>
             </ul>
+            <ul class="side-links side-links-daf" aria-label="DAF forms">
+              <li><a href="https://github.com/draykerdk/daf/issues/new?template=claim.yml">Claim a function you delivered to the federation →</a></li>
+              <li><a href="https://github.com/draykerdk/daf/issues/new?template=resource-request.yml">Ask the federation for resources (a last resort) →</a></li>
+              <li><a href="https://github.com/draykerdk/daf/issues/new?template=cycle.yml">Open an assembly cycle →</a></li>
+            </ul>
+            <p class="side-note side-note-daf">These open DAF’s forms on GitHub. What they create is proposed, not in the record until an assembly accepts it.</p>
           </section>
           <a href="/routing/" class="link-mono">See where each subject belongs →</a>
         </div>
@@ -1041,6 +1068,9 @@
                       <sc-if value="{{ d.hasExcerpt }}">
                         <p class="dec-ex">{{ d.excerpt }}</p>
                       </sc-if>
+                      <sc-if value="{{ d.isAssembly }}">
+                        <p class="dec-ex dec-assembly">{{ d.assemblyNote }}</p>
+                      </sc-if>
                       <sc-if value="{{ d.hasThreads }}">
                         <div class="dec-threads">
                           <span>Discussed in:</span>
@@ -1090,6 +1120,9 @@
                 <sc-for list="{{ r.repos }}" as="rr">
                   <a href="{{ rr.href }}" class="routes-repo mono">{{ rr.repo }} →</a>
                 </sc-for>
+                <sc-if value="{{ r.hasForm }}">
+                  <a href="{{ r.formHref }}" class="routes-form">{{ r.formText }}</a>
+                </sc-if>
               </div>
             </li>
           </sc-for>
@@ -1332,7 +1365,12 @@ const PARTS = [
 // claimed it; claimed and closed functions get their own kind. A thread with no such
 // label is read by the title prefix the composer writes ([Proposal], [Motion],
 // [Report]); anything else is a question or an idea.
+// FEDERATION is DAF's own record in the making, in the daf repository only: the
+// threads its issue forms open ([Cycle], [Claim], [Request] and their labels)
+// and its assembly reports (pull requests, kind 'pr'). A DAF claim is not the
+// forum's CLAIMED (the 'claimed' function label): the two are never merged.
 const FUNCTION_LABELS = ['open-function', 'good first issue', 'help wanted', 'claimed'];
+const FEDERATION_REPO = 'daf';
 const TYPES = [
   { id: 'all', label: 'EVERYTHING' },
   { id: 'proposal', label: 'PROPOSALS', labels: ['motion', 'partnership'], prefix: /^\s*\[(proposal|motion)\]/i },
@@ -1342,6 +1380,7 @@ const TYPES = [
   { id: 'docs', label: 'DOCUMENTATION', labels: ['documentation'] },
   { id: 'intro', label: 'INTRODUCTIONS', labels: ['volunteer-introduction'] },
   { id: 'report', label: 'REPORTS', prefix: /^\s*\[report\]/i },
+  { id: 'federation', label: 'FEDERATION', labels: ['assembly', 'claim', 'resource-request'], prefix: /^\s*\[(cycle|claim|request)\]/i, repo: FEDERATION_REPO },
   { id: 'open', label: 'QUESTIONS & IDEAS' }
 ];
 
@@ -1355,13 +1394,15 @@ const FACETS = [
 const LEVEL_ORDER = ['entry', 'intermediate', 'advanced'];
 
 // The routing table published in the general-forum README ("Where things usually
-// belong instead"), row for row, plus a last row for this forum itself.
+// belong instead"), row for row, plus a last row for this forum itself. A route
+// may also offer an issue form, shown as a second link (form.label after "or").
 const ROUTES = [
   { about: 'The method, a protocol, the constitution, or a proposal’s path', repos: ['dfmp'] },
   { about: 'Papers, roadmap or the knowledge base', repos: ['dknowledge'] },
   { about: 'The kernel, its structure, network or security', repos: ['dk', 'bsdk', 'dk-network', 'living-cryptography'] },
   { about: 'Identity and applications', repos: ['uid'] },
-  { about: 'The federation and its resources', repos: ['daf'] },
+  { about: 'The federation and its resources', repos: ['daf'],
+    form: { label: 'claim a delivered function', href: 'https://github.com/draykerdk/daf/issues/new?template=claim.yml' } },
   { about: 'Proposing a new project', repos: ['dfmpproject'] },
   { about: 'Something with no home yet', repos: ['emergence-initiative'] },
   { about: 'The participation portal itself', repos: ['drayker.org'] },
@@ -1572,6 +1613,25 @@ const hiddenReason = (m) => {
   const r = String((typeof m === 'object' ? m.reason : typeof m === 'string' ? m : '') || '').toLowerCase().replace(/[_\s]+/g, '-').replace(/[^a-z-]/g, '').slice(0, 40);
   return r || 'hidden';
 };
+// DAF's vote parser (draykerdk/daf tools/lib/tally.js at 5f62b6b, the same
+// regular expressions as tools/lib/vote.js). A vote only tags the comment that
+// holds it: the forum never counts votes, weighs them, checks a quorum or
+// derives an outcome. The tally is the federation's, computed on GitHub.
+const VOTE_RE = /^\s*VOTE:\s*(for|against|abstain)\s*$/im;
+const AS_RE = /^\s*AS:\s*`?([a-z0-9-]+)`?\s*$/im;
+function readVote(body) {
+  const v = VOTE_RE.exec(body || '');
+  const a = AS_RE.exec(body || '');
+  if (!v || !a) return null;
+  return { vote: v[1].toLowerCase(), holder: a[1].toLowerCase() };
+}
+const voteOf = (body) => { const v = readVote(body); return v ? { vote: v.vote, as: v.holder } : null; };
+// An assembly report: a daf pull request titled "Assembly YYYY-MM".
+const ASSEMBLY_TITLE = /^Assembly \d{4}-(0[1-9]|1[0-2])$/;
+// A merged assembly report on the Decisions page.
+const ASSEMBLY_DECISION_NOTE = 'An assembly report is merged whether the assembly passed or failed. The outcome is written in the report on GitHub.';
+// The federation's tally comment (its Federation tally workflow), never shown here.
+const TALLY_MARKER = /^<!-- daf-tally:v[0-9]+ -->/;
 
 function loadScript(src) {
   return new Promise((resolve, reject) => {
@@ -1767,7 +1827,7 @@ class Component extends DCLogic {
   // ==========================================================================
   // DATA — /data/forum.json, kept 10 minutes in localStorage.
   // ==========================================================================
-  validData = (d) => !!(d && d.schema === 2 && Array.isArray(d.threads) && Array.isArray(d.decisions)
+  validData = (d) => !!(d && d.schema === 3 && Array.isArray(d.threads) && Array.isArray(d.decisions)
     && Array.isArray(d.repos) && d.counts && typeof d.counts === 'object');
 
   loadData = async (force) => {
@@ -1850,12 +1910,18 @@ class Component extends DCLogic {
   kindOf = (t) => {
     const l = (t && t.labels) || [];
     const has = (names) => (names || []).some((m) => l.indexOf(m) >= 0);
+    const title = String((t && t.title) || '');
+    const fed = TYPES.filter((k) => k.id === 'federation')[0];
+    const inDaf = !!t && t.repo === fed.repo;
+    // An assembly report of the federation is always FEDERATION.
+    if (inDaf && t.kind === 'pr') return 'federation';
     if (has(TYPES.filter((k) => k.id === 'proposal')[0].labels)) return 'proposal';
     // Nobody can pick up or claim a function whose conversation is locked.
     if (has(FUNCTION_LABELS)) return !this.isOpen(t) || t.locked ? 'function' : l.indexOf('claimed') >= 0 ? 'claimed' : 'work';
-    for (const k of TYPES) if (k.labels && has(k.labels)) return k.id;
-    const title = String((t && t.title) || '');
-    for (const k of TYPES) if (k.prefix && k.prefix.test(title)) return k.id;
+    // DAF's forms, in daf only: elsewhere a [Request] title keeps its usual kind.
+    if (inDaf && (has(fed.labels) || fed.prefix.test(title))) return 'federation';
+    for (const k of TYPES) if (!k.repo && k.labels && has(k.labels)) return k.id;
+    for (const k of TYPES) if (!k.repo && k.prefix && k.prefix.test(title)) return k.id;
     return 'open';
   };
   kindLabel = (id) => { const t = TYPES.filter((x) => x.id === id)[0]; return t ? t.label : 'CONVERSATION'; };
@@ -1898,20 +1964,27 @@ class Component extends DCLogic {
   });
 
   // A comment hidden on GitHub (its "minimized" field) keeps its author and date;
-  // its content is not shown. hidden is null or the lowercase reason.
-  apiComment = (c) => {
+  // its content is not shown. hidden is null or the lowercase reason. On an
+  // assembly report (assembly true) the vote a comment holds is read from its raw
+  // body with DAF's parser, never for hidden content, and the federation's tally
+  // comment keeps its place but not its count.
+  apiComment = (c, assembly) => {
     const hidden = hiddenReason(c.minimized);
+    const withheld = !hidden && assembly === true && TALLY_MARKER.test(String(c.body || ''));
     return {
       id: c.id, user: c.user && c.user.login ? c.user.login : 'ghost', user_id: c.user && c.user.id ? c.user.id : 0,
-      created: c.created_at || '', updated: c.updated_at || c.created_at || '', hidden, html: hidden ? '' : c.body_html || '',
-      url: c.html_url || '', live: true
+      created: c.created_at || '', updated: c.updated_at || c.created_at || '', hidden, html: hidden || withheld ? '' : c.body_html || '',
+      url: c.html_url || '', vote: assembly === true && !hidden && !withheld ? voteOf(c.body) : null, live: true
     };
   };
+  isAssemblyItem = (i, repo) => !!(i && i.pull_request && repo === FEDERATION_REPO && ASSEMBLY_TITLE.test(String(i.title || ''))
+    && (i.state === 'open' || i.pull_request.merged_at));
 
   apiLabels = (labels) => (labels || []).map((l) => String((l && l.name) || l || '').toLowerCase()).filter(Boolean);
 
   apiThread = (i, slug, repo) => ({
-    repo, slug, num: i.number, title: i.title || '', url: i.html_url || ('https://github.com/' + ORG + '/' + repo + '/issues/' + i.number),
+    repo, slug, num: i.number, kind: i.pull_request ? 'pr' : 'issue', title: i.title || '',
+    url: i.html_url || ('https://github.com/' + ORG + '/' + repo + (i.pull_request ? '/pull/' : '/issues/') + i.number),
     user: i.user && i.user.login ? i.user.login : 'ghost', user_id: i.user && i.user.id ? i.user.id : 0,
     labels: this.apiLabels(i.labels),
     state: i.state === 'closed' ? 'closed' : 'open', state_reason: i.state_reason || null, open: i.state !== 'closed',
@@ -1979,7 +2052,7 @@ class Component extends DCLogic {
     let added = 0, edited = 0;
     list.forEach((raw) => {
       if (!raw || !raw.id) return;
-      const c = this.apiComment(raw);
+      const c = this.apiComment(raw, t.kind === 'pr');
       if (at[c.id] === undefined) { t.comments.push(c); at[c.id] = t.comments.length - 1; added++; }
       else {
         const old = t.comments[at[c.id]];
@@ -2047,7 +2120,9 @@ class Component extends DCLogic {
   };
 
   // A thread that is not in the snapshot (the app booted from 404.html): the issue
-  // and its comments, read live. Pull requests and missing numbers are not found.
+  // and its comments, read live. Missing numbers are not found, nor are pull
+  // requests, except an assembly report of the federation (daf, "Assembly
+  // YYYY-MM", open or merged), which is a thread.
   loadLive = (slug, num) => {
     const key = slug + '/' + num;
     const repo = this.repoForSlug(slug);
@@ -2058,7 +2133,7 @@ class Component extends DCLogic {
     const base = API + '/repos/' + ORG + '/' + encodeURIComponent(repo) + '/issues/' + encodeURIComponent(num);
     this.gh(base)
       .then((issue) => {
-        if (!issue || !issue.number || issue.pull_request) {
+        if (!issue || !issue.number || (issue.pull_request && !this.isAssemblyItem(issue, repo))) {
           const e = new Error('not a thread');
           e.missing = issue && issue.pull_request ? 'pr' : 'none';
           e.href = issue && issue.html_url ? issue.html_url : '';
@@ -2074,7 +2149,7 @@ class Component extends DCLogic {
         if (known && !known.liveOnly) return t;
         const realBase = API + '/repos/' + ORG + '/' + encodeURIComponent(realRepo) + '/issues/' + issue.number;
         return this.gh(realBase + '/comments?per_page=100').then(
-          (list) => { t.comments = (Array.isArray(list) ? list : []).map(this.apiComment); return t; },
+          (list) => { t.comments = (Array.isArray(list) ? list : []).map((c) => this.apiComment(c, t.kind === 'pr')); return t; },
           (e) => { t.cmtError = errText(e); return t; });
       })
       .then((t) => {
@@ -3055,7 +3130,9 @@ class Component extends DCLogic {
       show: !!src, title: '', kindLabel: '', kindCls: 'kind', partName: '', where: '', stateText: '', stateCls: 'state',
       user: '', userHref: '', createdIso: '', createdAbs: '', labels: [], hasLabels: false,
       url: ghHref, replyUrl: ghHref + '#new_comment_field', locked: false, bodySlot: '', noBody: false,
-      hasDocs: false, docsHref: '', docsLabel: '', repliesHeading: 'Replies'
+      hasDocs: false, docsHref: '', docsLabel: '', repliesHeading: 'Replies',
+      // An assembly report of the federation: the notice above the replies.
+      isAssembly: !!(src && src.kind === 'pr' && src.repo === FEDERATION_REPO)
     };
     if (src) {
       const kind = this.kindOf(src);
@@ -3111,6 +3188,12 @@ class Component extends DCLogic {
       // Hidden on GitHub: author and date only; the content is neither published
       // in the data nor painted here.
       const hidden = c.hidden ? String(c.hidden) : '';
+      // On an assembly report: the vote a comment holds as a tag (never a count),
+      // and a note where there is nothing to show (a hidden comment, or the
+      // federation's tally, which is read on GitHub).
+      const vote = tv.isAssembly && !hidden && c.vote && c.vote.vote && c.vote.as ? c.vote : null;
+      const note = !tv.isAssembly ? '' : hidden ? 'Whether it holds a vote is not shown on this page.'
+        : !String(c.html || '').trim() ? 'Not shown on the forum. Read this reply on GitHub.' : '';
       const slot = hidden ? '' : 'c|' + id + '|' + (c.updated || '') + '|' + (c.live ? 'live' : 'snapshot');
       if (slot) this.slots[slot] = { html: String(c.html || ''), mode: c.live ? 'live' : 'snapshot' };
       const copied = s.copied === id, failed = s.copyFail === id;
@@ -3122,6 +3205,8 @@ class Component extends DCLogic {
         iso: c.created || '', abs: fmtAbs(c.created), rel: ago(c.created) || fmtDate(c.created),
         edited: !hidden && toMs(c.updated) > toMs(c.created) + 60000,
         hidden: !!hidden, hiddenText: hidden ? 'Hidden on GitHub' + (hidden === 'hidden' ? '' : ' (' + hidden + ')') : '',
+        hasNote: !!note, note,
+        hasVote: !!vote, voteText: vote ? 'Vote: ' + String(vote.vote) + ' · as ' + String(vote.as) : '',
         slot, copy: () => this.copyLink(id),
         copyText: copied ? 'Link copied' : failed ? 'Link is in the address bar' : 'Copy link',
         copyCls: copied || failed ? 'btn-link done' : 'btn-link',
@@ -3192,7 +3277,7 @@ class Component extends DCLogic {
         ghHref: 'https://github.com/' + ORG, ghLabel: 'github.com/draykerdk →' };
     }
     if (m.why === 'pr') {
-      return { title: 'That number is a pull request, not a thread.', text: ORG + '/' + m.repo + ' #' + m.num + ' is a pull request. The forum lists issues; the pull request can be read on GitHub.',
+      return { title: 'That number is a pull request, not a thread.', text: ORG + '/' + m.repo + ' #' + m.num + ' is a pull request. The forum lists issues, and the federation’s assembly reports (daf pull requests titled Assembly YYYY-MM); this pull request can be read on GitHub.',
         ghHref: m.href || 'https://github.com/' + ORG + '/' + m.repo + '/pull/' + m.num, ghLabel: 'Read the pull request on GitHub →' };
     }
     const known = (s.repos || []).some((r) => r && r.name === m.repo);
@@ -3218,11 +3303,15 @@ class Component extends DCLogic {
         return { href: '/t/' + encodeURIComponent(x.slug) + '/' + x.num + '/', t: m ? titleOf(m.title) : (x.repo || x.slug) + ' #' + x.num };
       });
       const excerpt = clip(d.excerpt || '', 280);
+      // A merged assembly report is not an accepted decision: it is merged whether
+      // the assembly passed or failed. No outcome and no count are shown here.
+      const isAssembly = d.repo === FEDERATION_REPO && ASSEMBLY_TITLE.test(String(d.title || ''));
       cur.items.push({
         title: titleOf(d.title), url: d.url || 'https://github.com/' + ORG + '/' + d.repo + '/pull/' + d.num,
         partName: this.partName(d.repo), where: '#' + d.num,
         meta: 'Merged ' + fmtDate(d.merged) + (d.user ? ' · by ' + d.user : ''),
-        excerpt, hasExcerpt: !!excerpt, threads, hasThreads: threads.length > 0
+        excerpt, hasExcerpt: !!excerpt, threads, hasThreads: threads.length > 0,
+        isAssembly, assemblyNote: isAssembly ? ASSEMBLY_DECISION_NOTE : ''
       });
     });
     const per = {};
@@ -3307,7 +3396,8 @@ class Component extends DCLogic {
     return {
       routes: ROUTES.map((r) => ({
         about: r.about,
-        repos: r.repos.map((repo) => ({ repo: this.org + '/' + repo, href: 'https://github.com/' + this.org + '/' + repo + '/issues' }))
+        repos: r.repos.map((repo) => ({ repo: this.org + '/' + repo, href: 'https://github.com/' + this.org + '/' + repo + '/issues' })),
+        hasForm: !!r.form, formHref: r.form ? r.form.href : '', formText: r.form ? 'or ' + r.form.label + ' →' : ''
       })),
       repoList: list, hasRepoList: list.length > 0,
       repoCount: plural(list.length, 'public repository', 'public repositories') + ' with issues enabled'
