@@ -1,12 +1,13 @@
 # Public proposal form used by the composer at forum.drayker.org. The forum
-# fills the canonical field ids summary, change and component before handing
-# publication to GitHub.
+# fills the canonical field ids summary, problem, change and component before
+# handing publication to GitHub.
 #
 # Field ids are the contract between this form and the site. Do not rename
-# summary / change / component without changing postUrl() in the component.
+# summary / problem / change / component without changing the composer in
+# index.html.
 
 name: Proposal
-description: Propose something the project should do, written so that it can be argued with.
+description: Propose something Drayker should do, written so that it can be argued with.
 title: "[Proposal] "
 labels:
   - motion
@@ -14,7 +15,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        A proposal is a public thread, not a decision. It becomes one only if it is cut into work someone finishes and that work is merged. Share only what you are comfortable publishing.
+        A proposal is a public thread, not a decision. It becomes one only if it is cut into work someone finishes and that work is merged. Share only what you are comfortable publishing. Public threads in the draykerdk repositories are also shown on forum.drayker.org.
   - type: input
     id: summary
     attributes:
@@ -22,6 +23,11 @@ body:
       description: One line. Assume the reader has read nothing else.
     validations:
       required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does it address?
+      description: Optional. Who runs into it today, and how.
   - type: textarea
     id: change
     attributes:

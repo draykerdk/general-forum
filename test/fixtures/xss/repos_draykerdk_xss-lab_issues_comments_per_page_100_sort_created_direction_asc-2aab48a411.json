@@ -1,0 +1,32 @@
+{
+ "url": "https://api.github.com/repos/draykerdk/xss-lab/issues/comments?per_page=100&sort=created&direction=asc",
+ "link": null,
+ "body": [
+  {
+   "id": 101,
+   "issue_url": "https://api.github.com/repos/draykerdk/xss-lab/issues/1",
+   "html_url": "https://github.com/draykerdk/xss-lab/issues/1#issuecomment-101",
+   "created_at": "2026-01-02T00:00:00Z",
+   "updated_at": "2026-01-02T00:00:00Z",
+   "user": {
+    "login": "replier",
+    "id": 2
+   },
+   "body": "![shot](https://github.com/user-attachments/assets/0a1b2c3d-1111-2222-3333-444455556666)",
+   "body_html": "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://private-user-images.githubusercontent.com/2/398765432-0a1b2c3d-1111-2222-3333-444455556666.png?jwt=eyJhbGciOiJIUzI1NiJ9.e30.sig\"><img src=\"https://private-user-images.githubusercontent.com/2/398765432-0a1b2c3d-1111-2222-3333-444455556666.png?jwt=eyJhbGciOiJIUzI1NiJ9.e30.sig\" alt=\"shot\" style=\"max-width: 100%;\"></a></p>\n<ul class=\"contains-task-list\"><li class=\"task-list-item\"><input type=\"checkbox\" id=\"\" disabled=\"\" class=\"task-list-item-checkbox\" checked=\"\"> done</li><li>plain <input type=\"text\" value=\"nope\"></li></ul>"
+  },
+  {
+   "id": 102,
+   "issue_url": "https://api.github.com/repos/draykerdk/xss-lab/issues/1",
+   "html_url": "https://github.com/draykerdk/xss-lab/issues/1#issuecomment-102",
+   "created_at": "2026-01-03T00:00:00Z",
+   "updated_at": "2026-01-03T00:00:00Z",
+   "user": {
+    "login": "tester",
+    "id": 1
+   },
+   "body": "deep",
+   "body_html": "<div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div><div>deepest</div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div></div><h1>Heading one</h1><h4>Heading four</h4><table><tr><td align=\"center\" onmouseover=\"x\">cell</td></tr></table><a href=\"mailto:a@example.com\">mail</a><a href=\"/draykerdk/xss-lab\">relative</a><a href=\"//example.com/proto\">protocol relative</a><!-- comment <script>alert(14)</script> --><![CDATA[<img src=x onerror=alert(15)>]]>"
+  }
+ ]
+}
