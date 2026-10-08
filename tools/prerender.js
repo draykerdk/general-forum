@@ -18,8 +18,10 @@
  * which is passed through the sanitizer again here.
  *
  * A thread of kind 'pr' is an assembly report of the federation (daf): its page
- * carries the fixed assembly notice and tags each comment that holds a vote. No
- * page ever counts votes or shows a total, a weight, a quorum or an outcome.
+ * carries the fixed assembly notice for its state (open, or merged) and tags
+ * each comment that holds a vote line. The tag says what the line names, not
+ * that the vote is the holder's: whether it counts is for the Federation tally.
+ * No page ever counts votes or shows a total, a weight, a quorum or an outcome.
  */
 
 const fs = require('fs');
@@ -57,8 +59,17 @@ const NAV = [
 const SCHEMA = 3;
 const DESCRIPTION_MAX = 180;
 const FEED_MAX = 50;
-// The assembly notice, word for word as index.html shows it.
-const ASSEMBLY_NOTICE = 'Assembly report, proposed: nothing in it is in the record until the assembly accepts it. Voting is transitional. The tally is computed on GitHub by the federation’s Federation tally workflow, from the comments there, not from this page.';
+// The assembly notices, word for word as index.html shows them: one while the
+// report is open (not merged), one once it is merged into the federation record.
+const ASSEMBLY_NOTICE = 'Assembly report, proposed: nothing in it is in the record until the assembly accepts it. Voting is transitional. The tally is computed on GitHub by the federation’s Federation tally workflow, from the comments there, not from this page. A vote line counts only if its author speaks for the holder it names and it falls inside the voting window; the Federation tally checks this on GitHub.';
+const ASSEMBLY_MERGED_NOTICE = 'Assembly report, merged into the federation record. A report is merged whether the assembly passed or failed; the outcome is written in the report. Voting is transitional. The tally is computed on GitHub by the Federation tally workflow, not on this page.';
+const assemblyNotice = (t) => (t.merged ? ASSEMBLY_MERGED_NOTICE : ASSEMBLY_NOTICE);
+// The tag on a comment that holds a vote line. It names the choice and the
+// holder the line names; it never says the vote is that holder's. The class
+// fs-vote marks the forum's own tag: the sanitizer drops it from mirrored
+// content, so no comment can produce one (tools/forum-check.js counts them).
+const VOTE_CLASS = 'fs-vote';
+const voteText = (v) => 'Vote line: ' + v.vote + ' · names ' + v.as;
 const TALLY_WORKFLOW = 'https://github.com/' + ORG + '/daf/actions/workflows/federation-tally.yml';
 const HIDDEN_VOTE_NOTE = 'Whether it holds a vote is not shown on this page.';
 const WITHHELD_NOTE = 'Not shown on the forum. Read this reply on GitHub.';
@@ -406,14 +417,16 @@ function region(forum, activeKey, mainHtml) {
 }
 
 const heading = (meta) => (meta.t.endsWith(SUFFIX) ? meta.t.slice(0, -SUFFIX.length) : meta.t);
-const stateLabel = (t) => (t.open ? 'open' : t.state_reason === 'not_planned' ? 'closed, not planned' : 'closed');
+// A merged assembly report reads as merged, never as closed.
+const isMergedReport = (t) => t.kind === 'pr' && Boolean(t.merged);
+const stateLabel = (t) => (t.open ? 'open' : isMergedReport(t) ? 'merged ' + fmtDate(t.merged) : t.state_reason === 'not_planned' ? 'closed, not planned' : 'closed');
 
 // Elements with class "ugc" hold text mirrored from GitHub (titles, bodies,
 // comments, descriptions); everything else is the site's own wording.
 function listMain(forum, meta) {
   const c = forum.counts;
   const rows = forum.threads.map((t) => '<li><a class="ugc" href="' + threadPath(t.slug, t.num) + '">' + esc(titleText(t.title)) + '</a>'
-    + '<p class="fs-meta">' + esc(t.repo) + ' #' + t.num + ' · <span class="fs-state">' + esc(t.open ? 'open' : 'closed') + '</span> · '
+    + '<p class="fs-meta">' + esc(t.repo) + ' #' + t.num + ' · <span class="fs-state">' + esc(t.open ? 'open' : isMergedReport(t) ? 'merged ' + fmtDate(t.merged) : 'closed') + '</span> · '
     + esc(plural(t.comments, 'reply', 'replies')) + ' · last activity ' + time(t.at) + '</p></li>').join('');
   return '<h1>' + esc(meta.list.t) + '</h1>'
     + '<p class="fs-lead">' + esc(meta.list.d) + '</p>'
@@ -421,6 +434,9 @@ function listMain(forum, meta) {
     + '<p class="fs-actions"><a class="fs-button" href="' + NEW_THREAD + '">Start a thread on GitHub</a></p>'
     + '<ol class="fs-list">' + rows + '</ol>';
 }
+
+// The holder is mirrored text (it comes from the comment), so it is marked ugc.
+const voteTag = (v) => '<p class="fs-meta ' + VOTE_CLASS + '">' + esc('Vote line: ' + v.vote + ' · names ') + '<span class="ugc">' + esc(v.as) + '</span></p>';
 
 function threadMain(forum, thread, detail, resanitize) {
   const lookup = new Map(forum.threads.map((t) => [t.repo.toLowerCase() + '#' + t.num, t]));
@@ -437,7 +453,7 @@ function threadMain(forum, thread, detail, resanitize) {
   const body = detail.html ? resanitize(detail.html) : '<p><em>No description was written.</em></p>';
   const assembly = thread.kind === 'pr';
   // A comment hidden on GitHub shows only its author, date and the reason. On
-  // an assembly report, a comment that holds a vote is tagged with it; a
+  // an assembly report, a comment that holds a vote line is tagged with it; a
   // comment with nothing to show (the federation's tally) points to GitHub.
   const comments = detail.comments.map((c) => '<li class="fs-comment" id="comment-' + Number(c.id) + '"><article>'
     + '<header>' + person(c.user) + ' · <a href="' + esc(c.url) + '">' + time(c.created) + '</a>'
@@ -445,17 +461,18 @@ function threadMain(forum, thread, detail, resanitize) {
     + (c.hidden
       ? '<p class="fs-meta">' + esc('Hidden on GitHub (' + c.hidden + ')') + '</p>'
         + (assembly ? '<p class="fs-meta">' + esc(HIDDEN_VOTE_NOTE) + '</p>' : '')
-      : assembly && !c.html
-        ? '<p class="fs-meta">' + esc(WITHHELD_NOTE) + '</p>'
-        : (assembly && c.vote ? '<p class="fs-meta">' + esc('Vote: ' + c.vote.vote + ' · as ') + '<span class="ugc">' + esc(c.vote.as) + '</span></p>' : '')
-          + '<div class="fs-body ugc">' + resanitize(c.html) + '</div>')
+      : (assembly && c.vote ? voteTag(c.vote) : '')
+        + (assembly && !c.html
+          ? '<p class="fs-meta">' + esc(WITHHELD_NOTE) + '</p>'
+          : '<div class="fs-body ugc">' + resanitize(c.html) + '</div>'))
     + '</article></li>').join('');
   const notice = assembly
-    ? '<section aria-label="Assembly report"><p>' + esc(ASSEMBLY_NOTICE) + '</p>'
+    ? '<section aria-label="Assembly report"><p>' + esc(assemblyNotice(thread)) + '</p>'
       + '<p class="fs-meta"><a href="' + esc(thread.url) + '">The pull request on GitHub</a> · <a href="' + esc(TALLY_WORKFLOW) + '">The Federation tally workflow</a></p></section>'
     : '';
   const refs = (thread.refs || []).map((r) => {
-    const local = r.kind === 'issue' ? lookup.get(String(r.repo).toLowerCase() + '#' + r.num) : null;
+    // An issue or a pull request with a page here (an assembly report) links to it.
+    const local = lookup.get(String(r.repo).toLowerCase() + '#' + r.num) || null;
     const href = local ? threadPath(local.slug, local.num) : r.url;
     const what = (r.kind === 'pr' ? 'Pull request ' : 'Issue ') + r.repo + ' #' + r.num;
     const status = r.kind === 'pr' && r.merged ? 'merged ' + fmtDate(r.merged) : r.state;
@@ -474,7 +491,7 @@ function threadMain(forum, thread, detail, resanitize) {
         + '<a href="' + esc(thread.url) + '">Read on GitHub</a></p>')
     + notice
     + '<section aria-label="Replies"><h2>' + esc(plural(detail.comments.length, 'reply', 'replies')) + '</h2>'
-    + (comments ? '<ol class="fs-comments">' + comments + '</ol>' : '<p class="fs-meta">No replies yet.</p>') + '</section>'
+    + (comments ? '<ol class="fs-comments">' + comments + '</ol>' : '<p class="fs-meta">' + (thread.open ? 'No replies yet.' : isMergedReport(thread) ? 'No replies before it was merged.' : 'No replies before it was closed.') + '</p>') + '</section>'
     + (refs ? '<section aria-label="Referenced by"><h2>Referenced by</h2><ul class="fs-list">' + refs + '</ul></section>' : '');
 }
 
@@ -611,7 +628,7 @@ function decisionFeed(forum) {
         .map((t) => '<li><a href="' + BASE + threadPath(t.slug, t.num).slice(1) + '">' + esc(titleText(t.title)) + '</a></li>').join('');
       return {
         id: d.url, title: titleText(d.title), link: d.url, published: d.merged, updated: d.merged, author: d.user, categories: [d.repo],
-        content: (d.excerpt ? '<p>' + esc(d.excerpt) + '</p>' : '') + '<p>' + esc(d.repo + ' #' + d.num) + ', merged ' + esc(fmtDate(d.merged)) + '.</p>'
+        content: (d.excerpt ? '<p class="ugc">' + esc(d.excerpt) + '</p>' : '') + '<p>' + esc(d.repo + ' #' + d.num) + ', merged ' + esc(fmtDate(d.merged)) + '.</p>'
           + (isAssemblyDecision(d) ? '<p>' + esc(ASSEMBLY_DECISION_NOTE) + '</p>' : '')
           + (threads ? '<p>Threads:</p><ul>' + threads + '</ul>' : '')
       };
@@ -734,5 +751,5 @@ if (require.main === module) {
 module.exports = {
   plain, titleText, xmlText, compact, clipText, esc, objectLiteral, arrayLiteral, readMeta, readRoutes, makeResanitize, threadPath,
   BASE, START, END, EMPTY_REGION, META_KEYS, DESCRIPTION_MAX, FEED_MAX, SCHEMA,
-  ASSEMBLY_NOTICE, TALLY_WORKFLOW, HIDDEN_VOTE_NOTE, WITHHELD_NOTE, ASSEMBLY_DECISION_NOTE, isAssemblyDecision
+  ASSEMBLY_NOTICE, ASSEMBLY_MERGED_NOTICE, assemblyNotice, VOTE_CLASS, voteText, voteTag, stateLabel, TALLY_WORKFLOW, HIDDEN_VOTE_NOTE, WITHHELD_NOTE, ASSEMBLY_DECISION_NOTE, isAssemblyDecision
 };

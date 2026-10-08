@@ -11,7 +11,10 @@
  * Threads are issues (kind 'issue'), plus the federation's assembly reports in
  * the daf repository (kind 'pr'): a pull request titled "Assembly YYYY-MM" that
  * is open, or merged into the default branch. On those, a comment that holds a
- * vote is tagged with it (see lib/vote.js); nothing is ever counted.
+ * vote line is tagged with it (see lib/vote.js); nothing is ever counted.
+ *
+ * Every thread carries merged: the time a pull request thread was merged
+ * (GitHub's merged_at), or null for an open one and for every issue.
  *
  * Usage: node tools/build-forum-snapshot.js [--out _site] [--fixture <dir> | --record <dir>]
  */
@@ -22,7 +25,7 @@ const crypto = require('crypto');
 const { execFileSync } = require('child_process');
 const { createClient } = require('./lib/github');
 const { sanitizeHtml, htmlToText, tokenize } = require('./lib/sanitize');
-const { voteOf, ASSEMBLY_TITLE, TALLY_MARKER } = require('./lib/vote');
+const { voteOf, ASSEMBLY_TITLE, isTallyComment } = require('./lib/vote');
 
 const ORG = 'draykerdk';
 const FEDERATION_REPO = 'daf';
@@ -271,6 +274,7 @@ function buildSnapshot(org, generatedAt) {
         created: item.created_at,
         at: item.updated_at,
         closed: item.closed_at || null,
+        merged: isPr ? item.pull_request.merged_at || null : null,
         comments: itemComments.length,
         last_user: last ? login(last.user) : null,
         last_at: last ? last.created_at : null,
@@ -283,9 +287,10 @@ function buildSnapshot(org, generatedAt) {
         html,
         comments: itemComments.map((c) => {
           const hidden = hiddenReason(c);
-          // On an assembly report, the federation's own tally comment keeps its
-          // place, author and date, but its count is never published here.
-          const withheld = !hidden && kind === 'pr' && TALLY_MARKER.test(String(c.body || ''));
+          // On an assembly report, the federation's own tally comment (by
+          // github-actions[bot], see lib/vote.js) keeps its place, author and
+          // date, but its count is never published here.
+          const withheld = !hidden && kind === 'pr' && isTallyComment(c);
           return {
             id: c.id,
             user: login(c.user),

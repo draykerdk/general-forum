@@ -160,6 +160,30 @@
     "html_url": "https://github.com/draykerdk/lab/pull/7",
     "merged_at": "2026-03-12T00:00:00Z"
    }
+  },
+  {
+   "number": 8,
+   "title": "Restate the assembly note",
+   "html_url": "https://github.com/draykerdk/lab/pull/8",
+   "state": "closed",
+   "state_reason": null,
+   "created_at": "2026-02-08T00:00:00Z",
+   "updated_at": "2026-03-08T00:00:00Z",
+   "closed_at": "2026-03-13T00:00:00Z",
+   "comments": 0,
+   "locked": false,
+   "active_lock_reason": null,
+   "body": "An assembly report is merged whether the assembly passed or failed. The outcome is written in the report on GitHub.",
+   "body_html": "<p>An assembly report is merged whether the assembly passed or failed. The outcome is written in the report on GitHub.</p>",
+   "user": {
+    "login": "noter-gh",
+    "id": 108
+   },
+   "labels": [],
+   "pull_request": {
+    "html_url": "https://github.com/draykerdk/lab/pull/8",
+    "merged_at": "2026-03-13T00:00:00Z"
+   }
   }
  ]
 }

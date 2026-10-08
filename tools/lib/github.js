@@ -61,6 +61,9 @@ const pick = (obj, keys) => {
   return out;
 };
 const pickUser = (user) => (user ? pick(user, ['login', 'id']) : user);
+// A comment keeps its author's type too: the federation's tally comment is
+// recognised by its author, github-actions[bot] with type Bot.
+const pickCommentUser = (user) => (user ? pick(user, ['login', 'id', 'type']) : user);
 
 function trimForFixture(body) {
   if (!Array.isArray(body)) return body;
@@ -75,7 +78,7 @@ function trimForFixture(body) {
       return out;
     }
     if ('issue_url' in item) {
-      return Object.assign(pick(item, ['id', 'issue_url', 'html_url', 'created_at', 'updated_at', 'minimized', 'body', 'body_html']), { user: pickUser(item.user) });
+      return Object.assign(pick(item, ['id', 'issue_url', 'html_url', 'created_at', 'updated_at', 'minimized', 'body', 'body_html']), { user: pickCommentUser(item.user) });
     }
     if ('number' in item && 'state' in item) {
       const out = pick(item, ['number', 'title', 'html_url', 'state', 'state_reason', 'created_at', 'updated_at', 'closed_at', 'comments', 'locked', 'active_lock_reason', 'body', 'body_html']);
