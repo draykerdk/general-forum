@@ -20,9 +20,9 @@ const ROOT = path.join(__dirname, '..');
 const { sanitizeHtml, htmlToText } = require('./lib/sanitize');
 const { createClient, fixtureName, trimForFixture, isApiUrl } = require('./lib/github');
 const { findReferences, sanitizeFragment, clip, hiddenReason, buildSnapshot, SCHEMA } = require('./build-forum-snapshot');
-const { clipText, titleText, ASSEMBLY_NOTICE, TALLY_WORKFLOW, HIDDEN_VOTE_NOTE, WITHHELD_NOTE } = require('./prerender');
+const { clipText, titleText, ASSEMBLY_NOTICE, ASSEMBLY_MERGED_NOTICE, TALLY_WORKFLOW, HIDDEN_VOTE_NOTE, WITHHELD_NOTE, voteText, voteTag } = require('./prerender');
 const vote = require('./lib/vote');
-const { scriptInMarkup, markupUrls } = require('./forum-check');
+const { scriptInMarkup, markupUrls, ownMarkers } = require('./forum-check');
 const { createServer } = require('./serve');
 
 const tests = [];
@@ -307,7 +307,8 @@ test('fixture trimming keeps the fields the builder reads', () => {
     { id: 9, issue_url: 'u', html_url: 'h', created_at: 'c', updated_at: 'u', minimized: { reason: 'spam' }, body: 'b', body_html: '<p>b</p>', body_text: 'b', reactions: {}, author_association: 'NONE', user: { login: 'a', id: 1, type: 'User' } },
     { id: 10, issue_url: 'u', minimized: null, user: null }
   ]);
-  assert.deepStrictEqual(hidden, { id: 9, issue_url: 'u', html_url: 'h', created_at: 'c', updated_at: 'u', minimized: { reason: 'spam' }, body: 'b', body_html: '<p>b</p>', user: { login: 'a', id: 1 } });
+  // A comment keeps its author's type: the tally comment is recognised by it.
+  assert.deepStrictEqual(hidden, { id: 9, issue_url: 'u', html_url: 'h', created_at: 'c', updated_at: 'u', minimized: { reason: 'spam' }, body: 'b', body_html: '<p>b</p>', user: { login: 'a', id: 1, type: 'User' } });
   assert.deepStrictEqual(shown, { id: 10, issue_url: 'u', minimized: null, user: null });
 });
 
@@ -393,6 +394,14 @@ test('votes are read with DAF\'s parser, copied unchanged', () => {
   assert.ok(page.includes('const AS_RE = ' + vote.AS_RE.toString() + ';'), 'index.html AS_RE differs');
   assert.ok(page.includes('const ASSEMBLY_TITLE = ' + vote.ASSEMBLY_TITLE.toString() + ';'), 'index.html ASSEMBLY_TITLE differs');
   assert.ok(page.includes('const TALLY_MARKER = ' + vote.TALLY_MARKER.toString() + ';'), 'index.html TALLY_MARKER differs');
+  // The tally comment is the bot's, as in daf tools/lib/sticky.js isOurs; the live layer uses the same rule.
+  assert.ok(page.includes("const TALLY_BOT = '" + vote.TALLY_BOT + "';") && page.includes('const isTallyComment = ' + vote.isTallyComment.toString() + ';'), 'index.html tally rule differs');
+  const tally = '<!-- daf-tally:v1 -->\n## Tally';
+  assert.strictEqual(vote.isTallyComment({ body: tally, user: { login: 'github-actions[bot]', type: 'Bot' } }), true);
+  assert.strictEqual(vote.isTallyComment({ body: tally, user: { login: 'example-cedar-gh', type: 'User' } }), false, 'a person\'s comment that starts with the marker');
+  assert.strictEqual(vote.isTallyComment({ body: tally, user: { login: 'github-actions[bot]', type: 'User' } }), false, 'the login alone is not enough');
+  assert.strictEqual(vote.isTallyComment({ body: 'Before\n' + tally, user: { login: 'github-actions[bot]', type: 'Bot' } }), false, 'the marker starts the body');
+  assert.strictEqual(vote.isTallyComment({ body: tally, user: null }), false);
   // DAF's own examples (tools/test/helpers.js and tally.test.js).
   assert.deepStrictEqual(vote.readVote('Discussion first.\n\nVOTE: for\nAS: `example-delta`\n'), { vote: 'for', holder: 'example-delta' });
   assert.deepStrictEqual(vote.readVote('VOTE: For\nAS: Example-Delta'), { vote: 'for', holder: 'example-delta' });
@@ -403,6 +412,21 @@ test('votes are read with DAF\'s parser, copied unchanged', () => {
   assert.strictEqual(vote.voteOf(null), null);
   for (const t of ['Assembly 2026-11', 'Assembly 2027-01']) assert.ok(vote.ASSEMBLY_TITLE.test(t), t);
   for (const t of ['Assembly 2026-13', 'Assembly 2026-00', 'assembly 2026-11', 'Assembly 2026-11 report', '[Cycle] Assembly 2026-11', ' Assembly 2026-11']) assert.ok(!vote.ASSEMBLY_TITLE.test(t), t);
+});
+
+test('static and app wording of assembly reports match, and mirrored content cannot forge the markers', () => {
+  const page = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  assert.ok(page.includes('<p>' + ASSEMBLY_NOTICE + '</p>'), 'index.html open assembly notice differs from tools/prerender.js');
+  assert.ok(page.includes('<p>' + ASSEMBLY_MERGED_NOTICE + '</p>'), 'index.html merged assembly notice differs from tools/prerender.js');
+  assert.ok(ASSEMBLY_NOTICE.endsWith(' A vote line counts only if its author speaks for the holder it names and it falls inside the voting window; the Federation tally checks this on GitHub.'));
+  assert.ok(page.includes("voteText: vote ? 'Vote line: ' + String(vote.vote) + ' · names ' + String(vote.as) : ''"), 'index.html vote tag differs');
+  assert.strictEqual(voteText({ vote: 'against', as: 'example-cedar' }), 'Vote line: against · names example-cedar');
+  // The sanitizer drops the vote tag class and the notice markup from mirrored
+  // content, so ownMarkers (tools/forum-check.js) never counts them.
+  const forged = sanitizeHtml('<p class="fs-meta fs-vote">Vote line: for · names x</p><section aria-label="Assembly report"><p>n</p></section><p class="fs-vote ugc pl-k">y</p>', {});
+  assert.ok(!/fs-vote|fs-meta|aria-label|<section|ugc"/.test(forged), forged);
+  assert.deepStrictEqual(ownMarkers(forged), { votes: [], notices: 0 });
+  assert.deepStrictEqual(ownMarkers('<div class="fs-body ugc">' + forged + '</div>'), { votes: [], notices: 0 });
 });
 
 test('assembly reports become threads in daf only, and votes are only tagged', () => {
@@ -426,8 +450,13 @@ test('assembly reports become threads in daf only, and votes are only tagged', (
       comment('daf', 1, 11, 'VOTE: for\nAS: example-river'),
       comment('daf', 2, 21, 'VOTE: for\nAS: `example-river`'),
       comment('daf', 2, 22, 'VOTE: against\nAS: hidden-holder', { minimized: { reason: 'spam' } }),
-      comment('daf', 2, 23, '<!-- daf-tally:v1 -->\n## Tally\n\nfor: 4 points'),
-      comment('daf', 2, 24, 'Just discussion.')
+      comment('daf', 2, 23, '<!-- daf-tally:v1 -->\n## Tally\n\nfor: 4 points', { user: { login: 'github-actions[bot]', id: 41898282, type: 'Bot' } }),
+      comment('daf', 2, 24, 'Just discussion.'),
+      // A person's comment that starts with the marker is not the tally.
+      comment('daf', 2, 25, '<!-- daf-tally:v1 -->\nVOTE: for\nAS: example-cedar', { user: { login: 'cedar', id: 5, type: 'User' } }),
+      // A vote line by an account that is not the holder's speaker is tagged
+      // with what it names: whether it counts is for the Federation tally.
+      comment('daf', 2, 26, 'VOTE: against\nAS: example-cedar', { user: { login: 'mallory', id: 6, type: 'User' } })
     ],
     pulls: [{ number: 3, state: 'closed', merged_at: '2026-10-09T00:00:00Z', base: { ref: 'master' } }, { number: 4, state: 'closed', merged_at: '2026-09-09T00:00:00Z', base: { ref: 'side' } }] },
     { repo: repo('dk'), items: [pr('dk', 8, 'Assembly 2026-11', 'open')], comments: [], pulls: null }
@@ -440,7 +469,9 @@ test('assembly reports become threads in daf only, and votes are only tagged', (
   // A merged assembly report is a thread and stays a decision; a merge into a side branch is neither.
   assert.deepStrictEqual(forum.decisions.map((d) => d.num), [3]);
   // Assembly reports are threads: they count in threads and open; decisions are unchanged.
-  assert.deepStrictEqual([forum.counts.threads, forum.counts.open, forum.counts.decisions, forum.counts.comments], [3, 2, 1, 5]);
+  assert.deepStrictEqual([forum.counts.threads, forum.counts.open, forum.counts.decisions, forum.counts.comments], [3, 2, 1, 7]);
+  // merged: the merge time of a merged report, null for an open one and for an issue.
+  assert.deepStrictEqual(forum.threads.map((t) => [t.num, t.merged]).sort((a, b) => a[0] - b[0]), [[1, null], [2, null], [3, '2026-10-09T00:00:00Z']]);
   assert.deepStrictEqual([forum.repos[0].threads, forum.repos[0].open], [3, 2]);
   const file = threadFiles.find((f) => f.path === 't/daf/2.json').data;
   assert.strictEqual(file.kind, 'pr');
@@ -449,6 +480,9 @@ test('assembly reports become threads in daf only, and votes are only tagged', (
   assert.deepStrictEqual([byId.get(22).hidden, byId.get(22).html, byId.get(22).vote], ['spam', '', null], 'a hidden vote is not read');
   assert.deepStrictEqual([byId.get(23).html, byId.get(23).vote], ['', null], 'the federation\'s tally comment is never published');
   assert.strictEqual(byId.get(24).vote, null);
+  assert.deepStrictEqual([byId.get(25).html !== '', byId.get(25).vote], [true, { vote: 'for', as: 'example-cedar' }], 'a person\'s comment with the marker is shown and its vote line read');
+  assert.deepStrictEqual(byId.get(26).vote, { vote: 'against', as: 'example-cedar' });
+  assert.strictEqual(threadFiles.find((f) => f.path === 't/daf/3.json').data.merged, '2026-10-09T00:00:00Z');
   assert.strictEqual(threadFiles.find((f) => f.path === 't/daf/1.json').data.comments[0].vote, null, 'votes are read on assembly reports only');
   const all = JSON.stringify(forum) + threadFiles.map((f) => JSON.stringify(f.data)).join('');
   assert.ok(!all.includes('hidden-holder') && !all.includes('4 points'), 'hidden or tally content published');
@@ -457,7 +491,7 @@ test('assembly reports become threads in daf only, and votes are only tagged', (
 // ---------------------------------------------------------------- snapshot contract
 
 const ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
-const THREAD_KEYS = ['repo', 'slug', 'num', 'kind', 'title', 'url', 'user', 'user_id', 'labels', 'state', 'state_reason', 'open', 'locked', 'lock_reason', 'created', 'at', 'closed', 'comments', 'last_user', 'last_at', 'participants', 'excerpt', 'text', 'refs'];
+const THREAD_KEYS = ['repo', 'slug', 'num', 'kind', 'title', 'url', 'user', 'user_id', 'labels', 'state', 'state_reason', 'open', 'locked', 'lock_reason', 'created', 'at', 'closed', 'merged', 'comments', 'last_user', 'last_at', 'participants', 'excerpt', 'text', 'refs'];
 const REF_KEYS = ['repo', 'slug', 'num', 'kind', 'title', 'url', 'merged', 'state'];
 const DECISION_KEYS = ['repo', 'slug', 'num', 'title', 'url', 'user', 'merged', 'excerpt', 'text', 'threads'];
 const COMMENT_KEYS = ['id', 'user', 'user_id', 'created', 'updated', 'hidden', 'html', 'url', 'vote'];
@@ -506,6 +540,9 @@ function validateSnapshot(dataDir) {
     assert.ok(t.state_reason === null || ['completed', 'not_planned', 'reopened', 'duplicate'].includes(t.state_reason), 'state_reason: ' + t.state_reason);
     assert.ok(ISO.test(t.created) && ISO.test(t.at));
     assert.ok(t.open ? t.closed === null || ISO.test(t.closed) : ISO.test(t.closed));
+    // merged: null on issues and open reports; the merge time on a merged report
+    // (a closed report is in the snapshot only when it was merged).
+    assert.ok(t.kind === 'pr' && !t.open ? ISO.test(t.merged) : t.merged === null, 'merged for ' + where + ': ' + t.merged);
     assert.ok(t.excerpt.length <= 280 && t.text.length <= 2000);
     assert.ok(!/\s{2}/.test(t.excerpt) && !/\s{2}/.test(t.text), 'whitespace collapsed: ' + where);
     assert.ok(t.text.startsWith(t.excerpt.replace(/…$/, '')), 'excerpt is a prefix of text: ' + where);
@@ -633,7 +670,8 @@ test('recorded fixture builds a valid, stable snapshot', () => {
 
   // The synthetic federation threads (test/fixtures/make-daf-federation-fixture.js).
   const byKey = new Map(a.forum.threads.map((t) => [t.repo + '#' + t.num, t]));
-  assert.deepStrictEqual(['daf#9001', 'daf#9002', 'daf#9003', 'daf#9004'].map((k) => byKey.has(k) && byKey.get(k).kind), ['issue', 'issue', 'pr', 'pr']);
+  assert.deepStrictEqual(['daf#9001', 'daf#9002', 'daf#9003', 'daf#9004', 'daf#9005'].map((k) => byKey.has(k) && byKey.get(k).kind), ['issue', 'issue', 'pr', 'pr', 'issue']);
+  assert.deepStrictEqual([byKey.get('daf#9003').merged, byKey.get('daf#9004').merged], [null, '2026-10-08T04:30:00Z']);
   assert.ok(a.forum.decisions.some((d) => d.repo === 'daf' && d.num === 9004), 'a merged assembly report is also a decision');
   assert.ok(!byKey.get('daf#9004').open && byKey.get('daf#9004').url === 'https://github.com/draykerdk/daf/pull/9004');
   const report = byKey.get('daf#9003');
@@ -652,14 +690,25 @@ test('recorded fixture builds a valid, stable snapshot', () => {
   const staticOf = (html) => html.slice(html.indexOf('<!-- FORUM_STATIC_START -->'), html.indexOf('<!-- FORUM_STATIC_END -->'));
   const region = staticOf(page);
   const esc = (x) => x.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-  assert.ok(region.includes('<p>' + esc(ASSEMBLY_NOTICE) + '</p>'), 'assembly notice');
+  assert.ok(region.includes('<p>' + esc(ASSEMBLY_NOTICE) + '</p>') && !region.includes(esc(ASSEMBLY_MERGED_NOTICE)), 'open assembly notice');
   assert.ok(region.includes('<a href="https://github.com/draykerdk/daf/pull/9003">The pull request on GitHub</a>') && region.includes('<a href="' + TALLY_WORKFLOW + '">The Federation tally workflow</a>'));
   assert.ok(region.indexOf('aria-label="Assembly report"') < region.indexOf('aria-label="Replies"'), 'the notice is above the replies');
-  assert.ok(region.includes('<p class="fs-meta">Vote: for · as <span class="ugc">example-river</span></p>'), 'vote tag');
-  assert.strictEqual((region.match(/Vote: /g) || []).length, 1, 'one tag, for the one visible vote');
+  // The tag names what the vote line names; it does not say the vote is the holder's.
+  assert.strictEqual(voteTag({ vote: 'for', as: 'example-river' }), '<p class="fs-meta fs-vote">Vote line: for · names <span class="ugc">example-river</span></p>');
+  assert.ok(region.includes(voteTag({ vote: 'for', as: 'example-river' })), 'vote tag');
+  assert.strictEqual((region.match(/Vote line: /g) || []).length, 1, 'one tag, for the one visible vote');
+  assert.deepStrictEqual(ownMarkers(region).votes, [{ comment: 900300001, text: 'Vote line: for · names example-river' }]);
+  // A merged report: the merged notice, and "Merged", never "closed".
+  const merged = staticOf(fs.readFileSync(path.join(tmp, 'a/t/daf/9004/index.html'), 'utf8'));
+  assert.ok(merged.includes('<section aria-label="Assembly report"><p>' + esc(ASSEMBLY_MERGED_NOTICE) + '</p>') && !merged.includes(esc(ASSEMBLY_NOTICE)), 'merged assembly notice');
+  assert.ok(merged.includes('<span class="fs-state">merged 8 Oct 2026</span>') && !merged.includes('<span class="fs-state">closed'), 'merged state label');
+  assert.ok(staticOf(fs.readFileSync(path.join(tmp, 'a/index.html'), 'utf8')).includes('daf #9004 · <span class="fs-state">merged 8 Oct 2026</span>'), 'merged state in the list');
+  // The cycle issue links back to the report's forum page, not to GitHub.
+  const cycle = staticOf(fs.readFileSync(path.join(tmp, 'a/t/daf/9002/index.html'), 'utf8'));
+  assert.ok(cycle.includes('<a class="ugc" href="/t/daf/9003/">Assembly 2026-11</a><p class="fs-meta">Pull request daf #9003 · open</p>'), 'back-link to the report page');
   assert.ok(region.includes('<p class="fs-meta">Hidden on GitHub (off-topic)</p><p class="fs-meta">' + esc(HIDDEN_VOTE_NOTE) + '</p>'));
   assert.ok(!region.includes(esc(WITHHELD_NOTE)));
-  for (const file of [path.join(tmp, 'a/t/daf/9002/index.html'), path.join(tmp, 'a/t/daf/9001/index.html')]) {
+  for (const file of [path.join(tmp, 'a/t/daf/9002/index.html'), path.join(tmp, 'a/t/daf/9001/index.html'), path.join(tmp, 'a/t/daf/9005/index.html')]) {
     assert.ok(!staticOf(fs.readFileSync(file, 'utf8')).includes('aria-label="Assembly report"'), 'no assembly notice on an issue');
   }
   const everything = [];
@@ -721,12 +770,46 @@ test('live-safety fixture passes the live-mode checks and stays safe', () => {
   const page = (rel) => fs.readFileSync(path.join(out, rel), 'utf8');
   const region = (html) => html.slice(html.indexOf('<!-- FORUM_STATIC_START -->'), html.indexOf('<!-- FORUM_STATIC_END -->'));
   for (const t of forum.threads) {
-    const detail = readJson(path.join(data, 't/lab/' + t.num + '.json'));
-    for (const html of [detail.html].concat(detail.comments.map((c) => c.html))) assertSafe(html, 'lab#' + t.num);
-    const r = region(page('t/lab/' + t.num + '/index.html'));
-    assert.deepStrictEqual(scriptInMarkup(r), [], 'no script in lab#' + t.num);
-    assert.ok(markupUrls(r).every((u) => /^(\/|https?:\/\/|mailto:)/.test(u)), 'absolute URLs in lab#' + t.num);
+    const where = t.repo + '#' + t.num;
+    const detail = readJson(path.join(data, 't/' + t.slug + '/' + t.num + '.json'));
+    for (const html of [detail.html].concat(detail.comments.map((c) => c.html))) assertSafe(html, where);
+    const r = region(page('t/' + t.slug + '/' + t.num + '/index.html'));
+    assert.deepStrictEqual(scriptInMarkup(r), [], 'no script in ' + where);
+    assert.ok(markupUrls(r).every((u) => /^(\/|https?:\/\/|mailto:)/.test(u)), 'absolute URLs in ' + where);
   }
+  // F1: "Vote: " in titles, bodies and comments, on issues and on assembly
+  // reports, never blocks a deploy, and only the forum's own tags are counted.
+  const daf = (n) => region(page('t/daf/' + n + '/index.html'));
+  const dafJson = (n) => readJson(path.join(data, 't/daf/' + n + '.json'));
+  assert.deepStrictEqual(forum.threads.filter((t) => t.repo === 'daf').map((t) => t.num + ':' + t.kind + ':' + t.merged).sort(),
+    ['21:pr:2026-03-29T00:00:00Z', '22:pr:null', '23:issue:null', '24:issue:null', '25:issue:null']);
+  assert.deepStrictEqual(dafJson(22).comments.map((c) => [c.id, c.html === '', c.vote]), [
+    [2201, false, { vote: 'for', as: 'example-river' }],
+    [2202, false, null],
+    [2203, false, { vote: 'for', as: 'example-cedar' }],
+    [2204, true, null],
+    [2205, false, { vote: 'against', as: 'example-cedar' }],
+    [2206, false, null],
+    [2207, true, { vote: 'for', as: 'example-oak' }]
+  ], 'mixed case read, prose not a vote, a person\'s marker comment shown, the bot\'s tally withheld, a non-speaker\'s line tagged, a line inside an HTML comment read');
+  assert.deepStrictEqual(ownMarkers(daf(22)), { votes: [
+    { comment: 2201, text: 'Vote line: for · names example-river' },
+    { comment: 2203, text: 'Vote line: for · names example-cedar' },
+    { comment: 2205, text: 'Vote line: against · names example-cedar' },
+    { comment: 2207, text: 'Vote line: for · names example-oak' }
+  ], notices: 1 });
+  assert.ok(daf(22).includes('<p class="fs-meta">' + WITHHELD_NOTE + '</p>') && !fs.readFileSync(path.join(data, 't/daf/22.json'), 'utf8').includes('TALLYCOUNT-5e2b'), 'the bot\'s tally is withheld');
+  assert.ok(!daf(22).includes('fs-vote">Vote line: for · names example-river</p>'), 'a forged tag keeps no class');
+  assert.deepStrictEqual(ownMarkers(daf(21)), { votes: [{ comment: 2101, text: 'Vote line: for · names example-river' }], notices: 1 });
+  assert.ok(daf(21).includes(ASSEMBLY_MERGED_NOTICE) && daf(21).includes('<span class="fs-state">merged 29 Mar 2026</span>'), 'merged report');
+  for (const n of [23, 24, 25]) {
+    assert.deepStrictEqual(ownMarkers(daf(n)), { votes: [], notices: 0 }, 'no tag or notice on daf#' + n);
+    assert.ok(dafJson(n).comments.every((c) => c.vote === null), 'no vote read on daf#' + n);
+  }
+  assert.ok(daf(23).includes('<h1 class="ugc">Vote: should we move the meeting?</h1>'));
+  // The [Veto] issue links back to the report that mentions it, on the forum.
+  assert.ok(daf(24).includes('<a class="ugc" href="/t/daf/22/">Assembly 2026-10</a>'), 'back-link to the report page');
+  assert.ok(daf(25).includes('Conversation locked on GitHub') && daf(25).includes('Reply on GitHub when you can.') && !daf(25).includes('#new_comment_field'), 'locked, with a reply that says Reply on GitHub');
   // SEC-1: the malformed escape survives as an unrewritten GitHub link.
   assert.ok(readJson(path.join(data, 't/lab/1.json')).html.includes('href="https://github.com/draykerdk/a%E9/issues/1"'));
   // SEC-3: logins are mirrored text.
@@ -743,11 +826,16 @@ test('live-safety fixture passes the live-mode checks and stays safe', () => {
   assert.ok(two.includes('<a href="https://github.com/t/lab/1/" rel="nofollow ugc noopener noreferrer">github.com/t/lab/1</a>'));
   assert.ok(two.includes('<a href="https://github.com/t/lab/1/" rel="nofollow ugc noopener noreferrer">/t/lab/1/</a>'), 'a relative /t/ link in a body resolves to github.com');
   // DB-5: only pull requests merged into the default branch are decisions.
-  assert.deepStrictEqual(forum.decisions.map((d) => d.num), [7, 4]);
-  assert.deepStrictEqual(forum.decisions[1].threads, [{ repo: 'lab', slug: 'lab', num: 1 }]);
+  const labDecisions = forum.decisions.filter((d) => d.repo === 'lab');
+  assert.deepStrictEqual(labDecisions.map((d) => d.num), [8, 7, 4]);
+  assert.deepStrictEqual(labDecisions[2].threads, [{ repo: 'lab', slug: 'lab', num: 1 }]);
+  assert.deepStrictEqual(forum.decisions.filter((d) => d.repo === 'daf').map((d) => d.num), [21], 'the merged assembly report is a decision');
   // CF2-10: a decision carries its description as text for search, beyond the excerpt.
-  const seven = forum.decisions[0];
+  const seven = labDecisions.find((d) => d.num === 7);
   assert.ok(seven.text.includes('zeppelin') && !seven.excerpt.includes('zeppelin') && seven.excerpt.endsWith('…'), 'decision text holds the whole description');
+  // lab#8 repeats the assembly note word for word in its description: the
+  // forum-check --live run above passes only if mirrored text never counts as it.
+  assert.ok(labDecisions.some((d) => d.num === 8), 'lab#8 restates the assembly note');
   // SEC-CI-1: titles, logins and labels made only of XML-invalid characters
   // never write an empty feed element.
   for (const feed of ['feed.xml', 'decisions/feed.xml']) {

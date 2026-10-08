@@ -20,7 +20,7 @@
 ## Source model
 
 - Every thread has a canonical forum reading URL and an owning GitHub issue URL.
-- GitHub is checked about every 15 minutes; the site is republished when something changed, and at least once a day.
+- A scheduled workflow (set to every 15 minutes; GitHub may delay scheduled runs) reads GitHub; the site is republished when something changed.
 - Publishing, replies, edit history and moderation remain on GitHub.
 - Prefer the source issue for exact status and the forum URL for a stable public reading surface.
 

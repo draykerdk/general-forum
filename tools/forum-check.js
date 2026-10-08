@@ -14,10 +14,12 @@
  * --live is for a build from the live GitHub data, which anyone can write to.
  * It keeps only checks that such content cannot fail: structure (files,
  * canonical and robots tags, JSON-LD, the static region, sitemap, feeds and
- * entry counts), wording checks that skip mirrored content (class="ugc"), and
- * security checks that read the parsed markup (tags and attributes), never the
- * escaped text. Without --live (the fixture builds), the stricter text checks
- * and the sanitizer fixed-point check run as well.
+ * entry counts), wording checks that skip mirrored content (class="ugc"), the
+ * forum's own markers read with the tokenizer outside mirrored content (vote
+ * tags, assembly notices), and security checks that read the parsed markup
+ * (tags and attributes), never the escaped text. Without --live (the fixture
+ * builds), the stricter text checks, the exact markup of the vote tags and the
+ * sanitizer fixed-point check run as well.
  */
 
 const fs = require('fs');
@@ -174,6 +176,56 @@ function siteText(html) {
     if (isSkipped) skip++;
   });
   return out.join('').replace(/\s+/g, ' ').trim();
+}
+
+// The forum's own markers in a static region, read with the sanitizer's
+// tokenizer; subtrees with class "ugc" (mirrored content), <style> and <script>
+// are skipped. Returns { votes: [{ comment, text }], notices }: each vote tag
+// (an element with class fs-vote) with the id of the comment it sits in (null
+// outside a comment) and its text, and the number of assembly notices
+// (<section aria-label="Assembly report">). Mirrored content cannot produce
+// either marker: the sanitizer drops the class and the attribute, its text is
+// escaped, and its subtree is skipped here.
+function ownMarkers(html) {
+  const votes = [];
+  let notices = 0;
+  const stack = [];
+  let skip = 0;
+  let current = null;
+  tokenize(html, (tok) => {
+    if (tok.type === 'text') { if (current) current.text += tok.text; return; }
+    if (tok.type === 'end') {
+      for (let k = stack.length - 1; k >= 0; k--) {
+        if (stack[k].tag !== tok.name) continue;
+        while (stack.length > k) {
+          const e = stack.pop();
+          if (e.skip) skip--;
+          if (e.vote) current = null;
+        }
+        break;
+      }
+      return;
+    }
+    if (VOID.has(tok.name) || tok.selfClosing) return;
+    const classes = String(tok.attrs.get('class') || '').split(/\s+/);
+    const entry = { tag: tok.name, skip: false, vote: false, comment: null };
+    if (!skip) {
+      const id = /^comment-(\d+)$/.exec(tok.name === 'li' ? String(tok.attrs.get('id') || '') : '');
+      if (id) entry.comment = Number(id[1]);
+      if (tok.name === 'section' && tok.attrs.get('aria-label') === 'Assembly report') notices++;
+      if (classes.includes(pre.VOTE_CLASS) && !current) {
+        let comment = null;
+        for (let k = stack.length - 1; k >= 0; k--) if (stack[k].comment !== null) { comment = stack[k].comment; break; }
+        entry.vote = true;
+        current = { comment, text: '' };
+        votes.push(current);
+      }
+    }
+    if (classes.includes('ugc') || tok.name === 'style' || tok.name === 'script') { entry.skip = true; skip++; }
+    stack.push(entry);
+  });
+  for (const v of votes) v.text = v.text.replace(/\s+/g, ' ').trim();
+  return { votes, notices };
 }
 
 // Start tags of an HTML fragment as { name, attrs: Map } with attribute
@@ -374,6 +426,7 @@ function checkSite(siteDir, live) {
   pages.push({ file: '404.html', url: null, kind: 'notfound' });
 
   const resanitize = pre.makeResanitize(forum);
+  const threadByKey = new Map(forum.threads.map((t) => [t.repo.toLowerCase() + '#' + t.num, t]));
   const routes = pre.readRoutes(read(path.join(ROOT, 'index.html')));
   for (const p of pages) {
     const label = '/' + p.file;
@@ -453,33 +506,42 @@ function checkSite(siteDir, live) {
         check(post.isPartOf && post.isPartOf['@id'] === BASE + '#website' && post.mainEntityOfPage, label + ' posting is not linked to the site');
       }
       if (t.locked) {
-        check(region.includes('Conversation locked on GitHub') && region.includes('href="' + t.url + '">Read on GitHub</a>') && !region.includes('Reply on GitHub'), label + ' is locked but does not say so');
+        // The forum's own text only: a reply may well say "Reply on GitHub".
+        check(region.includes('Conversation locked on GitHub') && region.includes('href="' + t.url + '">Read on GitHub</a>') && !text.includes('Reply on GitHub'), label + ' is locked but does not say so');
       } else {
         check(region.includes('href="' + t.url + '#new_comment_field">Reply on GitHub</a>'), label + ' has no Reply on GitHub link');
       }
       check((region.match(/<li class="fs-comment"/g) || []).length === detail.comments.length, label + ' does not show every comment');
       check(t.kind === 'issue' || t.kind === 'pr', label + ' has no thread kind');
       check(t.url === 'https://github.com/' + 'draykerdk/' + t.repo + (t.kind === 'pr' ? '/pull/' : '/issues/') + t.num, label + ' thread url does not match its kind');
-      const notice = '<section aria-label="Assembly report"><p>' + pre.esc(pre.ASSEMBLY_NOTICE) + '</p>';
+      // Vote tags and notices are counted as the forum's own markup only, never
+      // as text: a title, a body or a comment may say "Vote: " anything.
+      const own = ownMarkers(region);
       if (t.kind === 'pr') {
-        // An assembly report of the federation: the notice above the replies, a
-        // tag for each vote, and never a count, a weight, a quorum or an outcome.
+        // An assembly report of the federation: the notice for its state above
+        // the replies, a tag for each vote line, and never a count, a weight, a
+        // quorum or an outcome.
+        const notice = '<section aria-label="Assembly report"><p>' + pre.esc(pre.assemblyNotice(t)) + '</p>';
         check(t.repo === 'daf', label + ' is a pull request thread outside daf');
-        check(region.includes(notice) && region.indexOf(notice) < region.indexOf('<section aria-label="Replies">'), label + ' has no assembly notice above the replies');
+        check(t.merged === null || /^\d{4}-\d{2}-\d{2}T[0-9:]+Z$/.test(t.merged), label + ' has a bad merged time');
+        check(own.notices === 1 && region.includes(notice) && region.indexOf(notice) < region.indexOf('<section aria-label="Replies">'), label + ' has no assembly notice for its state above the replies');
+        check(region.includes('<span class="fs-state">' + pre.esc(pre.stateLabel(t)) + '</span>'), label + ' state label does not match the data');
         check(region.includes('<a href="' + t.url + '">The pull request on GitHub</a>') && region.includes('<a href="' + pre.TALLY_WORKFLOW + '">The Federation tally workflow</a>'), label + ' assembly notice does not link the pull request and the tally workflow');
-        // (A date before a "Vote:" tag, as in "8 Oct 2026 Vote: for", is not a count.)
-        // Fixture builds only: in live mode a label or a login could match the
-        // pattern, and content from GitHub must never block a deploy.
-        if (!live) check(!/\b\d+\s*(votes?|points?|for|against|abstain(ed|s)?)\b(?!:)|\b(for|against|abstain)\s*[:=]?\s*\d|\b(totals?|quorum|weights?|weighted|outcomes?|majority)\b|%/i.test(text), label + ' shows a count, a weight, a quorum or an outcome');
+        // (A date before a tag, as in "8 Oct 2026 Vote line: for", is not a
+        // count; the merged notice says where the outcome is written, which is
+        // not an outcome.) Fixture builds only: in live mode a label or a login
+        // could match the pattern, and content from GitHub must never block a deploy.
+        if (!live) check(!/\b\d+\s*(votes?(?! line\b)|points?|for|against|abstain(ed|s)?)\b(?!:)|\b(for|against|abstain)\s*[:=]?\s*\d|\b(totals?|quorum|weights?|weighted|outcomes?|majority)\b|%/i.test(text.split(pre.ASSEMBLY_MERGED_NOTICE).join(' ')), label + ' shows a count, a weight, a quorum or an outcome');
         for (const c of detail.comments) {
           const item = (new RegExp('<li class="fs-comment" id="comment-' + Number(c.id) + '">([\\s\\S]*?)</li>').exec(region) || [])[1] || '';
-          const tag = c.vote ? '<p class="fs-meta">Vote: ' + pre.esc(c.vote.vote) + ' · as <span class="ugc">' + pre.esc(c.vote.as) + '</span></p>' : '';
-          check(c.vote ? item.includes(tag) && !c.hidden : !item.includes('>Vote: '), label + ' comment ' + c.id + ' vote tag does not match the data');
+          const tags = own.votes.filter((v) => v.comment === Number(c.id)).map((v) => v.text);
+          check(c.vote ? !c.hidden && tags.length === 1 && tags[0] === pre.voteText(c.vote) : tags.length === 0, label + ' comment ' + c.id + ' vote tag does not match the data');
+          if (!live && c.vote) check(item.includes(pre.voteTag(c.vote)), label + ' comment ' + c.id + ' vote tag markup changed');
           if (c.hidden) check(item.includes('<p class="fs-meta">' + pre.esc(pre.HIDDEN_VOTE_NOTE) + '</p>'), label + ' hidden comment ' + c.id + ' does not say its vote is not shown');
         }
-        check((region.match(/>Vote: /g) || []).length === detail.comments.filter((c) => c.vote).length, label + ' tags a comment that holds no vote');
+        check(own.votes.length === detail.comments.filter((c) => c.vote).length && own.votes.every((v) => v.comment !== null), label + ' tags a comment that holds no vote');
       } else {
-        check(!region.includes('aria-label="Assembly report"') && !region.includes('>Vote: ') && detail.comments.every((c) => c.vote === null), label + ' is an issue with assembly markup or votes');
+        check(own.notices === 0 && own.votes.length === 0 && t.merged === null && detail.comments.every((c) => c.vote === null), label + ' is an issue with assembly markup or votes');
       }
       for (const c of detail.comments) {
         if (c.hidden === null) continue;
@@ -488,7 +550,13 @@ function checkSite(siteDir, live) {
         check(item.includes('<p class="fs-meta">Hidden on GitHub (' + c.hidden + ')</p>') && !item.includes('fs-body'), label + ' hidden comment ' + c.id + ' is not shown as hidden');
       }
       check(region.includes('<div class="fs-body ugc">' + (detail.html ? resanitize(detail.html) : '')) || !detail.html, label + ' does not show the sanitized body');
-      for (const r of t.refs || []) check(region.includes(r.url) || r.kind === 'issue', label + ' does not list the back-link ' + r.repo + '#' + r.num);
+      // A back-link goes to the forum page of the issue or pull request when it
+      // has one (an assembly report), and to GitHub otherwise.
+      for (const r of t.refs || []) {
+        const local = threadByKey.get(String(r.repo).toLowerCase() + '#' + r.num);
+        const href = local ? pre.threadPath(local.slug, local.num) : r.url;
+        check(region.includes('<a class="ugc" href="' + pre.esc(href) + '">'), label + ' does not link the back-link ' + r.repo + '#' + r.num + ' to ' + href);
+      }
     } else if (p.kind === 'list') {
       const page0 = byType('CollectionPage')[0];
       const list = page0 && page0.mainEntity;
@@ -601,6 +669,10 @@ function checkXmlChecker() {
     check(xmlError(bad) !== null, 'XML checker accepts ' + bad);
   }
   check(siteText('<p>own <a class="ugc" href="/">open source <b>x</b></a> text</p>') === 'own text', 'mirrored text is not excluded from site text');
+  // Markers inside mirrored content never count; the forum's own do, with their comment.
+  const m = ownMarkers('<li class="fs-comment" id="comment-7"><p class="fs-meta fs-vote">Vote line: for · names <span class="ugc">x</span></p>'
+    + '<div class="fs-body ugc"><p class="fs-vote">Vote line: for</p><section aria-label="Assembly report"></section></div></li>');
+  check(JSON.stringify(m) === JSON.stringify({ votes: [{ comment: 7, text: 'Vote line: for · names x' }], notices: 0 }), 'vote markers are not read from the forum\'s own markup only: ' + JSON.stringify(m));
 }
 
 async function checkDeployDecision() {
@@ -656,4 +728,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { xmlError, siteText, scriptInMarkup, markupUrls };
+module.exports = { xmlError, siteText, ownMarkers, scriptInMarkup, markupUrls };

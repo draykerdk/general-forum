@@ -313,7 +313,8 @@ function checkBindings(vals, label) {
     assert.strictEqual(v.showing, 'Showing ' + v.rows.length + ' of ' + DATA.threads.length + ' threads');
     assert.deepStrictEqual(clone(v.stats.map((s) => s.v)), [DATA.counts.threads, DATA.counts.open, DATA.counts.unanswered, DATA.counts.decisions].map(String));
     assert(v.rows.every((r) => /^\/t\/[^/]+\/[0-9]+\/$/.test(r.href)), 'row links must be clean thread paths');
-    assert(/^Last published .+ \(([0-9]+ [A-Z][a-z]{2} [0-9]{4}, )?[0-9]{2}:[0-9]{2} UTC\) · GitHub is checked about every 15 minutes; the site is republished when something changes and at least once a day$/.test(v.sync.stamp), v.sync.stamp);
+    assert(/^Last published .+ \(([0-9]+ [A-Z][a-z]{2} [0-9]{4}, )?[0-9]{2}:[0-9]{2} UTC\) · A scheduled workflow rebuilds the site from GitHub; GitHub may delay scheduled runs\.$/.test(v.sync.stamp), v.sync.stamp);
+    assert(!/15 minutes|once a day/.test(v.sync.stamp), 'the stamp promises no cadence');
     assert(!/picked up|last change/i.test(v.sync.stamp), 'the stamp does not claim a change on GitHub');
     assert.strictEqual(v.sync.note, '', 'no check note before a check');
     assert(!/newer than that/.test(v.sync.detail), 'no claim of newer threads before a check found any');
@@ -410,7 +411,10 @@ function checkBindings(vals, label) {
     assert.strictEqual(k(['open-function'], true, '[Proposal] Something'), 'work', 'labels come before the title prefix');
     // FEDERATION: DAF's forms and assembly reports, in the daf repository only.
     const kd = (repo, labels, title, extra) => c.kindOf(Object.assign({ repo, labels, open: true, state: 'open', title }, extra || {}));
-    for (const title of ['[Cycle] Assembly 2026-11', '[Claim] A delivered function', '[Request] Hosting', '  [request] lower case', '[CLAIM] upper case']) assert.strictEqual(kd('daf', [], title), 'federation', title);
+    for (const title of ['[Cycle] Assembly 2026-11', '[Claim] A delivered function', '[Request] Hosting', '  [request] lower case', '[CLAIM] upper case', '[Veto] Row 2 of the award', '[veto] lower case']) assert.strictEqual(kd('daf', [], title), 'federation', title);
+    // DAF's veto form adds no label: its title prefix makes it FEDERATION, in daf only.
+    assert.strictEqual(kd('dk', [], '[Veto] x'), 'open', 'a [Veto] title elsewhere keeps its usual kind');
+    assert.strictEqual(kd('dfmp', ['motion'], '[Veto] x'), 'proposal', 'a [Veto] title elsewhere keeps its usual kind');
     for (const l of ['assembly', 'claim', 'resource-request']) assert.strictEqual(kd('daf', [l], 'Plain title'), 'federation', l);
     assert.strictEqual(kd('daf', [], 'Assembly 2026-11', { kind: 'pr' }), 'federation', 'an assembly report is FEDERATION');
     assert.strictEqual(kd('daf', ['motion'], 'Assembly 2026-11', { kind: 'pr' }), 'federation', 'an assembly report is FEDERATION whatever its labels');
@@ -435,9 +439,9 @@ function checkBindings(vals, label) {
       if (kind === 'work') assert(t.open && !t.labels.includes('claimed'), 'work to pick up must be open and unclaimed: ' + t.repo + ' #' + t.num);
     }
     if (ON_FIXTURE) {
-      assert.deepStrictEqual(clone(v.kindChips.map((x) => x.t + ' ' + x.n)), ['EVERYTHING 33', 'WORK TO PICK UP 21', 'FUNCTION 8', 'FEDERATION 4']);
+      assert.deepStrictEqual(clone(v.kindChips.map((x) => x.t + ' ' + x.n)), ['EVERYTHING 34', 'WORK TO PICK UP 21', 'FUNCTION 8', 'FEDERATION 5']);
       c.setState({ kind: 'federation', status: 'all', n: 100 });
-      assert.deepStrictEqual(clone(c.renderVals().rows.map((r) => r.where + ' ' + r.kindLabel).sort()), ['daf #9001 FEDERATION', 'daf #9002 FEDERATION', 'daf #9003 FEDERATION', 'daf #9004 FEDERATION']);
+      assert.deepStrictEqual(clone(c.renderVals().rows.map((r) => r.where + ' ' + r.kindLabel).sort()), ['daf #9001 FEDERATION', 'daf #9002 FEDERATION', 'daf #9003 FEDERATION', 'daf #9004 FEDERATION', 'daf #9005 FEDERATION']);
       c.setState({ kind: 'all' });
       c.setState({ status: 'closed', n: 100 });
       // The one closed thread that is not a function is the merged assembly report.
@@ -542,7 +546,7 @@ function checkBindings(vals, label) {
     assert.strictEqual(v.tv.replyUrl, withComments.url + '#new_comment_field');
     assert.strictEqual(v.stands[0].t.indexOf('Opened '), 0);
     if (!withComments.open) assert(v.stands.some((s) => /^Closed/.test(s.t)), 'closed state listed');
-    assert(v.stands.every((s) => /^(Opened|Waiting|No replies|[0-9]+ repl|Claimed|Locked on GitHub|Pull request|Referenced in|Closed|Replies not loaded)/.test(s.t)), 'only data-backed stages');
+    assert(v.stands.every((s) => /^(Opened|Waiting|No replies|[0-9]+ repl|Claimed|Locked on GitHub|Pull request|Referenced in|Closed|Merged|Replies not loaded)/.test(s.t)), 'only data-backed stages');
     assert(!v.tLive);
     // The snapshot is older than 10 minutes in this check, so exactly one call is made
     // for newer comments, and its failure is shown as a failure.
@@ -680,7 +684,7 @@ function checkBindings(vals, label) {
   });
 
   await check('closed, locked and untitled threads', async () => {
-    const closed = DATA.threads.find((t) => !t.open && !t.comments);
+    const closed = DATA.threads.find((t) => !t.open && !t.comments && t.kind === 'issue');
     if (closed) {
       const v = (await boot('/t/' + closed.slug + '/' + closed.num + '/')).renderVals();
       assert.strictEqual(v.cmtNote.text, 'No replies before it was closed.');
@@ -1165,7 +1169,7 @@ function checkBindings(vals, label) {
     assert.strictEqual(v.aboutLead, 'Drayker’s public discussion happens in the issues of its ' + DATA.counts.repos + ' public repositories.');
     assert.strictEqual((await boot('/about/', { data: false })).renderVals().aboutLead, 'Drayker’s public discussion happens in the issues of its public repositories.');
     assert(!/rebuilt from GitHub’s public API about every 15 minutes|refreshes from GitHub about every 15 minutes/.test(template), 'old refresh claim');
-    for (const s of ['href="/feed.xml"', 'href="/decisions/feed.xml"', 'GitHub is checked about every 15 minutes; the site is republished when something changed, and at least once a day.', 'It is the first step of the public contribution path.',
+    for (const s of ['href="/feed.xml"', 'href="/decisions/feed.xml"', 'A scheduled workflow rebuilds the site from GitHub (it is set to run every 15 minutes, but GitHub may delay scheduled runs by hours) and republishes it when something changed. A thread page may also ask GitHub for replies newer than the last publication.', 'It is the first step of the public contribution path.',
       'The thread stays where it is as the record of why it was taken.</div>',
       'A thread page may ask GitHub’s public API for replies newer than the last update, a thread opened after the last update is read live from GitHub, and the list asks GitHub’s search API for newer activity only when you press Check GitHub.',
       'Say what you would like to help with and what you can contribute now. The form opens on GitHub.',
@@ -1176,7 +1180,13 @@ function checkBindings(vals, label) {
     assert(!/none of this is deleted|how much time you have/.test(template), 'retired copy');
     const llms = fs.readFileSync(path.join(root, 'llms.txt'), 'utf8');
     assert(!/every merged pull request/i.test(llms + fs.readFileSync(path.join(root, 'README.md'), 'utf8')), 'README and llms.txt do not claim every merged pull request');
-    assert(llms.includes('the site is republished when something changed, and at least once a day.'), 'llms.txt republish wording');
+    assert(llms.includes('- A scheduled workflow (set to every 15 minutes; GitHub may delay scheduled runs) reads GitHub; the site is republished when something changed.'), 'llms.txt republish wording');
+    // No public text promises a cadence the scheduler does not keep.
+    const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
+    for (const [name, text] of [['index.html', template], ['llms.txt', llms], ['README.md', readme], ['component.yml', fs.readFileSync(path.join(root, '.drayker', 'component.yml'), 'utf8')]]) {
+      assert(!/about every 15 minutes|at least once a day|checked about every/i.test(text), name + ' promises a refresh cadence');
+    }
+    assert(readme.includes('A scheduled workflow in this repository (set to every 15 minutes; GitHub may delay scheduled runs) reads '), 'README schedule wording');
   });
 
   await check('no forbidden strings in user-visible text', async () => {
@@ -1327,7 +1337,8 @@ function checkBindings(vals, label) {
     : realFetch(url));
   // Words and numbers that would make a count, a weight, a quorum or an outcome.
   const COUNTED = /\b\d+\s*(votes?|points?|for|against|abstain(ed|s)?)\b|\b(for|against|abstain)\s*[:=]?\s*\d|\b(totals?|quorum|weights?|weighted|outcomes?|majority)\b|%/i;
-  const NOTICE = 'Assembly report, proposed: nothing in it is in the record until the assembly accepts it. Voting is transitional. The tally is computed on GitHub by the federation’s Federation tally workflow, from the comments there, not from this page.';
+  const NOTICE = 'Assembly report, proposed: nothing in it is in the record until the assembly accepts it. Voting is transitional. The tally is computed on GitHub by the federation’s Federation tally workflow, from the comments there, not from this page. A vote line counts only if its author speaks for the holder it names and it falls inside the voting window; the Federation tally checks this on GitHub.';
+  const MERGED_NOTICE = 'Assembly report, merged into the federation record. A report is merged whether the assembly passed or failed; the outcome is written in the report. Voting is transitional. The tally is computed on GitHub by the Federation tally workflow, not on this page.';
 
   await check('assembly report: notice, vote tags, and no count anywhere', async () => {
     const realFetch = context.fetch;
@@ -1341,19 +1352,22 @@ function checkBindings(vals, label) {
     assert.strictEqual(v.tv.url, 'https://github.com/draykerdk/daf/pull/' + ASM);
     assert.strictEqual(v.tv.replyUrl, 'https://github.com/draykerdk/daf/pull/' + ASM + '#new_comment_field');
     const section = template.slice(template.indexOf('<sc-if value="{{ tv.isAssembly }}">'), template.indexOf('<h2 class="cmts-h">'));
-    assert(section.includes('<p>' + NOTICE + '</p>'), 'assembly notice text');
+    assert(/<sc-if value="\{\{ tv\.isAssemblyOpen \}\}">\s*<p>([^<]*)<\/p>\s*<\/sc-if>/.exec(section)[1] === NOTICE, 'open assembly notice text');
+    assert(/<sc-if value="\{\{ tv\.isAssemblyMerged \}\}">\s*<p>([^<]*)<\/p>\s*<\/sc-if>/.exec(section)[1] === MERGED_NOTICE, 'merged assembly notice text');
+    assert(v.tv.isAssemblyOpen && !v.tv.isAssemblyMerged, 'an open report gets the open notice');
     assert(section.includes('<a href="{{ tv.url }}">The pull request on GitHub →</a>') && section.includes('<a href="https://github.com/draykerdk/daf/actions/workflows/federation-tally.yml">The Federation tally workflow →</a>'));
     assert(template.indexOf('<sc-if value="{{ tv.isAssembly }}">') < template.indexOf('<h2 class="cmts-h">'), 'the notice is above the replies');
     assert.deepStrictEqual(clone(v.cmts.map((x) => [x.hasVote, x.voteText, x.hasNote, x.note])), [
-      [true, 'Vote: for · as example-river', false, ''],
+      [true, 'Vote line: for · names example-river', false, ''],
       [false, '', false, ''],
       [false, '', true, 'Whether it holds a vote is not shown on this page.'],
       [false, '', true, 'Not shown on the forum. Read this reply on GitHub.']
     ]);
     assert.strictEqual(v.cmts[2].hiddenText, 'Hidden on GitHub (spam)', 'a hidden comment keeps the hidden treatment');
     assert(/<sc-if value="\{\{ c\.hasVote \}\}">\s*<p class="vote-tag mono">\{\{ c\.voteText \}\}<\/p>\s*<\/sc-if>/.test(template), 'the vote tag is text');
-    // No total, weight, quorum or outcome: not in the template, not in anything the page renders.
-    assert(!COUNTED.test(section.replace(/<[^>]+>/g, ' ')), 'the notice counts');
+    // No total, weight, quorum or outcome: not in the template, not in anything
+    // the page renders. (The merged notice says where the outcome is written.)
+    assert(!COUNTED.test(section.replace(/<[^>]+>/g, ' ').split(MERGED_NOTICE).join(' ')), 'the notice counts');
     const strings = [];
     const collect = (x, seen) => {
       if (typeof x === 'string') strings.push(x);
@@ -1375,7 +1389,24 @@ function checkBindings(vals, label) {
       const fv = (await boot('/t/daf/9003/', { api: () => Promise.resolve(response(200, [])) })).renderVals();
       checkBindings(fv, 'fixture assembly report');
       assert(fv.tv.isAssembly && fv.tv.kindLabel === 'FEDERATION');
-      assert.deepStrictEqual(clone(fv.cmts.map((x) => x.voteText || x.hiddenText || '-')), ['Vote: for · as example-river', '-', 'Hidden on GitHub (off-topic)']);
+      assert.deepStrictEqual(clone(fv.cmts.map((x) => x.voteText || x.hiddenText || '-')), ['Vote line: for · names example-river', '-', 'Hidden on GitHub (off-topic)']);
+      assert(fv.tv.isAssemblyOpen && !fv.tv.isAssemblyMerged && fv.tv.stateText === 'Open');
+      // A merged report: the merged notice, "Merged" in the state and the side panel, never "Closed".
+      const mv = (await boot('/t/daf/9004/', { api: () => Promise.resolve(response(200, [])) })).renderVals();
+      checkBindings(mv, 'fixture merged assembly report');
+      assert(mv.tv.isAssembly && mv.tv.isAssemblyMerged && !mv.tv.isAssemblyOpen, 'merged report notice');
+      assert.strictEqual(mv.tv.stateText, 'Merged');
+      assert(mv.stands.some((x) => x.t === 'Merged, 8 Oct 2026') && !mv.stands.some((x) => /^Closed/.test(x.t)), JSON.stringify(clone(mv.stands)));
+      assert.strictEqual(mv.cmtNote.text, 'No replies before it was merged.');
+      const row = (await boot('/?kind=federation&status=closed')).renderVals().rows.find((r) => r.where === 'daf #9004');
+      assert.strictEqual(row.stateText, 'Merged');
+      // The cycle issue's back-link goes to the report's forum page.
+      const cv = (await boot('/t/daf/9002/', { api: () => Promise.resolve(response(200, [])) })).renderVals();
+      const back = cv.stands.find((x) => /^Pull request daf #9003/.test(x.t));
+      assert(back && back.href === '/t/daf/9003/', JSON.stringify(clone(cv.stands)));
+      // A [Veto] issue in daf is FEDERATION, with no assembly markup.
+      const vv = (await boot('/t/daf/9005/', { api: () => Promise.resolve(response(200, [])) })).renderVals();
+      assert(vv.tv.kindLabel === 'FEDERATION' && !vv.tv.isAssembly, 'a [Veto] issue is FEDERATION');
     }
   });
 
@@ -1386,7 +1417,9 @@ function checkBindings(vals, label) {
     const raw = [
       { id: 11, user: { login: 'voter', id: 2 }, created_at: '2026-12-01T01:00:00Z', updated_at: '2026-12-01T01:00:00Z', body: 'VOTE: against\nAS: `example-cedar`', body_html: '<p>VOTE: against</p>', html_url: 'a' },
       { id: 12, user: { login: 'hider', id: 3 }, created_at: '2026-12-01T02:00:00Z', updated_at: '2026-12-01T02:00:00Z', body: 'VOTE: for\nAS: hidden-live', body_html: '<p>SECRET-LIVE</p>', html_url: 'b', minimized: { reason: 'spam' } },
-      { id: 13, user: { login: 'github-actions[bot]', id: 4 }, created_at: '2026-12-01T03:00:00Z', updated_at: '2026-12-01T03:00:00Z', body: '<!-- daf-tally:v1 -->\n| for | 7 |', body_html: '<table><tr><td>for</td><td>7</td></tr></table>', html_url: 'c' }
+      { id: 13, user: { login: 'github-actions[bot]', id: 4, type: 'Bot' }, created_at: '2026-12-01T03:00:00Z', updated_at: '2026-12-01T03:00:00Z', body: '<!-- daf-tally:v1 -->\n| for | 7 |', body_html: '<table><tr><td>for</td><td>7</td></tr></table>', html_url: 'c' },
+      // A person's comment that starts with the marker is not the tally (daf sticky.js isOurs).
+      { id: 14, user: { login: 'cedar', id: 5, type: 'User' }, created_at: '2026-12-01T04:00:00Z', updated_at: '2026-12-01T04:00:00Z', body: '<!-- daf-tally:v1 -->\nVOTE: for\nAS: example-cedar', body_html: '<p>VOTE: for</p>', html_url: 'd' }
     ];
     const api = (issue) => (url) => (url.endsWith('/comments?per_page=100') ? Promise.resolve(response(200, raw)) : Promise.resolve(response(200, issue)));
     let c = await boot('/t/daf/990002/', { api: api(pr(990002, 'Assembly 2026-12')) });
@@ -1395,12 +1428,16 @@ function checkBindings(vals, label) {
     assert(v.tLive && v.tv.isAssembly && v.tv.kindLabel === 'FEDERATION' && v.tv.url === 'https://github.com/draykerdk/daf/pull/990002', 'live assembly report: ' + c.state.tState);
     const live = c.tcache['daf/990002'];
     assert.strictEqual(live.kind, 'pr');
-    assert.deepStrictEqual(clone(live.comments.map((x) => [x.hidden, x.html === '', x.vote])), [[null, false, { vote: 'against', as: 'example-cedar' }], ['spam', true, null], [null, true, null]]);
+    assert.deepStrictEqual(clone(live.comments.map((x) => [x.hidden, x.html === '', x.vote])), [[null, false, { vote: 'against', as: 'example-cedar' }], ['spam', true, null], [null, true, null], [null, false, { vote: 'for', as: 'example-cedar' }]]);
+    assert.strictEqual(live.merged, null);
+    assert(v.tv.isAssemblyOpen && !v.tv.isAssemblyMerged);
     assert(!JSON.stringify(live.comments).includes('hidden-live') && !JSON.stringify(live.comments).includes('SECRET-LIVE'), 'hidden content kept');
-    assert.deepStrictEqual(clone(v.cmts.map((x) => x.voteText)), ['Vote: against · as example-cedar', '', '']);
+    assert.deepStrictEqual(clone(v.cmts.map((x) => x.voteText)), ['Vote line: against · names example-cedar', '', '', 'Vote line: for · names example-cedar']);
     // A merged one is still a thread.
     c = await boot('/t/daf/990005/', { api: api(pr(990005, 'Assembly 2026-12', { state: 'closed', pull_request: { merged_at: '2026-12-09T00:00:00Z' } })) });
-    assert(c.renderVals().tLive, 'a merged assembly report is read live');
+    v = c.renderVals();
+    assert(v.tLive, 'a merged assembly report is read live');
+    assert(c.tcache['daf/990005'].merged === '2026-12-09T00:00:00Z' && v.tv.isAssemblyMerged && !v.tv.isAssemblyOpen && v.tv.stateText === 'Merged', 'a merged report read live is merged');
     // Every other pull request keeps the "pull request, not a thread" page.
     for (const [path0, issue] of [['/t/daf/990003/', pr(990003, 'Fix a typo')], ['/t/daf/990004/', pr(990004, 'Assembly 2026-12', { state: 'closed' })],
       ['/t/daf/990006/', pr(990006, 'Assembly 2026-13')], ['/t/dk/990007/', pr(990007, 'Assembly 2026-12', { html_url: 'https://github.com/draykerdk/dk/pull/990007', repository_url: 'https://api.github.com/repos/draykerdk/dk' })]]) {

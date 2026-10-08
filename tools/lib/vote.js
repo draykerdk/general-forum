@@ -39,5 +39,11 @@ const ASSEMBLY_TITLE = /^Assembly \d{4}-(0[1-9]|1[0-2])$/;
 // '<!-- daf-tally:v1 -->'). That comment carries the federation's count, which
 // the forum never shows.
 const TALLY_MARKER = /^<!-- daf-tally:v[0-9]+ -->/;
+// The account that workflow posts as. A comment is the tally only when that
+// account (type Bot) wrote it and its body starts with the marker, the rule of
+// daf tools/lib/sticky.js isOurs: a person's comment that happens to start with
+// the marker is an ordinary comment, and DAF still reads the vote in it.
+const TALLY_BOT = 'github-actions[bot]';
+const isTallyComment = (c) => !!(c && c.user && c.user.login === TALLY_BOT && c.user.type === 'Bot' && TALLY_MARKER.test(String(c.body || '')));
 
-module.exports = { VOTE_RE, AS_RE, readVote, voteOf, ASSEMBLY_TITLE, TALLY_MARKER };
+module.exports = { VOTE_RE, AS_RE, readVote, voteOf, ASSEMBLY_TITLE, TALLY_MARKER, TALLY_BOT, isTallyComment };

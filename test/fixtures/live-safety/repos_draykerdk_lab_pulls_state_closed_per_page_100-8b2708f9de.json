@@ -3,6 +3,14 @@
  "link": null,
  "body": [
   {
+   "number": 8,
+   "state": "closed",
+   "merged_at": "2026-03-13T00:00:00Z",
+   "base": {
+    "ref": "main"
+   }
+  },
+  {
    "number": 7,
    "state": "closed",
    "merged_at": "2026-03-12T00:00:00Z",

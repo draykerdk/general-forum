@@ -3,8 +3,9 @@
 // fixture in test/fixtures/github: one [Claim] issue, one [Cycle] issue and one
 // open "Assembly 2026-11" pull request with three comments (a vote, a plain
 // discussion comment, and a vote hidden on GitHub), and a merged
-// "Assembly 2026-10" pull request (a thread and a decision). Nothing else in the
-// recording is changed. Synthetic items use numbers 9001-9004 and are replaced
+// "Assembly 2026-10" pull request (a thread and a decision), and a [Veto] issue
+// with no label, as DAF's veto form opens it. Nothing else in the recording is
+// changed. Synthetic items use numbers 9001-9005 and are replaced
 // on every run, so running it twice gives the same files.
 // Run after re-recording (see test/fixtures/README.md):
 //   node test/fixtures/make-daf-federation-fixture.js
@@ -13,7 +14,7 @@ const { fixtureName } = require('../../tools/lib/github.js');
 const dir = path.join(__dirname, 'github');
 const A = 'https://api.github.com';
 const R = 'https://github.com/draykerdk/daf';
-const NUMS = [9001, 9002, 9003, 9004];
+const NUMS = [9001, 9002, 9003, 9004, 9005];
 const COMMENT_IDS = [900300001, 900300002, 900300003];
 
 function load(rel) {
@@ -57,6 +58,12 @@ const synthetic = [
     pull_request: { html_url: R + '/pull/9004', merged_at: '2026-10-08T04:30:00Z' },
     body: 'The report for the cycle 2026-10.',
     body_html: '<p>The report for the cycle 2026-10.</p>'
+  }),
+  // DAF's veto form (daf .github/ISSUE_TEMPLATE/veto.yml) titles the issue
+  // "[Veto] " and adds no label.
+  item(9005, '[Veto] Row 2 of the 2026-10 award', 'example-delta-gh', 7003, {
+    body: '### Decision contested\n\nRow 2 of the 2026-10 award.\n\n### Grounds\n\nThe function was delivered after the cycle closed.',
+    body_html: '<h3>Decision contested</h3>\n<p>Row 2 of the 2026-10 award.</p>\n<h3>Grounds</h3>\n<p>The function was delivered after the cycle closed.</p>'
   })
 ];
 

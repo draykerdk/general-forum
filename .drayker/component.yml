@@ -17,7 +17,7 @@ component:
     - emergence-initiative
   implementation:
     level: operational
-    scope: GitHub Issues provide public intake and routing; forum.drayker.org provides a static reading and composing surface over every public draykerdk repository, rebuilt from the GitHub API about every 15 minutes, while publication and follow-through remain on GitHub.
+    scope: GitHub Issues provide public intake and routing; forum.drayker.org provides a static reading and composing surface over every public draykerdk repository, rebuilt from the GitHub API by a scheduled workflow, while publication and follow-through remain on GitHub.
     evidence:
       - type: usage
         ref: https://github.com/draykerdk/general-forum/issues

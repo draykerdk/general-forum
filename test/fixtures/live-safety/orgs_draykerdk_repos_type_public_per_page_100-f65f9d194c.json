@@ -3,6 +3,17 @@
  "link": null,
  "body": [
   {
+   "name": "daf",
+   "private": false,
+   "visibility": "public",
+   "archived": false,
+   "has_issues": true,
+   "description": "Synthetic federation repository for the live-mode checks",
+   "homepage": null,
+   "html_url": "https://github.com/draykerdk/daf",
+   "default_branch": "master"
+  },
+  {
    "name": "lab",
    "private": false,
    "visibility": "public",
