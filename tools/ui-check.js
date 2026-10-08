@@ -60,15 +60,17 @@ function findData() {
 }
 const dataFile = findData();
 const DATA = JSON.parse(fs.readFileSync(dataFile, 'utf8'));
-// The recorded fixture, recognised by its issues: same threads, same titles.
+// The recorded fixture, recognised by its threads: same issues (and open daf
+// assembly reports), same titles.
 function matchesFixture() {
   try {
     const titles = new Map();
+    const assembly = (repo, i) => repo === 'daf' && (i.state === 'open' || (i.pull_request && i.pull_request.merged_at)) && /^Assembly \d{4}-(0[1-9]|1[0-2])$/.test(i.title || '');
     for (const f of fs.readdirSync(FIXTURE_DIR)) {
       if (!/_issues_state_all_/.test(f)) continue;
       const rec = JSON.parse(fs.readFileSync(path.join(FIXTURE_DIR, f), 'utf8'));
       const repo = (String(rec.url || '').match(/\/repos\/[^/]+\/([^/]+)\/issues/) || [])[1];
-      for (const i of rec.body || []) if (repo && i && !i.pull_request) titles.set(repo + '#' + i.number, i.title);
+      for (const i of rec.body || []) if (repo && i && (!i.pull_request || assembly(repo, i))) titles.set(repo + '#' + i.number, i.title);
     }
     return titles.size > 0 && titles.size === DATA.threads.length && DATA.threads.every((t) => titles.get(t.repo + '#' + t.num) === t.title);
   } catch (e) { return false; }
@@ -155,7 +157,7 @@ const context = {
   }
 };
 vm.createContext(context);
-vm.runInContext(script + '\n;globalThis.__forum = { Component, PARTS, ROUTES, POST, META, TYPES, titleOf, clip, sanHref, hiddenReason, composePost, componentFor, similarThreads, meaningfulWords, URL_MAX, TITLE_MIN };', context);
+vm.runInContext(script + '\n;globalThis.__forum = { Component, PARTS, ROUTES, POST, META, TYPES, titleOf, clip, sanHref, hiddenReason, composePost, componentFor, similarThreads, meaningfulWords, URL_MAX, TITLE_MIN, readVote, VOTE_RE, AS_RE };', context);
 const F = context.__forum;
 
 const flush = async () => { for (let i = 0; i < 12; i++) await new Promise((r) => setImmediate(r)); };
@@ -406,7 +408,24 @@ function checkBindings(vals, label) {
     assert.strictEqual(k([], true, '[Report] Something'), 'report');
     for (const t of ['[Question] Something', '[Idea] Something', 'Something']) assert.strictEqual(k([], true, t), 'open', t);
     assert.strictEqual(k(['open-function'], true, '[Proposal] Something'), 'work', 'labels come before the title prefix');
-    assert.deepStrictEqual(clone(F.TYPES.map((t) => t.label)), ['EVERYTHING', 'PROPOSALS', 'WORK TO PICK UP', 'CLAIMED', 'FUNCTION', 'DOCUMENTATION', 'INTRODUCTIONS', 'REPORTS', 'QUESTIONS & IDEAS']);
+    // FEDERATION: DAF's forms and assembly reports, in the daf repository only.
+    const kd = (repo, labels, title, extra) => c.kindOf(Object.assign({ repo, labels, open: true, state: 'open', title }, extra || {}));
+    for (const title of ['[Cycle] Assembly 2026-11', '[Claim] A delivered function', '[Request] Hosting', '  [request] lower case', '[CLAIM] upper case']) assert.strictEqual(kd('daf', [], title), 'federation', title);
+    for (const l of ['assembly', 'claim', 'resource-request']) assert.strictEqual(kd('daf', [l], 'Plain title'), 'federation', l);
+    assert.strictEqual(kd('daf', [], 'Assembly 2026-11', { kind: 'pr' }), 'federation', 'an assembly report is FEDERATION');
+    assert.strictEqual(kd('daf', ['motion'], 'Assembly 2026-11', { kind: 'pr' }), 'federation', 'an assembly report is FEDERATION whatever its labels');
+    // Other repositories keep their kinds: a [Request] title or a claim label elsewhere is not FEDERATION.
+    assert.strictEqual(kd('dk', [], '[Request] Hosting'), 'open', 'a [Request] title outside daf keeps its kind');
+    assert.strictEqual(kd('general-forum', [], '[Claim] Something'), 'open');
+    assert.strictEqual(kd('dk', ['claim'], 'Plain title'), 'open');
+    assert.strictEqual(kd('dk', ['documentation'], '[Cycle] x'), 'docs');
+    assert.strictEqual(kd('daf', [], 'A [Claim] in the middle'), 'open', 'the prefix starts the title');
+    assert.strictEqual(kd('daf', [], '[Proposal] Something'), 'proposal');
+    assert.strictEqual(kd('daf', [], 'Plain question'), 'open');
+    // A DAF claim is not the forum's CLAIMED (the function label).
+    assert.strictEqual(kd('daf', ['claimed'], 'Plain title'), 'claimed');
+    assert.strictEqual(kd('daf', ['claim'], '[Claim] x', { open: false, state: 'closed' }), 'federation');
+    assert.deepStrictEqual(clone(F.TYPES.map((t) => t.label)), ['EVERYTHING', 'PROPOSALS', 'WORK TO PICK UP', 'CLAIMED', 'FUNCTION', 'DOCUMENTATION', 'INTRODUCTIONS', 'REPORTS', 'FEDERATION', 'QUESTIONS & IDEAS']);
     const v = c.renderVals();
     const chips = v.kindChips.filter((x) => x.t !== 'EVERYTHING');
     assert(chips.every((x) => Number(x.n) >= 1), 'only kinds with threads get a chip');
@@ -416,9 +435,13 @@ function checkBindings(vals, label) {
       if (kind === 'work') assert(t.open && !t.labels.includes('claimed'), 'work to pick up must be open and unclaimed: ' + t.repo + ' #' + t.num);
     }
     if (ON_FIXTURE) {
-      assert.deepStrictEqual(clone(v.kindChips.map((x) => x.t + ' ' + x.n)), ['EVERYTHING 29', 'WORK TO PICK UP 21', 'FUNCTION 8']);
+      assert.deepStrictEqual(clone(v.kindChips.map((x) => x.t + ' ' + x.n)), ['EVERYTHING 33', 'WORK TO PICK UP 21', 'FUNCTION 8', 'FEDERATION 4']);
+      c.setState({ kind: 'federation', status: 'all', n: 100 });
+      assert.deepStrictEqual(clone(c.renderVals().rows.map((r) => r.where + ' ' + r.kindLabel).sort()), ['daf #9001 FEDERATION', 'daf #9002 FEDERATION', 'daf #9003 FEDERATION', 'daf #9004 FEDERATION']);
+      c.setState({ kind: 'all' });
       c.setState({ status: 'closed', n: 100 });
-      assert(c.renderVals().rows.every((r) => r.kindLabel === 'FUNCTION'), 'closed functions are labelled FUNCTION');
+      // The one closed thread that is not a function is the merged assembly report.
+      assert(c.renderVals().rows.every((r) => r.kindLabel === 'FUNCTION' || (r.where === 'daf #9004' && r.kindLabel === 'FEDERATION')), 'closed functions are labelled FUNCTION');
     }
   });
 
@@ -583,6 +606,7 @@ function checkBindings(vals, label) {
       api: () => Promise.resolve(response(200, { number: 6, pull_request: {}, html_url: 'https://github.com/draykerdk/dfmp/pull/6' })) });
     const v = c.renderVals();
     assert(v.isNotFound && /pull request/.test(v.nf.title) && v.nf.ghHref === 'https://github.com/draykerdk/dfmp/pull/6');
+    assert.strictEqual(v.nf.text, 'draykerdk/dfmp #6 is a pull request. The forum lists issues, and the federation’s assembly reports (daf pull requests titled Assembly YYYY-MM); this pull request can be read on GitHub.');
   });
 
   await check('thread missing from the snapshot is read live', async () => {
@@ -798,12 +822,19 @@ function checkBindings(vals, label) {
     context.localStorage.setItem('drayker-forum-v1', 'old');
     await c.loadData(true);
     assert.strictEqual(context.localStorage.getItem('drayker-forum-v1'), null, 'obsolete cache key removed');
-    assert(JSON.parse(context.localStorage.getItem('drayker-forum-v2')).data.schema === 2);
-    const bad = await boot('/', { data: false });
-    context.fetch = () => Promise.resolve(response(200, { schema: 1, threads: [] }));
-    await bad.loadData(true);
-    context.fetch = realFetch;
-    assert(bad.renderVals().listError, 'schema other than 2 is rejected');
+    assert(JSON.parse(context.localStorage.getItem('drayker-forum-v2')).data.schema === 3);
+    for (const schema of [1, 2]) {
+      const bad = await boot('/', { data: false });
+      context.fetch = () => Promise.resolve(response(200, Object.assign(clone(DATA), { schema })));
+      await bad.loadData(true);
+      context.fetch = realFetch;
+      assert(bad.renderVals().listError, 'schema ' + schema + ' is rejected: only 3 is read');
+    }
+    // A browser copy of an older schema is dropped and the published file is read.
+    const cached = await boot('/', { data: false });
+    context.localStorage.setItem('drayker-forum-v2', JSON.stringify({ t: Date.now(), data: Object.assign(clone(DATA), { schema: 2 }) }));
+    await cached.loadData(false);
+    assert(cached.state.dataSource === 'published', 'a schema 2 copy in this browser is not used');
   });
 
   await check('theme cycles light, dark, auto', async () => {
@@ -914,6 +945,15 @@ function checkBindings(vals, label) {
     assert(template.includes('Everything you post is public on GitHub and mirrored here. Share only what you are comfortable publishing.'));
     assert(template.includes('Kind to people, relentless with ideas.') && template.includes('not even Drayker’s own.') && template.includes('https://github.com/draykerdk/.github/blob/master/CONTRIBUTING.md'));
     assert(template.includes('https://github.com/draykerdk/general-forum/issues/new?template=volunteer-introduction.yml') && template.includes('https://github.com/draykerdk/general-forum/issues/new?template=partnership.yml'));
+    // Other ways in: DAF's own forms, by exact template URL, with no labels or body.
+    const other = template.slice(template.indexOf('<h2 id="cmp-other-h"'), template.indexOf('</section>', template.indexOf('<h2 id="cmp-other-h"')));
+    const dafLinks = (other.match(/href="https:\/\/github\.com\/draykerdk\/daf\/[^"]*"/g) || []).map((h) => h.slice(6, -1));
+    assert.deepStrictEqual(dafLinks, ['https://github.com/draykerdk/daf/issues/new?template=claim.yml', 'https://github.com/draykerdk/daf/issues/new?template=resource-request.yml',
+      'https://github.com/draykerdk/daf/issues/new?template=cycle.yml']);
+    assert(!/labels=|body=|veto/i.test(other), 'no labels or body parameter, and no veto form');
+    for (const text of ['Claim a function you delivered to the federation →', 'Ask the federation for resources (a last resort) →', 'Open an assembly cycle →',
+      '<p class="side-note side-note-daf">These open DAF’s forms on GitHub. What they create is proposed, not in the record until an assembly accepts it.</p>']) assert(other.includes(text), 'Other ways in: ' + text);
+    assert(!/decentrali[sz]ed|awarded|accepted/i.test(other), 'DAF wording: proposed, never awarded or accepted');
 
     const c = await boot('/new/');
     const opened = [];
@@ -1095,13 +1135,21 @@ function checkBindings(vals, label) {
     const apos = (x) => String(x).replace(/['’]/g, '’');
     const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
     const table = readme.slice(readme.indexOf('| If it is about'));
+    // A route may also offer an issue form: in the README, an "or [label](form URL)" link after the repositories.
     const rows = table.split('\n').slice(2).filter((l) => /^\|/.test(l)).map((l) => {
       const cells = l.split('|').slice(1, -1).map((x) => x.trim());
-      return { about: apos(cells[0]), repos: (cells[1].match(/`[^`]+`/g) || []).map((x) => x.slice(1, -1)) };
+      const form = /, or \[([^\]]+)\]\((https:\/\/github\.com\/draykerdk\/[^/)]+\/issues\/new\?template=[a-z-]+\.yml)\)$/.exec(cells[1]);
+      return { about: apos(cells[0]), repos: (cells[1].match(/`[^`]+`/g) || []).map((x) => x.slice(1, -1)), form: form ? { label: form[1], href: form[2] } : null };
     });
     assert(rows.length >= 8, 'README routing table not found');
-    const routes = v.routes.map((r) => ({ about: apos(r.about), repos: r.repos.map((x) => x.repo.split('/')[1]) }));
-    assert.deepStrictEqual(clone(routes), rows.concat([{ about: 'This forum, or anything you are not sure about', repos: ['general-forum'] }]));
+    const routes = v.routes.map((r) => ({ about: apos(r.about), repos: r.repos.map((x) => x.repo.split('/')[1]), form: r.hasForm ? { label: r.formText.replace(/^or /, '').replace(/ →$/, ''), href: r.formHref } : null }));
+    assert.deepStrictEqual(clone(routes), rows.concat([{ about: 'This forum, or anything you are not sure about', repos: ['general-forum'], form: null }]));
+    assert.deepStrictEqual(clone(F.ROUTES.filter((r) => r.form)), [{ about: 'The federation and its resources', repos: ['daf'],
+      form: { label: 'claim a delivered function', href: 'https://github.com/draykerdk/daf/issues/new?template=claim.yml' } }], 'one form route: the claim form, on the single federation row');
+    const fedRow = v.routes.find((r) => r.hasForm);
+    assert(fedRow.formText === 'or claim a delivered function →' && !/labels=|body=/.test(fedRow.formHref));
+    assert(!F.ROUTES.some((r) => /veto|contest/i.test(r.about + JSON.stringify(r.form || {}))), 'no veto form or route');
+    assert(v.routes.filter((r) => !r.hasForm).every((r) => r.formHref === '' && r.formText === ''));
     // Method, protocol and constitutional proposals go through DFMP; daf owns the federation.
     assert.deepStrictEqual(clone(F.ROUTES[0]), { about: 'The method, a protocol, the constitution, or a proposal’s path', repos: ['dfmp'] });
     assert(F.ROUTES.some((r) => r.about === 'The federation and its resources' && r.repos.join() === 'daf'));
@@ -1257,6 +1305,135 @@ function checkBindings(vals, label) {
     assert(after.hidden && after.hiddenText === 'Hidden on GitHub', after.hiddenText);
   });
 
+  // -------------------------------------------------------------------------
+  // Assembly reports of the federation (daf pull requests, kind 'pr')
+  // -------------------------------------------------------------------------
+  const ASM = 990001;
+  const asmMeta = {
+    repo: 'daf', slug: 'daf', num: ASM, kind: 'pr', title: 'Assembly 2026-12', url: 'https://github.com/draykerdk/daf/pull/' + ASM, user: 'steward', user_id: 1,
+    labels: [], state: 'open', state_reason: null, open: true, locked: false, lock_reason: null, created: '2026-12-01T00:00:00Z', at: '2026-12-02T00:00:00Z',
+    closed: null, comments: 4, last_user: 'tallier', last_at: '2026-12-02T00:00:00Z', participants: ['steward', 'voter', 'talker', 'hider', 'tallier'],
+    excerpt: 'The report.', text: 'The report.', refs: []
+  };
+  const asmComments = [
+    { id: 1, user: 'voter', user_id: 2, created: '2026-12-01T01:00:00Z', updated: '2026-12-01T01:00:00Z', hidden: null, html: '<p>VOTE: for<br>AS: <code>example-river</code></p>', url: 'u1', vote: { vote: 'for', as: 'example-river' } },
+    { id: 2, user: 'talker', user_id: 3, created: '2026-12-01T02:00:00Z', updated: '2026-12-01T02:00:00Z', hidden: null, html: '<p>Discussion only.</p>', url: 'u2', vote: null },
+    { id: 3, user: 'hider', user_id: 4, created: '2026-12-01T03:00:00Z', updated: '2026-12-01T03:00:00Z', hidden: 'spam', html: '', url: 'u3', vote: null },
+    { id: 4, user: 'tallier', user_id: 5, created: '2026-12-02T00:00:00Z', updated: '2026-12-02T00:00:00Z', hidden: null, html: '', url: 'u4', vote: null }
+  ];
+  const withAssembly = () => Object.assign(clone(DATA), { threads: [clone(asmMeta)].concat(clone(DATA.threads)) });
+  const asmFetch = (realFetch) => (url) => (url === '/data/t/daf/' + ASM + '.json'
+    ? Promise.resolve(response(200, Object.assign(clone(asmMeta), { html: '<p>The report.</p>', comments: clone(asmComments) }, { excerpt: undefined, text: undefined })))
+    : realFetch(url));
+  // Words and numbers that would make a count, a weight, a quorum or an outcome.
+  const COUNTED = /\b\d+\s*(votes?|points?|for|against|abstain(ed|s)?)\b|\b(for|against|abstain)\s*[:=]?\s*\d|\b(totals?|quorum|weights?|weighted|outcomes?|majority)\b|%/i;
+  const NOTICE = 'Assembly report, proposed: nothing in it is in the record until the assembly accepts it. Voting is transitional. The tally is computed on GitHub by the federation’s Federation tally workflow, from the comments there, not from this page.';
+
+  await check('assembly report: notice, vote tags, and no count anywhere', async () => {
+    const realFetch = context.fetch;
+    context.fetch = asmFetch(realFetch);
+    const c = await boot('/t/daf/' + ASM + '/', { data: withAssembly(), api: () => Promise.resolve(response(200, [])) });
+    context.fetch = realFetch;
+    const v = c.renderVals();
+    checkBindings(v, 'assembly report');
+    assert(v.isThread && v.tReadyBody && v.tv.isAssembly, 'assembly thread ready: ' + c.state.tState);
+    assert.strictEqual(v.tv.kindLabel, 'FEDERATION');
+    assert.strictEqual(v.tv.url, 'https://github.com/draykerdk/daf/pull/' + ASM);
+    assert.strictEqual(v.tv.replyUrl, 'https://github.com/draykerdk/daf/pull/' + ASM + '#new_comment_field');
+    const section = template.slice(template.indexOf('<sc-if value="{{ tv.isAssembly }}">'), template.indexOf('<h2 class="cmts-h">'));
+    assert(section.includes('<p>' + NOTICE + '</p>'), 'assembly notice text');
+    assert(section.includes('<a href="{{ tv.url }}">The pull request on GitHub →</a>') && section.includes('<a href="https://github.com/draykerdk/daf/actions/workflows/federation-tally.yml">The Federation tally workflow →</a>'));
+    assert(template.indexOf('<sc-if value="{{ tv.isAssembly }}">') < template.indexOf('<h2 class="cmts-h">'), 'the notice is above the replies');
+    assert.deepStrictEqual(clone(v.cmts.map((x) => [x.hasVote, x.voteText, x.hasNote, x.note])), [
+      [true, 'Vote: for · as example-river', false, ''],
+      [false, '', false, ''],
+      [false, '', true, 'Whether it holds a vote is not shown on this page.'],
+      [false, '', true, 'Not shown on the forum. Read this reply on GitHub.']
+    ]);
+    assert.strictEqual(v.cmts[2].hiddenText, 'Hidden on GitHub (spam)', 'a hidden comment keeps the hidden treatment');
+    assert(/<sc-if value="\{\{ c\.hasVote \}\}">\s*<p class="vote-tag mono">\{\{ c\.voteText \}\}<\/p>\s*<\/sc-if>/.test(template), 'the vote tag is text');
+    // No total, weight, quorum or outcome: not in the template, not in anything the page renders.
+    assert(!COUNTED.test(section.replace(/<[^>]+>/g, ' ')), 'the notice counts');
+    const strings = [];
+    const collect = (x, seen) => {
+      if (typeof x === 'string') strings.push(x);
+      else if (x && typeof x === 'object' && !seen.has(x)) { seen.add(x); Object.keys(x).forEach((k) => collect(x[k], seen)); }
+    };
+    collect({ tv: v.tv, cmts: v.cmts, stands: v.stands, fresh: v.fresh, cmtNote: v.cmtNote }, new Set());
+    const hit = strings.find((x) => COUNTED.test(x) && !/^[0-9]+ repl(y|ies)$/.test(x));
+    assert(!hit, 'a rendered string counts: ' + hit);
+    assert.strictEqual(v.tv.repliesHeading, '4 replies', 'replies are counted, votes never');
+    // An issue thread gets no notice and no tag, even if its data carried a vote.
+    const t = DATA.threads.find((x) => x.kind === 'issue' && x.comments > 0) || DATA.threads.find((x) => x.kind === 'issue');
+    context.fetch = (url) => (String(url).startsWith('/data/t/')
+      ? realFetch(url).then((r) => r.json()).then((j) => { j.comments.forEach((x) => { x.vote = { vote: 'for', as: 'x' }; }); return response(200, j); })
+      : realFetch(url));
+    const iv = (await boot('/t/' + t.slug + '/' + t.num + '/', { api: () => Promise.resolve(response(200, [])) })).renderVals();
+    context.fetch = realFetch;
+    assert(!iv.tv.isAssembly && iv.cmts.every((x) => !x.hasVote && !x.hasNote), 'no assembly markup on an issue');
+    if (ON_FIXTURE) {
+      const fv = (await boot('/t/daf/9003/', { api: () => Promise.resolve(response(200, [])) })).renderVals();
+      checkBindings(fv, 'fixture assembly report');
+      assert(fv.tv.isAssembly && fv.tv.kindLabel === 'FEDERATION');
+      assert.deepStrictEqual(clone(fv.cmts.map((x) => x.voteText || x.hiddenText || '-')), ['Vote: for · as example-river', '-', 'Hidden on GitHub (off-topic)']);
+    }
+  });
+
+  await check('live layer: an assembly report is read live, any other pull request is not a thread', async () => {
+    const pr = (n, title, extra) => Object.assign({ number: n, title, html_url: 'https://github.com/draykerdk/daf/pull/' + n, repository_url: 'https://api.github.com/repos/draykerdk/daf',
+      user: { login: 'steward', id: 1 }, labels: [], state: 'open', created_at: '2026-12-01T00:00:00Z', updated_at: '2026-12-01T00:00:00Z', comments: 3,
+      body_html: '<p>Report</p>', pull_request: { html_url: 'https://github.com/draykerdk/daf/pull/' + n, merged_at: null } }, extra || {});
+    const raw = [
+      { id: 11, user: { login: 'voter', id: 2 }, created_at: '2026-12-01T01:00:00Z', updated_at: '2026-12-01T01:00:00Z', body: 'VOTE: against\nAS: `example-cedar`', body_html: '<p>VOTE: against</p>', html_url: 'a' },
+      { id: 12, user: { login: 'hider', id: 3 }, created_at: '2026-12-01T02:00:00Z', updated_at: '2026-12-01T02:00:00Z', body: 'VOTE: for\nAS: hidden-live', body_html: '<p>SECRET-LIVE</p>', html_url: 'b', minimized: { reason: 'spam' } },
+      { id: 13, user: { login: 'github-actions[bot]', id: 4 }, created_at: '2026-12-01T03:00:00Z', updated_at: '2026-12-01T03:00:00Z', body: '<!-- daf-tally:v1 -->\n| for | 7 |', body_html: '<table><tr><td>for</td><td>7</td></tr></table>', html_url: 'c' }
+    ];
+    const api = (issue) => (url) => (url.endsWith('/comments?per_page=100') ? Promise.resolve(response(200, raw)) : Promise.resolve(response(200, issue)));
+    let c = await boot('/t/daf/990002/', { api: api(pr(990002, 'Assembly 2026-12')) });
+    let v = c.renderVals();
+    checkBindings(v, 'live assembly report');
+    assert(v.tLive && v.tv.isAssembly && v.tv.kindLabel === 'FEDERATION' && v.tv.url === 'https://github.com/draykerdk/daf/pull/990002', 'live assembly report: ' + c.state.tState);
+    const live = c.tcache['daf/990002'];
+    assert.strictEqual(live.kind, 'pr');
+    assert.deepStrictEqual(clone(live.comments.map((x) => [x.hidden, x.html === '', x.vote])), [[null, false, { vote: 'against', as: 'example-cedar' }], ['spam', true, null], [null, true, null]]);
+    assert(!JSON.stringify(live.comments).includes('hidden-live') && !JSON.stringify(live.comments).includes('SECRET-LIVE'), 'hidden content kept');
+    assert.deepStrictEqual(clone(v.cmts.map((x) => x.voteText)), ['Vote: against · as example-cedar', '', '']);
+    // A merged one is still a thread.
+    c = await boot('/t/daf/990005/', { api: api(pr(990005, 'Assembly 2026-12', { state: 'closed', pull_request: { merged_at: '2026-12-09T00:00:00Z' } })) });
+    assert(c.renderVals().tLive, 'a merged assembly report is read live');
+    // Every other pull request keeps the "pull request, not a thread" page.
+    for (const [path0, issue] of [['/t/daf/990003/', pr(990003, 'Fix a typo')], ['/t/daf/990004/', pr(990004, 'Assembly 2026-12', { state: 'closed' })],
+      ['/t/daf/990006/', pr(990006, 'Assembly 2026-13')], ['/t/dk/990007/', pr(990007, 'Assembly 2026-12', { html_url: 'https://github.com/draykerdk/dk/pull/990007', repository_url: 'https://api.github.com/repos/draykerdk/dk' })]]) {
+      c = await boot(path0, { api: api(issue) });
+      v = c.renderVals();
+      assert(v.isNotFound && c.state.tMissing && c.state.tMissing.why === 'pr' && /pull request/.test(v.nf.title), path0 + ' must not be a thread');
+    }
+  });
+
+  await check('freshen: new comments on an assembly report are tagged, hidden ones are not read', async () => {
+    const realFetch = context.fetch;
+    context.fetch = asmFetch(realFetch);
+    const fresh = [
+      { id: 21, user: { login: 'late', id: 9 }, created_at: '2030-01-01T00:00:00Z', updated_at: '2030-01-01T00:00:00Z', body: 'Changed my mind.\n\nVOTE: abstain\nAS: example-delta', body_html: '<p>Changed</p>', html_url: 'x' },
+      { id: 22, user: { login: 'late2', id: 10 }, created_at: '2030-01-01T01:00:00Z', updated_at: '2030-01-01T01:00:00Z', body: 'VOTE: for\nAS: hidden-fresh', body_html: '<p>x</p>', html_url: 'y', minimized: { reason: 'abuse' } },
+      { id: 1, user: { login: 'voter', id: 2 }, created_at: '2026-12-01T01:00:00Z', updated_at: '2030-01-01T02:00:00Z', body: 'VOTE: against\nAS: example-river', body_html: '<p>VOTE: against</p>', html_url: 'u1' }
+    ];
+    const c = await boot('/t/daf/' + ASM + '/', { data: withAssembly(), api: () => Promise.resolve(response(200, fresh)) });
+    context.fetch = realFetch;
+    const v = c.renderVals();
+    checkBindings(v, 'freshened assembly report');
+    assert.strictEqual(v.fresh.text, '2 new, 1 edited since the last update.');
+    const byId = {};
+    c.tcache['daf/' + ASM].comments.forEach((x) => { byId[x.id] = x; });
+    assert.deepStrictEqual(clone([byId[21].vote, byId[22].vote, byId[22].hidden, byId[1].vote]), [{ vote: 'abstain', as: 'example-delta' }, null, 'abuse', { vote: 'against', as: 'example-river' }]);
+    // On an issue, a live comment's vote is never read.
+    const c0 = new F.Component();
+    assert.strictEqual(c0.apiComment(fresh[0]).vote, null);
+    assert.strictEqual(c0.apiComment(fresh[0], 1).vote, null, 'a map index is not the assembly flag');
+    assert.deepStrictEqual(clone(c0.apiComment(fresh[0], true).vote), { vote: 'abstain', as: 'example-delta' });
+    assert.deepStrictEqual(clone(F.readVote('VOTE: For\nAS: Example-Delta')), { vote: 'for', holder: 'example-delta' }, 'DAF\'s own example');
+  });
+
   await check('locked threads: kind, row, waiting filter, replies note and side panel', async () => {
     const data = clone(DATA);
     const t = data.threads.find((x) => x.open && !x.comments && (x.labels || []).some((l) => ['open-function', 'help wanted', 'good first issue'].includes(l)))
@@ -1357,6 +1534,28 @@ function checkBindings(vals, label) {
     assert.strictEqual(win.location.pathname, '/t/' + encodeURIComponent(dest.slug) + '/' + dest.num + '/');
     const v = c.renderVals();
     assert(v.tReadyBody && !v.tLive && v.cmts.length === dest.comments, 'the permanent page’s file supplies the replies');
+  });
+
+  await check('decisions: a merged assembly report says the merge is not the outcome', async () => {
+    const NOTE = 'An assembly report is merged whether the assembly passed or failed. The outcome is written in the report on GitHub.';
+    const data = clone(DATA);
+    const base = { url: 'https://github.com/draykerdk/daf/pull/1', user: 'a', threads: [], excerpt: 'Report.', merged: '2026-10-01T00:00:00Z' };
+    data.decisions = [
+      Object.assign({}, base, { repo: 'daf', slug: 'daf', num: 1, title: 'Assembly 2026-09' }),
+      Object.assign({}, base, { repo: 'daf', slug: 'daf', num: 2, title: 'Assembly 2026-13' }),
+      Object.assign({}, base, { repo: 'daf', slug: 'daf', num: 3, title: 'Fix a typo' }),
+      Object.assign({}, base, { repo: 'dk', slug: 'dk', num: 4, title: 'Assembly 2026-09' })
+    ];
+    const v = (await boot('/decisions/', { data })).renderVals();
+    checkBindings(v, 'decisions with an assembly report');
+    assert.deepStrictEqual(clone(decItems(v).map((d) => [d.where, d.partName, d.isAssembly, d.assemblyNote]).sort((a, b) => (a[0] < b[0] ? -1 : 1))), [
+      ['#1', 'DAF', true, NOTE], ['#2', 'DAF', false, ''], ['#3', 'DAF', false, ''], ['#4', 'Dk', false, '']]);
+    assert(/<sc-if value="\{\{ d\.isAssembly \}\}">\s*<p class="dec-ex dec-assembly">\{\{ d\.assemblyNote \}\}<\/p>\s*<\/sc-if>/.test(template), 'note markup');
+    assert(!/\b(passed|failed|accepted|rejected)\b/i.test(decItems(v).map((d) => d.meta + ' ' + d.title).join(' ')), 'no outcome beside the note');
+    if (ON_FIXTURE) {
+      const fx = decItems((await boot('/decisions/')).renderVals());
+      assert.deepStrictEqual(clone(fx.filter((d) => d.isAssembly).map((d) => d.title)), ['Assembly 2026-10']);
+    }
   });
 
   await check('decisions search reads the description text when the snapshot has it', async () => {

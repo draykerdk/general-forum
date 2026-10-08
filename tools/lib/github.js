@@ -18,11 +18,20 @@ const path = require('path');
 const crypto = require('crypto');
 
 const API = 'https://api.github.com';
+const API_HOST = 'api.github.com';
 const MAX_ATTEMPTS = 5;
 const MAX_WAIT_MS = 15 * 60 * 1000;
 
 function absolute(pathOrUrl) {
   return /^https:\/\//.test(pathOrUrl) ? pathOrUrl : API + (pathOrUrl.startsWith('/') ? '' : '/') + pathOrUrl;
+}
+
+// True only for an https URL whose host is exactly api.github.com (no port, no
+// credentials). The token is sent to no other address.
+function isApiUrl(url) {
+  let parsed;
+  try { parsed = new URL(url); } catch (error) { return false; }
+  return parsed.protocol === 'https:' && parsed.hostname === API_HOST && parsed.host === API_HOST && !parsed.username && !parsed.password;
 }
 
 function fixtureName(url) {
@@ -100,7 +109,11 @@ function createClient(options) {
       'X-GitHub-Api-Version': '2022-11-28',
       'User-Agent': 'drayker-forum-snapshot'
     };
-    if (token) headers.Authorization = 'Bearer ' + token;
+    if (token) {
+      // A caller or a Link header could name another host: the token never goes there.
+      if (!isApiUrl(url)) throw new Error('Refusing to send the GitHub token to a URL outside https://api.github.com: ' + url);
+      headers.Authorization = 'Bearer ' + token;
+    }
 
     for (let attempt = 1; ; attempt++) {
       let response;
@@ -182,4 +195,4 @@ function createClient(options) {
   return { get, paginate, stats: () => ({ requests }) };
 }
 
-module.exports = { createClient, fixtureName, nextLink, trimForFixture };
+module.exports = { createClient, fixtureName, nextLink, trimForFixture, isApiUrl };

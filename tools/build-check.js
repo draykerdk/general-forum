@@ -18,9 +18,10 @@ const { spawnSync } = require('child_process');
 
 const ROOT = path.join(__dirname, '..');
 const { sanitizeHtml, htmlToText } = require('./lib/sanitize');
-const { createClient, fixtureName, trimForFixture } = require('./lib/github');
-const { findReferences, sanitizeFragment, clip, hiddenReason } = require('./build-forum-snapshot');
-const { clipText, titleText } = require('./prerender');
+const { createClient, fixtureName, trimForFixture, isApiUrl } = require('./lib/github');
+const { findReferences, sanitizeFragment, clip, hiddenReason, buildSnapshot, SCHEMA } = require('./build-forum-snapshot');
+const { clipText, titleText, ASSEMBLY_NOTICE, TALLY_WORKFLOW, HIDDEN_VOTE_NOTE, WITHHELD_NOTE } = require('./prerender');
+const vote = require('./lib/vote');
 const { scriptInMarkup, markupUrls } = require('./forum-check');
 const { createServer } = require('./serve');
 
@@ -353,19 +354,120 @@ test('GitHub client retries, paginates, records without secrets and replays', as
   assert.strictEqual(attempts, 5);
 });
 
+test('the GitHub token is sent to api.github.com only', async () => {
+  const calls = [];
+  const fakeFetch = async (url, init) => {
+    calls.push({ url, auth: init.headers.Authorization });
+    return { ok: true, status: 200, headers: { get: (k) => (k === 'link' && url.endsWith('/list') ? '<https://example.com/steal?page=2>; rel="next"' : null) }, json: async () => [1], text: async () => '[1]' };
+  };
+  const gh = createClient({ token: 'secret-token-value', fetch: fakeFetch, sleep: async () => {}, log: () => {} });
+  await gh.get('/repos/draykerdk/daf/issues');
+  await gh.get('https://api.github.com/repos/draykerdk/daf');
+  assert.deepStrictEqual(calls.map((c) => c.auth), ['Bearer secret-token-value', 'Bearer secret-token-value']);
+  for (const url of ['https://example.com/x', 'https://api.github.com.example.com/x', 'https://api.github.com:8443/x', 'https://user@api.github.com/x', 'https://uploads.github.com/x', 'https://github.com/draykerdk']) {
+    calls.length = 0;
+    await assert.rejects(gh.get(url), /Refusing to send the GitHub token/, url);
+    assert.strictEqual(calls.length, 0, 'no request made to ' + url);
+  }
+  // A Link header naming another host stops the pagination before any request there.
+  calls.length = 0;
+  await assert.rejects(gh.paginate('/list'), /Refusing to send the GitHub token/);
+  assert.deepStrictEqual(calls.map((c) => c.url), ['https://api.github.com/list']);
+  // Without a token, nothing secret is at stake: the request is made, unauthenticated.
+  calls.length = 0;
+  const open = createClient({ fetch: fakeFetch, sleep: async () => {}, log: () => {} });
+  await open.get('https://example.com/x');
+  assert.deepStrictEqual(calls, [{ url: 'https://example.com/x', auth: undefined }]);
+  assert.ok(isApiUrl('https://api.github.com/x') && !isApiUrl('http://api.github.com/x') && !isApiUrl('not a url'));
+});
+
+// ---------------------------------------------------------------- votes
+
+test('votes are read with DAF\'s parser, copied unchanged', () => {
+  // The regular expressions of draykerdk/daf tools/lib/tally.js at 5f62b6b, byte for byte.
+  assert.strictEqual(vote.VOTE_RE.toString(), '/^\\s*VOTE:\\s*(for|against|abstain)\\s*$/im');
+  assert.strictEqual(vote.AS_RE.toString(), '/^\\s*AS:\\s*`?([a-z0-9-]+)`?\\s*$/im');
+  // index.html carries the same two for the live layer.
+  const page = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  assert.ok(page.includes('const VOTE_RE = ' + vote.VOTE_RE.toString() + ';'), 'index.html VOTE_RE differs');
+  assert.ok(page.includes('const AS_RE = ' + vote.AS_RE.toString() + ';'), 'index.html AS_RE differs');
+  assert.ok(page.includes('const ASSEMBLY_TITLE = ' + vote.ASSEMBLY_TITLE.toString() + ';'), 'index.html ASSEMBLY_TITLE differs');
+  assert.ok(page.includes('const TALLY_MARKER = ' + vote.TALLY_MARKER.toString() + ';'), 'index.html TALLY_MARKER differs');
+  // DAF's own examples (tools/test/helpers.js and tally.test.js).
+  assert.deepStrictEqual(vote.readVote('Discussion first.\n\nVOTE: for\nAS: `example-delta`\n'), { vote: 'for', holder: 'example-delta' });
+  assert.deepStrictEqual(vote.readVote('VOTE: For\nAS: Example-Delta'), { vote: 'for', holder: 'example-delta' });
+  assert.strictEqual(vote.readVote('I would vote for this, but this is discussion.'), null);
+  assert.deepStrictEqual(vote.voteOf('VOTE: abstain\nAS: example-cedar'), { vote: 'abstain', as: 'example-cedar' });
+  assert.strictEqual(vote.voteOf('VOTE: maybe\nAS: example-cedar'), null);
+  assert.strictEqual(vote.voteOf('VOTE: for'), null, 'a vote names its holder');
+  assert.strictEqual(vote.voteOf(null), null);
+  for (const t of ['Assembly 2026-11', 'Assembly 2027-01']) assert.ok(vote.ASSEMBLY_TITLE.test(t), t);
+  for (const t of ['Assembly 2026-13', 'Assembly 2026-00', 'assembly 2026-11', 'Assembly 2026-11 report', '[Cycle] Assembly 2026-11', ' Assembly 2026-11']) assert.ok(!vote.ASSEMBLY_TITLE.test(t), t);
+});
+
+test('assembly reports become threads in daf only, and votes are only tagged', () => {
+  const R = 'https://github.com/draykerdk/';
+  const repo = (name) => ({ name, default_branch: 'master', html_url: R + name, description: null, homepage: null });
+  const pr = (name, n, title, state, merged) => ({
+    number: n, title, html_url: R + name + '/pull/' + n, state, state_reason: null, created_at: '2026-11-01T00:00:00Z', updated_at: '2026-11-02T00:00:00Z',
+    closed_at: state === 'open' ? null : '2026-11-03T00:00:00Z', comments: 0, locked: false, body: 'Report', body_html: '<p>Report</p>',
+    user: { login: 'steward', id: 1 }, labels: [], pull_request: { html_url: R + name + '/pull/' + n, merged_at: merged || null }
+  });
+  const comment = (name, n, id, body, extra) => Object.assign({ id, issue_url: 'https://api.github.com/repos/draykerdk/' + name + '/issues/' + n,
+    html_url: R + name + '/pull/' + n + '#issuecomment-' + id, created_at: '2026-11-01T0' + (id % 10) + ':00:00Z', updated_at: '2026-11-01T0' + (id % 10) + ':00:00Z',
+    minimized: null, body, body_html: '<p>' + body.replace(/\n/g, '<br>') + '</p>', user: { login: 'voter', id: 2 } }, extra || {});
+  const issue = { number: 1, title: '[Claim] Something', html_url: R + 'daf/issues/1', state: 'open', state_reason: null, created_at: '2026-11-01T00:00:00Z',
+    updated_at: '2026-11-01T00:00:00Z', closed_at: null, comments: 1, locked: false, body: '', body_html: '', user: { login: 'a', id: 3 }, labels: [{ name: 'claim' }] };
+  const org = [
+    { repo: repo('daf'), items: [issue, pr('daf', 2, 'Assembly 2026-11', 'open'), pr('daf', 3, 'Assembly 2026-10', 'closed', '2026-10-09T00:00:00Z'),
+      pr('daf', 4, 'Assembly 2026-09', 'closed', '2026-09-09T00:00:00Z'), pr('daf', 5, 'Assembly 2026-08', 'closed'), pr('daf', 6, 'Assembly 2026-13', 'open'),
+      pr('daf', 7, 'Fix a typo', 'open')],
+    comments: [
+      comment('daf', 1, 11, 'VOTE: for\nAS: example-river'),
+      comment('daf', 2, 21, 'VOTE: for\nAS: `example-river`'),
+      comment('daf', 2, 22, 'VOTE: against\nAS: hidden-holder', { minimized: { reason: 'spam' } }),
+      comment('daf', 2, 23, '<!-- daf-tally:v1 -->\n## Tally\n\nfor: 4 points'),
+      comment('daf', 2, 24, 'Just discussion.')
+    ],
+    pulls: [{ number: 3, state: 'closed', merged_at: '2026-10-09T00:00:00Z', base: { ref: 'master' } }, { number: 4, state: 'closed', merged_at: '2026-09-09T00:00:00Z', base: { ref: 'side' } }] },
+    { repo: repo('dk'), items: [pr('dk', 8, 'Assembly 2026-11', 'open')], comments: [], pulls: null }
+  ];
+  const { forum, threadFiles } = buildSnapshot(org, '2026-11-05T00:00:00Z');
+  assert.strictEqual(forum.schema, 3);
+  assert.deepStrictEqual(forum.threads.map((t) => t.repo + '#' + t.num + ':' + t.kind).sort(), ['daf#1:issue', 'daf#2:pr', 'daf#3:pr']);
+  const open = forum.threads.find((t) => t.num === 2);
+  assert.strictEqual(open.url, R + 'daf/pull/2');
+  // A merged assembly report is a thread and stays a decision; a merge into a side branch is neither.
+  assert.deepStrictEqual(forum.decisions.map((d) => d.num), [3]);
+  // Assembly reports are threads: they count in threads and open; decisions are unchanged.
+  assert.deepStrictEqual([forum.counts.threads, forum.counts.open, forum.counts.decisions, forum.counts.comments], [3, 2, 1, 5]);
+  assert.deepStrictEqual([forum.repos[0].threads, forum.repos[0].open], [3, 2]);
+  const file = threadFiles.find((f) => f.path === 't/daf/2.json').data;
+  assert.strictEqual(file.kind, 'pr');
+  const byId = new Map(file.comments.map((c) => [c.id, c]));
+  assert.deepStrictEqual(byId.get(21).vote, { vote: 'for', as: 'example-river' });
+  assert.deepStrictEqual([byId.get(22).hidden, byId.get(22).html, byId.get(22).vote], ['spam', '', null], 'a hidden vote is not read');
+  assert.deepStrictEqual([byId.get(23).html, byId.get(23).vote], ['', null], 'the federation\'s tally comment is never published');
+  assert.strictEqual(byId.get(24).vote, null);
+  assert.strictEqual(threadFiles.find((f) => f.path === 't/daf/1.json').data.comments[0].vote, null, 'votes are read on assembly reports only');
+  const all = JSON.stringify(forum) + threadFiles.map((f) => JSON.stringify(f.data)).join('');
+  assert.ok(!all.includes('hidden-holder') && !all.includes('4 points'), 'hidden or tally content published');
+});
+
 // ---------------------------------------------------------------- snapshot contract
 
 const ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
-const THREAD_KEYS = ['repo', 'slug', 'num', 'title', 'url', 'user', 'user_id', 'labels', 'state', 'state_reason', 'open', 'locked', 'lock_reason', 'created', 'at', 'closed', 'comments', 'last_user', 'last_at', 'participants', 'excerpt', 'text', 'refs'];
+const THREAD_KEYS = ['repo', 'slug', 'num', 'kind', 'title', 'url', 'user', 'user_id', 'labels', 'state', 'state_reason', 'open', 'locked', 'lock_reason', 'created', 'at', 'closed', 'comments', 'last_user', 'last_at', 'participants', 'excerpt', 'text', 'refs'];
 const REF_KEYS = ['repo', 'slug', 'num', 'kind', 'title', 'url', 'merged', 'state'];
 const DECISION_KEYS = ['repo', 'slug', 'num', 'title', 'url', 'user', 'merged', 'excerpt', 'text', 'threads'];
-const COMMENT_KEYS = ['id', 'user', 'user_id', 'created', 'updated', 'hidden', 'html', 'url'];
+const COMMENT_KEYS = ['id', 'user', 'user_id', 'created', 'updated', 'hidden', 'html', 'url', 'vote'];
 const COUNT_KEYS = ['repos', 'threads', 'open', 'closed', 'unanswered', 'comments', 'decisions'];
 
 function validateSnapshot(dataDir) {
   const forum = readJson(path.join(dataDir, 'forum.json'));
   const meta = readJson(path.join(dataDir, 'meta.json'));
-  assert.strictEqual(forum.schema, 2);
+  assert.strictEqual(forum.schema, 3);
+  assert.strictEqual(SCHEMA, 3);
   assert.strictEqual(forum.org, 'draykerdk');
   assert.ok(ISO.test(forum.generated_at));
   assert.deepStrictEqual(Object.keys(forum), ['schema', 'generated_at', 'org', 'repos', 'threads', 'decisions', 'counts']);
@@ -390,7 +492,10 @@ function validateSnapshot(dataDir) {
     assert.deepStrictEqual(Object.keys(t), THREAD_KEYS, 'thread keys for ' + where);
     assert.ok(repoByName.has(t.repo), 'thread repo exists: ' + where);
     assert.strictEqual(t.slug, repoByName.get(t.repo).slug);
-    assert.strictEqual(t.url, 'https://github.com/draykerdk/' + t.repo + '/issues/' + t.num);
+    // Issues, and the federation's assembly reports (pull requests in daf).
+    assert.ok(t.kind === 'issue' || t.kind === 'pr', 'thread kind: ' + where);
+    assert.strictEqual(t.url, 'https://github.com/draykerdk/' + t.repo + (t.kind === 'pr' ? '/pull/' : '/issues/') + t.num);
+    if (t.kind === 'pr') assert.ok(t.repo === 'daf' && vote.ASSEMBLY_TITLE.test(t.title), 'only assembly reports are pull request threads: ' + where);
     assert.ok(Number.isInteger(t.num) && t.num > 0);
     assert.ok(typeof t.title === 'string' && typeof t.user === 'string');
     assert.ok(t.labels.every((l) => l === l.toLowerCase()), 'labels lowercased: ' + where);
@@ -429,6 +534,9 @@ function validateSnapshot(dataDir) {
       previous = c.created;
       assert.ok(c.url.startsWith(t.url + '#issuecomment-'));
       assert.ok(c.hidden === null || (/^[a-z][a-z-]*$/.test(c.hidden) && c.html === ''), 'a hidden comment has a reason and no content: ' + where + ' comment ' + c.id);
+      // A vote is { vote, as }, read on assembly reports only, never from hidden content.
+      assert.ok(c.vote === null || (t.kind === 'pr' && c.hidden === null && JSON.stringify(Object.keys(c.vote)) === '["vote","as"]'
+        && ['for', 'against', 'abstain'].includes(c.vote.vote) && /^[a-z0-9-]+$/.test(c.vote.as)), 'vote on ' + where + ' comment ' + c.id);
       assertSafe(c.html, where + ' comment ' + c.id);
     }
     const last = detail.comments[detail.comments.length - 1];
@@ -522,6 +630,51 @@ test('recorded fixture builds a valid, stable snapshot', () => {
   assert.ok(a.forum.decisions.some((d) => d.threads.length > 0), 'some decision points to a thread');
   const forumText = fs.readFileSync(path.join(tmp, 'a/data/forum.json'), 'utf8');
   assert.ok(!/author_association|"MEMBER"|"OWNER"|"CONTRIBUTOR"/.test(forumText), 'author_association is never emitted');
+
+  // The synthetic federation threads (test/fixtures/make-daf-federation-fixture.js).
+  const byKey = new Map(a.forum.threads.map((t) => [t.repo + '#' + t.num, t]));
+  assert.deepStrictEqual(['daf#9001', 'daf#9002', 'daf#9003', 'daf#9004'].map((k) => byKey.has(k) && byKey.get(k).kind), ['issue', 'issue', 'pr', 'pr']);
+  assert.ok(a.forum.decisions.some((d) => d.repo === 'daf' && d.num === 9004), 'a merged assembly report is also a decision');
+  assert.ok(!byKey.get('daf#9004').open && byKey.get('daf#9004').url === 'https://github.com/draykerdk/daf/pull/9004');
+  const report = byKey.get('daf#9003');
+  assert.deepStrictEqual([report.url, report.open, report.comments], ['https://github.com/draykerdk/daf/pull/9003', true, 3]);
+  assert.ok(!a.forum.decisions.some((d) => d.repo === 'daf' && d.num === 9003), 'an open assembly report is not a decision');
+  assert.ok(a.forum.threads.filter((t) => t.kind === 'pr').every((t) => t.repo === 'daf'));
+  assert.ok(byKey.get('daf#9002').refs.some((r) => r.kind === 'pr' && r.num === 9003), 'the cycle issue links back to its report');
+  const detail = readJson(path.join(tmp, 'a/data/t/daf/9003.json'));
+  assert.deepStrictEqual(detail.comments.map((c) => [c.hidden, c.vote]), [[null, { vote: 'for', as: 'example-river' }], [null, null], ['off-topic', null]]);
+
+  // Built site from the recorded fixture: the static page of the report, and the
+  // hidden vote in no file at all.
+  const pre = runTool('prerender.js', ['--out', path.join(tmp, 'a')]);
+  assert.strictEqual(pre.status, 0, 'prerender failed: ' + pre.stderr);
+  const page = fs.readFileSync(path.join(tmp, 'a/t/daf/9003/index.html'), 'utf8');
+  const staticOf = (html) => html.slice(html.indexOf('<!-- FORUM_STATIC_START -->'), html.indexOf('<!-- FORUM_STATIC_END -->'));
+  const region = staticOf(page);
+  const esc = (x) => x.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  assert.ok(region.includes('<p>' + esc(ASSEMBLY_NOTICE) + '</p>'), 'assembly notice');
+  assert.ok(region.includes('<a href="https://github.com/draykerdk/daf/pull/9003">The pull request on GitHub</a>') && region.includes('<a href="' + TALLY_WORKFLOW + '">The Federation tally workflow</a>'));
+  assert.ok(region.indexOf('aria-label="Assembly report"') < region.indexOf('aria-label="Replies"'), 'the notice is above the replies');
+  assert.ok(region.includes('<p class="fs-meta">Vote: for · as <span class="ugc">example-river</span></p>'), 'vote tag');
+  assert.strictEqual((region.match(/Vote: /g) || []).length, 1, 'one tag, for the one visible vote');
+  assert.ok(region.includes('<p class="fs-meta">Hidden on GitHub (off-topic)</p><p class="fs-meta">' + esc(HIDDEN_VOTE_NOTE) + '</p>'));
+  assert.ok(!region.includes(esc(WITHHELD_NOTE)));
+  for (const file of [path.join(tmp, 'a/t/daf/9002/index.html'), path.join(tmp, 'a/t/daf/9001/index.html')]) {
+    assert.ok(!staticOf(fs.readFileSync(file, 'utf8')).includes('aria-label="Assembly report"'), 'no assembly notice on an issue');
+  }
+  const everything = [];
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else everything.push(full);
+    }
+  };
+  walk(path.join(tmp, 'a'));
+  for (const file of everything) {
+    const text = fs.readFileSync(file);
+    assert.ok(!text.includes('hidden-holder-4c1e') && !text.includes('HIDDENVOTE-4c1e'), 'hidden vote published in ' + path.relative(tmp, file));
+  }
 });
 
 test('synthetic attack fixture is neutralised end to end', () => {
