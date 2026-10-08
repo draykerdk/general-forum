@@ -66,7 +66,7 @@ function trimForFixture(body) {
       return out;
     }
     if ('issue_url' in item) {
-      return Object.assign(pick(item, ['id', 'issue_url', 'html_url', 'created_at', 'updated_at', 'body', 'body_html']), { user: pickUser(item.user) });
+      return Object.assign(pick(item, ['id', 'issue_url', 'html_url', 'created_at', 'updated_at', 'minimized', 'body', 'body_html']), { user: pickUser(item.user) });
     }
     if ('number' in item && 'state' in item) {
       const out = pick(item, ['number', 'title', 'html_url', 'state', 'state_reason', 'created_at', 'updated_at', 'closed_at', 'comments', 'locked', 'active_lock_reason', 'body', 'body_html']);

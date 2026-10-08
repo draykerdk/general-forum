@@ -7,7 +7,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        This is a public issue. Share only information you are comfortable publishing. A contribution is voluntary and does not imply employment, payment, ownership, tokens or guaranteed placement.
+        This is a public issue. Share only information you are comfortable publishing. A contribution is voluntary and does not imply employment, payment, ownership, tokens or guaranteed placement. Public threads in the draykerdk repositories are also shown on forum.drayker.org.
   - type: input
     id: name
     attributes:

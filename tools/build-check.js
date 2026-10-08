@@ -19,7 +19,8 @@ const { spawnSync } = require('child_process');
 const ROOT = path.join(__dirname, '..');
 const { sanitizeHtml, htmlToText } = require('./lib/sanitize');
 const { createClient, fixtureName, trimForFixture } = require('./lib/github');
-const { findReferences, sanitizeFragment, clip } = require('./build-forum-snapshot');
+const { findReferences, sanitizeFragment, clip, hiddenReason } = require('./build-forum-snapshot');
+const { clipText, titleText } = require('./prerender');
 const { scriptInMarkup, markupUrls } = require('./forum-check');
 const { createServer } = require('./serve');
 
@@ -130,7 +131,7 @@ test('sanitizer removes every attack vector', () => {
   assert.strictEqual(clean(VECTORS.math), '');
   assert.strictEqual(clean(VECTORS.form), '');
   assert.strictEqual(clean(VECTORS.imgOnerror), '', 'an image without an https source is dropped');
-  assert.strictEqual(clean(VECTORS.noscriptMxss), '"&gt;');
+  assert.strictEqual(clean(VECTORS.noscriptMxss), '&quot;&gt;');
   assert.strictEqual(clean(VECTORS.commentTrick), '--&gt;<p>after</p>');
   assert.strictEqual(clean(VECTORS.template), '');
   assert.strictEqual(clean(VECTORS.base), '');
@@ -154,6 +155,9 @@ test('sanitizer keeps the allowed structure', () => {
     + '<details open><summary>S</summary>D</details><span class="user-mention">@a</span><div>d</div>');
   assert.strictEqual(clean('<custom-el>text <font color=red>red</font></custom-el>'), 'text red');
   assert.strictEqual(clean('a &amp; b &lt; c &copy; &hellip; &#x1F600; &bogus;'), 'a &amp; b &lt; c © … 😀 &amp;bogus;');
+  // '"' in text is escaped, so text never reads as attribute syntax.
+  assert.strictEqual(clean('<p>write href="/x" or src="/y"</p>'), '<p>write href=&quot;/x&quot; or src=&quot;/y&quot;</p>');
+  assert.strictEqual(clean(clean('<p>a "b"</p>')), '<p>a &quot;b&quot;</p>', 'escaped quotes are a fixed point');
 });
 
 test('sanitizer adds rel, resolves and rewrites links', () => {
@@ -240,6 +244,40 @@ test('htmlToText extracts readable plain text', () => {
   assert.strictEqual(clip('short', 280), 'short');
 });
 
+test('clipping never splits a surrogate pair', () => {
+  const emoji = '\u{1F600}'.repeat(1200);
+  const lone = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:^|[^\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+  for (const max of [280, 279, 2000, 180, 181]) {
+    for (const [name, fn] of [['clip', clip], ['clipText', clipText]]) {
+      const out = fn(emoji, max);
+      assert.ok(out.length <= max && out.endsWith('…'), name + ' ' + max + ' length');
+      assert.ok(!lone.test(out), name + ' ' + max + ' left a lone surrogate');
+      assert.strictEqual(Array.from(out.slice(0, -1)).every((c) => c === '\u{1F600}'), true, name + ' ' + max + ' kept whole emoji');
+    }
+  }
+  assert.strictEqual(clip('ab\u{1F600}', 3), 'ab…');
+  assert.strictEqual(clipText('ab\u{1F600}', 3), 'ab…');
+});
+
+test('titles keep only characters XML can carry', () => {
+  assert.strictEqual(titleText('\u0001'), '(untitled)');
+  assert.strictEqual(titleText('\uFFFF'), '(untitled)');
+  assert.strictEqual(titleText(' \uD800 \u0008 '), '(untitled)', 'lone surrogates and controls only');
+  assert.strictEqual(titleText('a\u0001b \u{1F600}'), 'ab \u{1F600}', 'surrogate pairs are kept');
+  assert.strictEqual(titleText('>'), '>');
+});
+
+test('comments hidden on GitHub keep only their reason', () => {
+  assert.strictEqual(hiddenReason({ minimized: null }), null);
+  assert.strictEqual(hiddenReason({}), null);
+  assert.strictEqual(hiddenReason({ minimized: { reason: 'off-topic' } }), 'off-topic');
+  assert.strictEqual(hiddenReason({ minimized: { reason: 'OFF_TOPIC' } }), 'off-topic');
+  assert.strictEqual(hiddenReason({ minimized: { reason: 'abuse' } }), 'abuse');
+  assert.strictEqual(hiddenReason({ minimized: {} }), 'hidden');
+  assert.strictEqual(hiddenReason({ minimized: { reason: '<b>x</b>' } }), 'hidden');
+  assert.strictEqual(hiddenReason({ minimized: true }), 'hidden');
+});
+
 test('references are read from the anchors GitHub rendered', () => {
   const link = (href, text, cls) => '<a' + (cls ? ' class="issue-link js-issue-link"' : '') + ' href="' + href + '">' + text + '</a>';
   const html = '<p>Closes ' + link('https://github.com/draykerdk/dfmp/issues/3', '#3', true)
@@ -264,6 +302,12 @@ test('fixture trimming keeps the fields the builder reads', () => {
   assert.deepStrictEqual(pr, { number: 4, state: 'closed', merged_at: '2026-01-01T00:00:00Z', base: { ref: 'main' } });
   const [item] = trimForFixture([{ number: 1, state: 'open', title: 't', locked: true, active_lock_reason: 'resolved', author_association: 'OWNER', user: { login: 'a', id: 1, type: 'User' } }]);
   assert.deepStrictEqual(item, { number: 1, title: 't', state: 'open', locked: true, active_lock_reason: 'resolved', user: { login: 'a', id: 1 }, labels: [] });
+  const [hidden, shown] = trimForFixture([
+    { id: 9, issue_url: 'u', html_url: 'h', created_at: 'c', updated_at: 'u', minimized: { reason: 'spam' }, body: 'b', body_html: '<p>b</p>', body_text: 'b', reactions: {}, author_association: 'NONE', user: { login: 'a', id: 1, type: 'User' } },
+    { id: 10, issue_url: 'u', minimized: null, user: null }
+  ]);
+  assert.deepStrictEqual(hidden, { id: 9, issue_url: 'u', html_url: 'h', created_at: 'c', updated_at: 'u', minimized: { reason: 'spam' }, body: 'b', body_html: '<p>b</p>', user: { login: 'a', id: 1 } });
+  assert.deepStrictEqual(shown, { id: 10, issue_url: 'u', minimized: null, user: null });
 });
 
 // ---------------------------------------------------------------- GitHub client
@@ -314,8 +358,8 @@ test('GitHub client retries, paginates, records without secrets and replays', as
 const ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
 const THREAD_KEYS = ['repo', 'slug', 'num', 'title', 'url', 'user', 'user_id', 'labels', 'state', 'state_reason', 'open', 'locked', 'lock_reason', 'created', 'at', 'closed', 'comments', 'last_user', 'last_at', 'participants', 'excerpt', 'text', 'refs'];
 const REF_KEYS = ['repo', 'slug', 'num', 'kind', 'title', 'url', 'merged', 'state'];
-const DECISION_KEYS = ['repo', 'slug', 'num', 'title', 'url', 'user', 'merged', 'excerpt', 'threads'];
-const COMMENT_KEYS = ['id', 'user', 'user_id', 'created', 'updated', 'html', 'url'];
+const DECISION_KEYS = ['repo', 'slug', 'num', 'title', 'url', 'user', 'merged', 'excerpt', 'text', 'threads'];
+const COMMENT_KEYS = ['id', 'user', 'user_id', 'created', 'updated', 'hidden', 'html', 'url'];
 const COUNT_KEYS = ['repos', 'threads', 'open', 'closed', 'unanswered', 'comments', 'decisions'];
 
 function validateSnapshot(dataDir) {
@@ -384,6 +428,7 @@ function validateSnapshot(dataDir) {
       assert.ok(c.created >= previous, 'comments oldest first in ' + where);
       previous = c.created;
       assert.ok(c.url.startsWith(t.url + '#issuecomment-'));
+      assert.ok(c.hidden === null || (/^[a-z][a-z-]*$/.test(c.hidden) && c.html === ''), 'a hidden comment has a reason and no content: ' + where + ' comment ' + c.id);
       assertSafe(c.html, where + ' comment ' + c.id);
     }
     const last = detail.comments[detail.comments.length - 1];
@@ -417,7 +462,9 @@ function validateSnapshot(dataDir) {
     assert.deepStrictEqual(Object.keys(d), DECISION_KEYS);
     assert.ok(ISO.test(d.merged));
     assert.strictEqual(d.url, 'https://github.com/draykerdk/' + d.repo + '/pull/' + d.num);
-    assert.ok(d.excerpt.length <= 280);
+    assert.ok(d.excerpt.length <= 280 && d.text.length <= 2000);
+    assert.ok(!/\s{2}/.test(d.excerpt) && !/\s{2}/.test(d.text), 'whitespace collapsed: ' + d.repo + '#' + d.num);
+    assert.ok(d.text.startsWith(d.excerpt.replace(/…$/, '')), 'excerpt is a prefix of text: ' + d.repo + '#' + d.num);
     for (const ref of d.threads) {
       assert.deepStrictEqual(Object.keys(ref), ['repo', 'slug', 'num']);
       assert.ok(threadKeys.has(ref.repo + '#' + ref.num), 'decision thread exists: ' + ref.repo + '#' + ref.num);
@@ -542,9 +589,49 @@ test('live-safety fixture passes the live-mode checks and stays safe', () => {
   const two = region(page('t/lab/2/index.html'));
   assert.ok(two.includes('<a href="https://github.com/t/lab/1/" rel="nofollow ugc noopener noreferrer">github.com/t/lab/1</a>'));
   assert.ok(two.includes('<a href="https://github.com/t/lab/1/" rel="nofollow ugc noopener noreferrer">/t/lab/1/</a>'), 'a relative /t/ link in a body resolves to github.com');
-  // DB-5: only the pull request merged into the default branch is a decision.
-  assert.deepStrictEqual(forum.decisions.map((d) => d.num), [4]);
-  assert.deepStrictEqual(forum.decisions[0].threads, [{ repo: 'lab', slug: 'lab', num: 1 }]);
+  // DB-5: only pull requests merged into the default branch are decisions.
+  assert.deepStrictEqual(forum.decisions.map((d) => d.num), [7, 4]);
+  assert.deepStrictEqual(forum.decisions[1].threads, [{ repo: 'lab', slug: 'lab', num: 1 }]);
+  // CF2-10: a decision carries its description as text for search, beyond the excerpt.
+  const seven = forum.decisions[0];
+  assert.ok(seven.text.includes('zeppelin') && !seven.excerpt.includes('zeppelin') && seven.excerpt.endsWith('…'), 'decision text holds the whole description');
+  // SEC-CI-1: titles, logins and labels made only of XML-invalid characters
+  // never write an empty feed element.
+  for (const feed of ['feed.xml', 'decisions/feed.xml']) {
+    const xml = page(feed);
+    assert.ok(!/<title><\/title>|<name><\/name>|term=""/.test(xml), feed + ' has an empty title, author or category');
+    assert.ok(!/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/.test(xml), feed + ' has XML-invalid characters');
+  }
+  assert.ok(page('feed.xml').includes('<title>(untitled)</title>') && page('feed.xml').includes('<author><name>ghost</name>'));
+  assert.ok(page('decisions/feed.xml').includes('<title>(untitled)</title>'));
+  assert.ok(page('t/lab/6/index.html').includes('<title>(untitled) — Drayker Forum</title>'));
+  // SEC-CI-5: an emoji-only body is clipped without splitting a surrogate pair.
+  assert.ok(!/\uFFFD/.test(page('t/lab/6/index.html')) && !/\uFFFD/.test(fs.readFileSync(path.join(data, 'forum.json'), 'utf8')), 'a clipped emoji became U+FFFD');
+  assert.ok(byNum.get(6).excerpt.endsWith('\u{1F600}…'));
+  // SEC-CI-6: prose that looks like an attribute is not rewritten in the feed.
+  assert.ok(!page('feed.xml').includes('forum.drayker.org/x') && page('feed.xml').includes('href=&amp;quot;/x&amp;quot;'), 'feed rewrote mirrored text');
+  // CF2-01: a comment hidden on GitHub keeps its place, author and date, and
+  // none of its content is published anywhere.
+  const hidden = readJson(path.join(data, 't/lab/2.json')).comments.find((c) => c.id === 203);
+  assert.deepStrictEqual([hidden.hidden, hidden.html, hidden.user, hidden.created], ['abuse', '', 'hidden-author', '2026-02-04T00:00:00Z']);
+  assert.strictEqual(byNum.get(2).comments, 1, 'a hidden comment still counts');
+  const twoPage = region(page('t/lab/2/index.html'));
+  assert.ok(twoPage.includes('<p class="fs-meta">Hidden on GitHub (abuse)</p>') && twoPage.includes('hidden-author') && twoPage.includes('<h2>1 reply</h2>'));
+  const twoLd = JSON.parse(/<script id="drayker-structured-data" type="application\/ld\+json">([\s\S]*?)<\/script>/.exec(page('t/lab/2/index.html'))[1]);
+  const posting = twoLd['@graph'].find((n) => n['@type'] === 'DiscussionForumPosting');
+  assert.strictEqual(posting.commentCount, 1);
+  assert.deepStrictEqual(posting.comment, [], 'JSON-LD describes no hidden comment');
+  const everything = [];
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else everything.push(full);
+    }
+  };
+  walk(out);
+  assert.ok(everything.length > 10);
+  for (const file of everything) assert.ok(!fs.readFileSync(file).includes('HIDDENMARKER-7f3a'), 'hidden comment content published in ' + path.relative(out, file));
   // DB-6: references come from rendered links only (not from code or in-page anchors).
   assert.deepStrictEqual(byNum.get(1).refs.map((r) => r.num), [4]);
   assert.deepStrictEqual(byNum.get(2).refs.map((r) => r.kind + r.num), ['pr5', 'issue1']);

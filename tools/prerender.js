@@ -83,15 +83,24 @@ function plain(value) {
     .trim();
 }
 
+// Characters XML 1.0 does not allow (C0 controls other than tab, newline and
+// carriage return, U+FFFE, U+FFFF) and lone surrogates. With the u flag a
+// surrogate pair is one code point, so only lone surrogates match the range.
+const XML_INVALID = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF\uD800-\uDFFF]/gu;
+const xmlText = (value) => String(value == null ? '' : value).replace(XML_INVALID, '');
+
 // Issue and pull request titles are plain text on GitHub: whitespace is
-// collapsed and nothing else is changed. An empty title reads "(untitled)".
-const titleText = (value) => String(value == null ? '' : value).replace(/\s+/g, ' ').trim() || '(untitled)';
+// collapsed and characters XML cannot carry are removed, nothing else is
+// changed. A title left empty reads "(untitled)".
+const titleText = (value) => xmlText(value).replace(/\s+/g, ' ').trim() || '(untitled)';
 
 // Clips already-plain text to max characters at a word boundary, '…' when cut.
+// A cut never splits a surrogate pair.
 function clipText(value, max) {
   const text = String(value == null ? '' : value).replace(/\s+/g, ' ').trim();
   if (text.length <= max) return text;
   let cut = text.slice(0, max - 1);
+  if (/[\uD800-\uDBFF]$/.test(cut)) cut = cut.slice(0, -1);
   const space = cut.lastIndexOf(' ');
   if (space > max * 0.5) cut = cut.slice(0, space);
   return cut.replace(/[\s,;:.\-–—]+$/, '') + '…';
@@ -241,7 +250,8 @@ function structuredData(page) {
       datePublished: t.created, dateModified: t.at,
       author: { '@type': 'Person', name: t.user, url: 'https://github.com/' + encodeURIComponent(t.user) },
       commentCount: d.comments.length,
-      comment: d.comments.map((c) => ({
+      // A comment hidden on GitHub counts, but nothing of it is described.
+      comment: d.comments.filter((c) => !c.hidden).map((c) => ({
         '@type': 'Comment',
         author: { '@type': 'Person', name: c.user, url: 'https://github.com/' + encodeURIComponent(c.user) },
         datePublished: c.created, text: clipText(htmlToText(c.html), 500), url: c.url
@@ -391,10 +401,14 @@ function threadMain(forum, thread, detail, resanitize) {
   ].join(' · ');
   const labels = thread.labels && thread.labels.length ? '<p class="fs-meta">Labels: <span class="ugc">' + esc(thread.labels.join(', ')) + '</span></p>' : '';
   const body = detail.html ? resanitize(detail.html) : '<p><em>No description was written.</em></p>';
+  // A comment hidden on GitHub shows only its author, date and the reason.
   const comments = detail.comments.map((c) => '<li class="fs-comment" id="comment-' + Number(c.id) + '"><article>'
     + '<header>' + person(c.user) + ' · <a href="' + esc(c.url) + '">' + time(c.created) + '</a>'
-    + (c.updated && c.updated !== c.created ? ' · edited' : '') + '</header>'
-    + '<div class="fs-body ugc">' + resanitize(c.html) + '</div></article></li>').join('');
+    + (!c.hidden && c.updated && c.updated !== c.created ? ' · edited' : '') + '</header>'
+    + (c.hidden
+      ? '<p class="fs-meta">' + esc('Hidden on GitHub (' + c.hidden + ')') + '</p>'
+      : '<div class="fs-body ugc">' + resanitize(c.html) + '</div>')
+    + '</article></li>').join('');
   const refs = (thread.refs || []).map((r) => {
     const local = r.kind === 'issue' ? lookup.get(String(r.repo).toLowerCase() + '#' + r.num) : null;
     const href = local ? threadPath(local.slug, local.num) : r.url;
@@ -474,10 +488,20 @@ function notFoundMain(forum, meta) {
 
 // ------------------------------------------------------------------- feeds
 
-const xmlEsc = (value) => String(value == null ? '' : value)
-  .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g, '')
+const xmlEsc = (value) => xmlText(value)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+// Makes root-relative href and src attributes absolute. The sanitizer escapes
+// '"' in text as &quot;, so only real attributes can match: mirrored prose
+// such as href="/x" is never rewritten.
 const absolutize = (html) => html.replace(/(href|src)="\/(?!\/)/g, (m, attr) => attr + '="' + BASE);
+
+// Author names and category terms are mirrored text: an author name left
+// empty reads "ghost" (GitHub's name for a deleted account), and an empty
+// category is left out.
+function author(name) {
+  const clean = xmlText(name).trim() || 'ghost';
+  return '    <author><name>' + xmlEsc(clean) + '</name><uri>https://github.com/' + xmlEsc(encodeURIComponent(clean)) + '</uri></author>\n';
+}
 
 function atom({ id, title, subtitle, self, alternate, entries, fallbackUpdated }) {
   const updated = entries.reduce((max, e) => (e.updated > max ? e.updated : max), '') || fallbackUpdated;
@@ -497,8 +521,8 @@ function atom({ id, title, subtitle, self, alternate, entries, fallbackUpdated }
       + (e.related ? '    <link rel="related" type="text/html" href="' + xmlEsc(e.related) + '"/>\n' : '')
       + (e.published ? '    <published>' + xmlEsc(e.published) + '</published>\n' : '')
       + '    <updated>' + xmlEsc(e.updated) + '</updated>\n'
-      + '    <author><name>' + xmlEsc(e.author) + '</name><uri>https://github.com/' + xmlEsc(encodeURIComponent(e.author)) + '</uri></author>\n'
-      + (e.categories || []).map((c) => '    <category term="' + xmlEsc(c) + '"/>\n').join('')
+      + author(e.author)
+      + (e.categories || []).map((c) => xmlText(c).trim()).filter(Boolean).map((c) => '    <category term="' + xmlEsc(c) + '"/>\n').join('')
       + '    <content type="html">' + xmlEsc(e.content) + '</content>\n'
       + '  </entry>\n').join('')
     + '</feed>\n';
@@ -651,6 +675,6 @@ if (require.main === module) {
 }
 
 module.exports = {
-  plain, titleText, compact, clipText, esc, objectLiteral, readMeta, makeResanitize, threadPath,
+  plain, titleText, xmlText, compact, clipText, esc, objectLiteral, readMeta, makeResanitize, threadPath,
   BASE, START, END, EMPTY_REGION, META_KEYS, DESCRIPTION_MAX, FEED_MAX
 };

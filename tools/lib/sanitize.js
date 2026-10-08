@@ -109,8 +109,10 @@
       });
   }
 
-  const escapeText = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const escapeAttr = (s) => escapeText(s).replace(/"/g, '&quot;');
+  // '"' is escaped in text too, so that no text can read as attribute syntax
+  // (href="/…") to a later pass over the HTML string.
+  const escapeText = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const escapeAttr = escapeText;
   const stripNulls = (s) => s.replace(/\u0000/g, '');
 
   /*

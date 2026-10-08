@@ -50,10 +50,14 @@ const userId = (user) => (user && typeof user.id === 'number' ? user.id : null);
 const byText = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 const numFromIssueUrl = (url) => Number(String(url || '').split('/').slice(-1)[0]);
 
+// Clips text to at most max UTF-16 code units, at a word boundary when one is
+// close, ending in '…' when cut. A cut never splits a surrogate pair, so no
+// lone surrogate (written out as U+FFFD) reaches the data or the pages.
 function clip(text, max) {
   const value = String(text || '').replace(/\s+/g, ' ').trim();
   if (value.length <= max) return value;
   let cut = value.slice(0, max - 1);
+  if (/[\uD800-\uDBFF]$/.test(cut)) cut = cut.slice(0, -1);
   const space = cut.lastIndexOf(' ');
   if (space > max * 0.6) cut = cut.slice(0, space);
   return cut.replace(/[\s,;:.\-–—]+$/, '') + '…';
@@ -85,7 +89,18 @@ function findReferences(html) {
   return refs;
 }
 
-const escapeText = (s) => String(s).replace(/\u0000/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const escapeText = (s) => String(s).replace(/\u0000/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+// A comment hidden (minimized) on GitHub keeps its place, author and date, but
+// none of its content is published. Returns the lowercase reason GitHub gives
+// ("off-topic", "spam", "abuse", "outdated", "resolved", "duplicate"), "hidden"
+// when it gives none, or null for a comment that is not hidden.
+function hiddenReason(comment) {
+  const minimized = comment && comment.minimized;
+  if (!minimized) return null;
+  const reason = String((typeof minimized === 'object' && minimized.reason) || '').toLowerCase().replace(/[\s_]+/g, '-');
+  return /^[a-z][a-z-]{0,31}$/.test(reason) ? reason : 'hidden';
+}
 
 // Sanitizes one issue, pull request or comment body. A body that makes the
 // sanitizer throw is kept as escaped plain text with a warning, so that one bad
@@ -178,16 +193,20 @@ function buildSnapshot(org, generatedAt) {
       seenNums.add(item.number);
       const itemComments = commentsByNum.get(item.number) || [];
       const isPr = Boolean(item.pull_request);
-      sources.push({ repo: repo.name, slug, item, isPr, comments: itemComments });
+      // Hidden comments still count (they exist on GitHub), but their content
+      // is never read: not for references, text or HTML.
+      sources.push({ repo: repo.name, slug, item, isPr, comments: itemComments.filter((c) => !hiddenReason(c)) });
 
       if (isPr) {
         const merged = item.pull_request.merged_at || null;
         if (!merged || !intoDefault(item.number)) continue;
         const html = clean(item.body_html, item.body, repo.name + '#' + item.number);
+        const plain = htmlToText(html);
         decisions.push({
           repo: repo.name, slug, num: item.number, title: item.title, url: item.html_url,
           user: login(item.user), merged,
-          excerpt: clip(htmlToText(html), EXCERPT_MAX),
+          excerpt: clip(plain, EXCERPT_MAX),
+          text: clip(plain, TEXT_MAX),
           threads: findReferences(item.body_html)
             .map((ref) => threadIndex.get(keyFor(ref.repo, ref.num)))
             .filter(Boolean)
@@ -234,15 +253,19 @@ function buildSnapshot(org, generatedAt) {
       });
       files.set(slug + '/' + item.number, {
         html,
-        comments: itemComments.map((c) => ({
-          id: c.id,
-          user: login(c.user),
-          user_id: userId(c.user),
-          created: c.created_at,
-          updated: c.updated_at,
-          html: clean(c.body_html, c.body, repo.name + '#' + item.number + ' comment ' + c.id),
-          url: c.html_url
-        }))
+        comments: itemComments.map((c) => {
+          const hidden = hiddenReason(c);
+          return {
+            id: c.id,
+            user: login(c.user),
+            user_id: userId(c.user),
+            created: c.created_at,
+            updated: c.updated_at,
+            hidden,
+            html: hidden ? '' : clean(c.body_html, c.body, repo.name + '#' + item.number + ' comment ' + c.id),
+            url: c.html_url
+          };
+        })
       });
     }
     repos.push({
@@ -372,4 +395,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { buildSnapshot, findReferences, sanitizeFragment, clip, contentHash, slugFor };
+module.exports = { buildSnapshot, findReferences, sanitizeFragment, clip, hiddenReason, contentHash, slugFor };

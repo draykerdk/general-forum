@@ -15,10 +15,9 @@ on:
     - cron: '7 3 * * 1'
   workflow_dispatch:
 
+# Each job sets its own permissions; a job-level block replaces this one.
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   # The keepalive run stays out of the Pages queue.
@@ -29,7 +28,6 @@ jobs:
   keepalive:
     if: github.event_name == 'schedule' && github.event.schedule == '7 3 * * 1'
     runs-on: ubuntu-latest
-    # A job-level block replaces the workflow-level permissions for this job only.
     permissions:
       actions: write
     steps:
@@ -41,6 +39,11 @@ jobs:
   build:
     if: github.event_name != 'schedule' || github.event.schedule != '7 3 * * 1'
     runs-on: ubuntu-latest
+    # The build reads content anyone can write, so it only reads: the code,
+    # and the Pages site settings for configure-pages. It cannot publish.
+    permissions:
+      contents: read
+      pages: read
     outputs:
       deploy: ${{ steps.decide.outputs.deploy }}
     steps:
@@ -79,6 +82,10 @@ jobs:
   deploy:
     needs: build
     if: needs.build.outputs.deploy == 'true'
+    # Only this job can publish to Pages and request the OIDC token it needs.
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

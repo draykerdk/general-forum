@@ -261,9 +261,40 @@ function checkTemplate() {
   if (meta) for (const key of pre.META_KEYS) check(meta[key].t.endsWith(SUFFIX) || key === 'list', 'META.' + key + '.t should end with "' + SUFFIX + '"');
 }
 
+// Reads the permissions block at the given indentation in a workflow (or a
+// job's block of it) into { scope: access }; null when there is none.
+function permissionsBlock(text, indent) {
+  const m = new RegExp('(?:^|\\n)' + indent + 'permissions:[ \\t]*\\n((?:' + indent + '  [^\\n]*\\n?)*)').exec(text);
+  if (!m) return null;
+  const out = {};
+  for (const line of m[1].split('\n')) {
+    const kv = /^\s+([a-z-]+):\s*([a-z]+)\s*$/.exec(line);
+    if (kv) out[kv[1]] = kv[2];
+  }
+  return out;
+}
+// Returns the lines of one job of a workflow (indented by four spaces), or ''.
+function jobBlock(workflow, name) {
+  const jobs = workflow.slice(workflow.indexOf('\njobs:\n'));
+  const m = new RegExp('\\n  ' + name + ':\\n([\\s\\S]*?)(?=\\n  [A-Za-z0-9_-]+:\\n|$)').exec(jobs);
+  return m ? m[1] + '\n' : '';
+}
+const samePermissions = (actual, expected) => JSON.stringify(Object.entries(actual || {}).sort()) === JSON.stringify(Object.entries(expected).sort());
+
+const FORUM_NOTE = 'Public threads in the draykerdk repositories are also shown on forum.drayker.org.';
+
 function checkConfig() {
   const proposal = read(path.join(ROOT, '.github', 'ISSUE_TEMPLATE', 'proposal.yml'));
-  for (const id of ['summary', 'change', 'component']) check(proposal.includes('id: ' + id), 'proposal form is missing field id ' + id);
+  const PROPOSAL_IDS = ['summary', 'problem', 'change', 'component', 'smallest_step', 'against', 'public'];
+  const ids = [...proposal.matchAll(/^\s+id: ([a-z_]+)\s*$/gm)].map((m) => m[1]);
+  check(JSON.stringify(ids) === JSON.stringify(PROPOSAL_IDS), 'proposal form field ids must be ' + PROPOSAL_IDS.join(', ') + ' in that order (found ' + ids.join(', ') + ')');
+  check(/id: problem\n\s+attributes:\n\s+label: What problem does it address\?\n/.test(proposal), 'proposal form field problem must be labelled "What problem does it address?"');
+  check(!/id: problem\n[\s\S]*?required: true[\s\S]*?id: change/.test(proposal), 'proposal form field problem must be optional');
+  for (const form of ['proposal.yml', 'partnership.yml', 'volunteer-introduction.yml']) {
+    const text = read(path.join(ROOT, '.github', 'ISSUE_TEMPLATE', form));
+    const intro = (/- type: markdown\n\s+attributes:\n\s+value: \|\n([\s\S]*?)\n  - type:/.exec(text) || [])[1] || '';
+    check(intro.includes(FORUM_NOTE), form + ' intro does not say that public threads are shown on forum.drayker.org');
+  }
   check(!/the project should/i.test(proposal), 'proposal form still says "the project"');
   check(!proposal.includes('postUrl()'), 'proposal form comment still names postUrl()');
 
@@ -274,7 +305,13 @@ function checkConfig() {
   check(!/npm test/.test(site), 'site workflow must not run the fixture-mode tests on live data');
   check(/actions\/upload-pages-artifact@v4[\s\S]*?path:\s*_site\b/.test(site), 'site workflow must upload _site with upload-pages-artifact@v4');
   check(site.includes('actions/deploy-pages@v4'), 'site workflow does not deploy with deploy-pages@v4');
-  check(site.includes('pages: write') && site.includes('id-token: write') && site.includes('contents: read'), 'site workflow permissions are incomplete');
+  // Least privilege per job: only the deploy job can publish or mint an OIDC
+  // token; the build job, which reads content anyone can write, only reads.
+  check(samePermissions(permissionsBlock(site, ''), { contents: 'read' }), 'site workflow-level permissions must be only contents: read');
+  check(samePermissions(permissionsBlock(jobBlock(site, 'build'), '    '), { contents: 'read', pages: 'read' }), 'build job permissions must be only contents: read and pages: read');
+  check(samePermissions(permissionsBlock(jobBlock(site, 'deploy'), '    '), { pages: 'write', 'id-token': 'write' }), 'deploy job permissions must be only pages: write and id-token: write');
+  check(samePermissions(permissionsBlock(jobBlock(site, 'keepalive'), '    '), { actions: 'write' }), 'keepalive job permissions must be only actions: write');
+  check(jobBlock(site, 'deploy').includes('actions/deploy-pages@v4') && jobBlock(site, 'build').includes('actions/configure-pages@v5'), 'deploy-pages must run in the deploy job and configure-pages in the build job');
   check(site.includes("cron: '7,22,37,52 * * * *'"), 'site workflow schedule is not every 15 minutes');
   check(site.includes('tools/deploy-decision.js') && site.includes('https://forum.drayker.org/data/meta.json'), 'site workflow does not compare the deployed meta.json');
   check(/if:\s*steps\.decide\.outputs\.deploy == 'true'\s*\n\s*uses: actions\/upload-pages-artifact@v4/.test(site), 'site workflow uploads the artifact without a deploy decision');
@@ -407,7 +444,10 @@ function checkSite(siteDir, live) {
         check(post.datePublished === t.created && post.dateModified === t.at, label + ' posting dates are wrong');
         check(post.author && post.author['@type'] === 'Person' && post.author.name === t.user && post.author.url === 'https://github.com/' + encodeURIComponent(t.user), label + ' posting author is wrong');
         check(typeof post.text === 'string' && post.text.length <= 1000, label + ' posting text is missing or too long');
-        check(post.commentCount === detail.comments.length && Array.isArray(post.comment) && post.comment.length === detail.comments.length, label + ' comment count is wrong');
+        // Hidden comments count but are not described.
+        const shown = detail.comments.filter((c) => !c.hidden);
+        check(post.commentCount === detail.comments.length && Array.isArray(post.comment) && post.comment.length === shown.length, label + ' comment count is wrong');
+        check((post.comment || []).every((c, i) => shown[i] && c.url === shown[i].url), label + ' JSON-LD describes a hidden comment');
         check((post.comment || []).every((c) => c['@type'] === 'Comment' && c.author && c.author.name && c.datePublished && typeof c.text === 'string' && c.text.length <= 500 && c.url), label + ' comments are incomplete');
         check(post.isPartOf && post.isPartOf['@id'] === BASE + '#website' && post.mainEntityOfPage, label + ' posting is not linked to the site');
       }
@@ -417,6 +457,12 @@ function checkSite(siteDir, live) {
         check(region.includes('href="' + t.url + '#new_comment_field">Reply on GitHub</a>'), label + ' has no Reply on GitHub link');
       }
       check((region.match(/<li class="fs-comment"/g) || []).length === detail.comments.length, label + ' does not show every comment');
+      for (const c of detail.comments) {
+        if (c.hidden === null) continue;
+        check(typeof c.hidden === 'string' && /^[a-z][a-z-]*$/.test(c.hidden) && c.html === '', label + ' hidden comment ' + c.id + ' keeps content or has a bad reason');
+        const item = (new RegExp('<li class="fs-comment" id="comment-' + Number(c.id) + '">([\\s\\S]*?)</li>').exec(region) || [])[1] || '';
+        check(item.includes('<p class="fs-meta">Hidden on GitHub (' + c.hidden + ')</p>') && !item.includes('fs-body'), label + ' hidden comment ' + c.id + ' is not shown as hidden');
+      }
       check(region.includes('<div class="fs-body ugc">' + (detail.html ? resanitize(detail.html) : '')) || !detail.html, label + ' does not show the sanitized body');
       for (const r of t.refs || []) check(region.includes(r.url) || r.kind === 'issue', label + ' does not list the back-link ' + r.repo + '#' + r.num);
     } else if (p.kind === 'list') {

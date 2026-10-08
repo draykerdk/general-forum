@@ -15,7 +15,7 @@
    "locked": false,
    "active_lock_reason": null,
    "body": "See #2. Not a reference: `#3`.",
-   "body_html": "<p>See <a class=\"issue-link js-issue-link\" data-hovercard-type=\"issue\" href=\"https://github.com/draykerdk/lab/issues/2\">#2</a>. Not a reference: <code>#3</code>, nor <a href=\"#3\">#3</a>.</p><p>Templates look like {{ name }}. Never allow <code>javascript:</code> URLs. Set onclick = handler, or write href=\"relative\", id=\"x\" and style=\"color:red\".</p><p><a href=\"https://github.com/draykerdk/a%E9/issues/1\">A malformed escape</a></p>",
+   "body_html": "<p>See <a class=\"issue-link js-issue-link\" data-hovercard-type=\"issue\" href=\"https://github.com/draykerdk/lab/issues/2\">#2</a>. Not a reference: <code>#3</code>, nor <a href=\"#3\">#3</a>.</p><p>Templates look like {{ name }}. Never allow <code>javascript:</code> URLs. Set onclick = handler, or write href=\"relative\", href=\"/x\", id=\"x\" and style=\"color:red\".</p><p><a href=\"https://github.com/draykerdk/a%E9/issues/1\">A malformed escape</a></p>",
    "user": {
     "login": "open-source-fan",
     "id": 101
@@ -31,7 +31,7 @@
    "created_at": "2026-02-02T00:00:00Z",
    "updated_at": "2026-03-02T00:00:00Z",
    "closed_at": null,
-   "comments": 0,
+   "comments": 1,
    "locked": false,
    "active_lock_reason": null,
    "body": "A link to https://github.com/t/lab/1/",
@@ -108,6 +108,57 @@
    "pull_request": {
     "html_url": "https://github.com/draykerdk/lab/pull/5",
     "merged_at": "2026-03-11T00:00:00Z"
+   }
+  },
+  {
+   "number": 6,
+   "title": "\u0001",
+   "html_url": "https://github.com/draykerdk/lab/issues/6",
+   "state": "open",
+   "state_reason": null,
+   "created_at": "2026-02-06T00:00:00Z",
+   "updated_at": "2026-03-06T00:00:00Z",
+   "closed_at": null,
+   "comments": 0,
+   "locked": false,
+   "active_lock_reason": null,
+   "body": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+   "body_html": "<p>😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀</p>",
+   "user": {
+    "login": "\u0003",
+    "id": 106
+   },
+   "labels": [
+    {
+     "name": "\u0002"
+    },
+    {
+     "name": "question"
+    }
+   ]
+  },
+  {
+   "number": 7,
+   "title": "￿",
+   "html_url": "https://github.com/draykerdk/lab/pull/7",
+   "state": "closed",
+   "state_reason": null,
+   "created_at": "2026-02-07T00:00:00Z",
+   "updated_at": "2026-03-07T00:00:00Z",
+   "closed_at": "2026-03-12T00:00:00Z",
+   "comments": 0,
+   "locked": false,
+   "active_lock_reason": null,
+   "body": "Long description",
+   "body_html": "<p>This change records the agreed wording for the lab repository. This change records the agreed wording for the lab repository. This change records the agreed wording for the lab repository. This change records the agreed wording for the lab repository. This change records the agreed wording for the lab repository. This change records the agreed wording for the lab repository. The last sentence names the zeppelin, which only the full text holds.</p>",
+   "user": {
+    "login": "MEMBER-bot",
+    "id": 107
+   },
+   "labels": [],
+   "pull_request": {
+    "html_url": "https://github.com/draykerdk/lab/pull/7",
+    "merged_at": "2026-03-12T00:00:00Z"
    }
   }
  ]
