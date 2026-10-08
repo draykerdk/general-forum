@@ -818,7 +818,7 @@ test('live-safety fixture passes the live-mode checks and stays safe', () => {
   assert.ok(region(page('decisions/index.html')).includes('by <span class="ugc">MEMBER-bot</span>'));
   // SEC-4: titles are shown as written, never emptied.
   assert.strictEqual(byNum.get(1).title, '>');
-  assert.ok(one.includes('<h1 class="ugc">&gt;</h1>') && page('t/lab/1/index.html').includes('<title>&gt; — Drayker Forum</title>'));
+  assert.ok(one.includes('<h1 class="ugc">&gt;</h1>') && page('t/lab/1/index.html').includes('<title>&gt; — Drayker General Forum</title>'));
   assert.ok(page('t/lab/2/index.html').includes('<h1 class="ugc">- item</h1>'));
   assert.ok(page('feed.xml').includes('<title>&gt;</title>') && page('feed.xml').includes('<title>- item</title>'));
   // SEC-5: a user's link to https://github.com/t/<slug>/<n>/ stays on github.com.
@@ -845,7 +845,7 @@ test('live-safety fixture passes the live-mode checks and stays safe', () => {
   }
   assert.ok(page('feed.xml').includes('<title>(untitled)</title>') && page('feed.xml').includes('<author><name>ghost</name>'));
   assert.ok(page('decisions/feed.xml').includes('<title>(untitled)</title>'));
-  assert.ok(page('t/lab/6/index.html').includes('<title>(untitled) — Drayker Forum</title>'));
+  assert.ok(page('t/lab/6/index.html').includes('<title>(untitled) — Drayker General Forum</title>'));
   // SEC-CI-5: an emoji-only body is clipped without splitting a surrogate pair.
   assert.ok(!/\uFFFD/.test(page('t/lab/6/index.html')) && !/\uFFFD/.test(fs.readFileSync(path.join(data, 'forum.json'), 'utf8')), 'a clipped emoji became U+FFFD');
   assert.ok(byNum.get(6).excerpt.endsWith('\u{1F600}…'));

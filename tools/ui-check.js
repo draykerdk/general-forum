@@ -269,9 +269,9 @@ function checkBindings(vals, label) {
     assert(head.indexOf("classList.add('js')") < head.indexOf('src="/support.js"'), 'pre-paint script must run before the runtime');
     assert(/querySelector\('meta\[name="theme-color"\]'\)[\s\S]*theme === 'light' \? '#FAF8F5' : '#08080A'/.test(head), 'pre-paint script must set theme-color');
     assert(/addEventListener\('error'[\s\S]*unpkg\\\.com[\s\S]*fallback\(\)/.test(head), 'a failed runtime script must show the static page at once');
-    assert(head.includes('<link rel="alternate" type="application/atom+xml" href="/feed.xml" title="Drayker Forum — new threads">'), 'thread feed link missing');
-    assert(head.includes('<link rel="alternate" type="application/atom+xml" href="/decisions/feed.xml" title="Drayker Forum — decisions">'), 'decisions feed link missing');
-    for (const tag of ['<title>Drayker Forum — every public thread</title>', '<meta name="description" content="', '<link rel="canonical" href="https://forum.drayker.org/">',
+    assert(head.includes('<link rel="alternate" type="application/atom+xml" href="/feed.xml" title="Drayker General Forum — new threads">'), 'thread feed link missing');
+    assert(head.includes('<link rel="alternate" type="application/atom+xml" href="/decisions/feed.xml" title="Drayker General Forum — decisions">'), 'decisions feed link missing');
+    for (const tag of ['<title>Drayker General Forum — every public thread</title>', '<meta name="description" content="', '<link rel="canonical" href="https://forum.drayker.org/">',
       '<meta property="og:title" content="', '<meta name="twitter:title" content="', '<script id="drayker-structured-data" type="application/ld+json">']) assert(head.includes(tag), 'head tag format changed: ' + tag);
     assert(html.includes('const META = {') && html.includes('readRoute = () =>'), 'prerender anchors missing');
     assert(!/<script[^>]+src="https:\/\/cdn\.jsdelivr\.net\/npm\/(d3|topojson)/.test(html), 'd3/topojson must be loaded lazily, not by a script tag');
@@ -504,7 +504,7 @@ function checkBindings(vals, label) {
     assert.strictEqual(c.state.page, 'thread');
     assert.strictEqual(c.routePath(), '/t/' + encodeURIComponent(t.slug) + '/' + t.num + '/');
     assert.strictEqual(headState['link[rel="canonical"]|href'], 'https://forum.drayker.org/t/' + encodeURIComponent(t.slug) + '/' + t.num + '/');
-    assert.strictEqual(context.document.title, t.title + ' — Drayker Forum');
+    assert.strictEqual(context.document.title, t.title + ' — Drayker General Forum');
 
     c = await boot('/#/t/dk/2');
     assert.strictEqual(win.location.pathname, '/t/dk/2/', 'legacy hash upgraded');

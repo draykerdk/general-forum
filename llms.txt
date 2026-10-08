@@ -1,6 +1,6 @@
-# Drayker Forum
+# Drayker General Forum
 
-> Drayker Forum brings the public issues and replies of every public draykerdk repository, and the pull requests merged into each repository's main branch, into one reading surface. Discussions remain connected to their source repositories, where replies and decisions are recorded.
+> Drayker General Forum brings the public issues and replies of every public draykerdk repository, and the pull requests merged into each repository's main branch, into one reading surface. Discussions remain connected to their source repositories, where replies and decisions are recorded.
 
 ## Canonical routes
 
