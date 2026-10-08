@@ -46,6 +46,13 @@
   const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
   const ATTACHMENT = /https:\/\/github\.com\/user-attachments\/assets\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/gi;
   const WS = /[\t\n\f\r ]/;
+  // A forum path as safeHref writes it: /t/<encoded slug>/<num>/ plus a URL hash.
+  const INTERNAL = /^\/t\/([A-Za-z0-9._~%!*'()-]+)\/([0-9]+)\/(#[^\s"<>`]*)?$/;
+
+  // decodeURIComponent that returns null instead of throwing on a malformed escape.
+  const safeDecode = (value) => {
+    try { return decodeURIComponent(value); } catch (e) { return null; }
+  };
 
   const NAMED = {
     amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', copy: '©', reg: '®',
@@ -283,6 +290,7 @@
     ctx = ctx || {};
     const org = String(ctx.org || 'draykerdk').toLowerCase();
     const threadExists = typeof ctx.threadExists === 'function' ? ctx.threadExists : null;
+    const internalPath = typeof ctx.internalPath === 'function' ? ctx.internalPath : null;
     const rawIds = attachmentIds(ctx.rawBody);
     const privateIds = new Map();
     let nextRaw = 0;
@@ -302,6 +310,11 @@
     };
 
     const safeHref = (raw) => {
+      if (internalPath && raw != null) {
+        const m = INTERNAL.exec(String(raw));
+        const slug = m ? safeDecode(m[1]) : null;
+        if (slug !== null && internalPath(slug, Number(m[2]))) return String(raw);
+      }
       let url = cleanUrl(raw);
       if (!url) return null;
       if (url.hostname === 'private-user-images.githubusercontent.com') url = privateToStable(url);
@@ -311,7 +324,8 @@
       if (threadExists && url.protocol === 'https:' && url.hostname === 'github.com' && !url.search) {
         const m = url.pathname.match(/^\/([^/]+)\/([^/]+)\/issues\/([0-9]+)\/?$/);
         if (m && m[1].toLowerCase() === org) {
-          const slug = threadExists(decodeURIComponent(m[2]), Number(m[3]));
+          const repo = safeDecode(m[2]);
+          const slug = repo === null ? null : threadExists(repo, Number(m[3]));
           if (slug) return '/t/' + encodeURIComponent(slug) + '/' + Number(m[3]) + '/' + url.hash;
         }
       }

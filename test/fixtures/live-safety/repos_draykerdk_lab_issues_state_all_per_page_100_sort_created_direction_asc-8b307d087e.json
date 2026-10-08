@@ -1,0 +1,114 @@
+{
+ "url": "https://api.github.com/repos/draykerdk/lab/issues?state=all&per_page=100&sort=created&direction=asc",
+ "link": null,
+ "body": [
+  {
+   "number": 1,
+   "title": ">",
+   "html_url": "https://github.com/draykerdk/lab/issues/1",
+   "state": "open",
+   "state_reason": null,
+   "created_at": "2026-02-01T00:00:00Z",
+   "updated_at": "2026-03-01T00:00:00Z",
+   "closed_at": null,
+   "comments": 2,
+   "locked": false,
+   "active_lock_reason": null,
+   "body": "See #2. Not a reference: `#3`.",
+   "body_html": "<p>See <a class=\"issue-link js-issue-link\" data-hovercard-type=\"issue\" href=\"https://github.com/draykerdk/lab/issues/2\">#2</a>. Not a reference: <code>#3</code>, nor <a href=\"#3\">#3</a>.</p><p>Templates look like {{ name }}. Never allow <code>javascript:</code> URLs. Set onclick = handler, or write href=\"relative\", id=\"x\" and style=\"color:red\".</p><p><a href=\"https://github.com/draykerdk/a%E9/issues/1\">A malformed escape</a></p>",
+   "user": {
+    "login": "open-source-fan",
+    "id": 101
+   },
+   "labels": []
+  },
+  {
+   "number": 2,
+   "title": "- item",
+   "html_url": "https://github.com/draykerdk/lab/issues/2",
+   "state": "open",
+   "state_reason": null,
+   "created_at": "2026-02-02T00:00:00Z",
+   "updated_at": "2026-03-02T00:00:00Z",
+   "closed_at": null,
+   "comments": 0,
+   "locked": false,
+   "active_lock_reason": null,
+   "body": "A link to https://github.com/t/lab/1/",
+   "body_html": "<p>A user link to <a href=\"https://github.com/t/lab/1/\">github.com/t/lab/1</a> and a relative one to <a href=\"/t/lab/1/\">/t/lab/1/</a>.</p>",
+   "user": {
+    "login": "OWNER-dev",
+    "id": 102
+   },
+   "labels": []
+  },
+  {
+   "number": 3,
+   "title": "How do {{ placeholders }} work? javascript: onclick=x",
+   "html_url": "https://github.com/draykerdk/lab/issues/3",
+   "state": "open",
+   "state_reason": null,
+   "created_at": "2026-02-03T00:00:00Z",
+   "updated_at": "2026-03-03T00:00:00Z",
+   "closed_at": null,
+   "comments": 0,
+   "locked": true,
+   "active_lock_reason": "resolved",
+   "body": "Locked.",
+   "body_html": "<p>Locked.</p>",
+   "user": {
+    "login": "dknowledger-x",
+    "id": 103
+   },
+   "labels": []
+  },
+  {
+   "number": 4,
+   "title": "Merge the {{ template }} change",
+   "html_url": "https://github.com/draykerdk/lab/pull/4",
+   "state": "closed",
+   "state_reason": null,
+   "created_at": "2026-02-04T00:00:00Z",
+   "updated_at": "2026-03-04T00:00:00Z",
+   "closed_at": "2026-03-10T00:00:00Z",
+   "comments": 0,
+   "locked": false,
+   "active_lock_reason": null,
+   "body": "Closes #1",
+   "body_html": "<p>Closes <a class=\"issue-link js-issue-link\" data-hovercard-type=\"issue\" href=\"https://github.com/draykerdk/lab/issues/1\">#1</a></p>",
+   "user": {
+    "login": "MEMBER-bot",
+    "id": 104
+   },
+   "labels": [],
+   "pull_request": {
+    "html_url": "https://github.com/draykerdk/lab/pull/4",
+    "merged_at": "2026-03-10T00:00:00Z"
+   }
+  },
+  {
+   "number": 5,
+   "title": "Sync master into side",
+   "html_url": "https://github.com/draykerdk/lab/pull/5",
+   "state": "closed",
+   "state_reason": null,
+   "created_at": "2026-02-05T00:00:00Z",
+   "updated_at": "2026-03-05T00:00:00Z",
+   "closed_at": "2026-03-11T00:00:00Z",
+   "comments": 0,
+   "locked": false,
+   "active_lock_reason": null,
+   "body": "update",
+   "body_html": "<p>update, see <a class=\"issue-link js-issue-link\" data-hovercard-type=\"issue\" href=\"https://github.com/draykerdk/lab/issues/2\">#2</a></p>",
+   "user": {
+    "login": "COLLABORATOR-x",
+    "id": 105
+   },
+   "labels": [],
+   "pull_request": {
+    "html_url": "https://github.com/draykerdk/lab/pull/5",
+    "merged_at": "2026-03-11T00:00:00Z"
+   }
+  }
+ ]
+}

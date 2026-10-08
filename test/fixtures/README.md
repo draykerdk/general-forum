@@ -29,8 +29,9 @@ The record and replay builds must produce the same `content_hash` in `data/meta.
 
 To keep the recording small, the recorder saves only the fields the builder reads (`trimForFixture` in `tools/lib/github.js`):
 
-- repositories: `name`, `private`, `visibility`, `archived`, `has_issues`, `description`, `homepage`, `html_url`
-- issues and pull requests: `number`, `title`, `html_url`, `state`, `state_reason`, `created_at`, `updated_at`, `closed_at`, `comments`, `body`, `body_html`, `user.login`, `user.id`, `labels[].name`, `pull_request.html_url`, `pull_request.merged_at`
+- repositories: `name`, `private`, `visibility`, `archived`, `has_issues`, `description`, `homepage`, `html_url`, `default_branch`
+- issues and pull requests (issues endpoint): `number`, `title`, `html_url`, `state`, `state_reason`, `created_at`, `updated_at`, `closed_at`, `comments`, `locked`, `active_lock_reason`, `body`, `body_html`, `user.login`, `user.id`, `labels[].name`, `pull_request.html_url`, `pull_request.merged_at`
+- pull requests (pulls endpoint, read only for repositories with merged pull requests): `number`, `state`, `merged_at`, `base.ref`
 - comments: `id`, `issue_url`, `html_url`, `created_at`, `updated_at`, `body`, `body_html`, `user.login`, `user.id`
 
 Everything else (`body_text`, reactions, full user objects, API URLs, `author_association`) is dropped. The output of a build is the same with or without trimming. If the builder starts reading a new field, add it to `trimForFixture` and re-record.
@@ -39,4 +40,14 @@ Everything else (`body_text`, reactions, full user objects, API URLs, `author_as
 
 One repository (`xss-lab`), one issue and two comments whose `body_html` carries the sanitizer test vectors: `<script>`, `onerror`, `javascript:` in several encodings, `data:` and `vbscript:` URLs, `<svg onload>`, `<iframe>`, `<style>`, `style=`, a nested `<noscript>` breakout, `<math>`, `<form>`, unclosed tags, an expiring private image URL, a draykerdk issue link to rewrite and 40 nested `<div>` elements.
 
-Regenerate with `node test/fixtures/make-xss-fixture.js`. `node tools/build-check.js` builds both fixtures and checks the output.
+It also carries a link with a malformed percent-escape (`%E9`), which must not stop the build.
+
+Regenerate with `rm -rf test/fixtures/xss && node test/fixtures/make-xss-fixture.js`.
+
+## `live-safety/`: content that must never block a deploy
+
+One repository (`lab`) with what anyone can post on GitHub and what the deploy checks must accept: prose with `{{ … }}`, `javascript:`, `onclick=`, `href="…"` and `id="…"`; logins such as `open-source-fan`, `OWNER-dev` and `MEMBER-bot`; the titles `>` and `- item`; a user link to `https://github.com/t/lab/1/`; a malformed percent-escape. It also covers the data rules: a pull request merged into a side branch (not a decision), references that are only in code or in-page anchors (not references), and a locked issue.
+
+`node tools/build-check.js` builds it, prerenders it and runs `tools/forum-check.js --live` on the result, which must pass; the fixture-mode check must flag the wording. Regenerate with `node test/fixtures/make-live-safety-fixture.js`.
+
+`node tools/build-check.js` builds all three fixtures and checks the output.

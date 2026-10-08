@@ -83,6 +83,10 @@ function plain(value) {
     .trim();
 }
 
+// Issue and pull request titles are plain text on GitHub: whitespace is
+// collapsed and nothing else is changed. An empty title reads "(untitled)".
+const titleText = (value) => String(value == null ? '' : value).replace(/\s+/g, ' ').trim() || '(untitled)';
+
 // Clips already-plain text to max characters at a word boundary, '…' when cut.
 function clipText(value, max) {
   const text = String(value == null ? '' : value).replace(/\s+/g, ' ').trim();
@@ -189,24 +193,22 @@ const threadPath = (slug, num) => '/t/' + encodeURIComponent(slug) + '/' + Numbe
 
 // Sanitizes snapshot HTML again, so that the result is the build output when
 // the snapshot is intact. Two parts of the policy are not idempotent and are
-// undone around the second pass: headings were already demoted (h3..h5 are
-// promoted back one level first), and forum links (/t/<slug>/<num>/) are
-// resolved against github.com by the sanitizer (restored afterwards for
-// threads that exist).
+// handled for the second pass: headings were already demoted (h3..h5 are
+// promoted back one level first), and the forum links the build wrote
+// (/t/<slug>/<num>/ for threads that have a page) are kept as they are
+// (ctx.internalPath). Any other link is treated as on the first pass, so a
+// user's link to https://github.com/t/... stays on github.com.
 function makeResanitize(forum) {
   const known = new Map();
   for (const t of forum.threads) known.set(t.repo.toLowerCase() + '#' + t.num, t.slug);
   const pages = new Set(forum.threads.map((t) => t.slug + '/' + t.num));
-  const ctx = { org: ORG, threadExists: (repo, num) => known.get(String(repo).toLowerCase() + '#' + Number(num)) || null };
+  const ctx = {
+    org: ORG,
+    threadExists: (repo, num) => known.get(String(repo).toLowerCase() + '#' + Number(num)) || null,
+    internalPath: (slug, num) => pages.has(slug + '/' + Number(num))
+  };
   const promote = (html) => String(html || '').replace(/<(\/?)h([3-5])(?=[\s/>])/gi, (m, slash, n) => '<' + slash + 'h' + (Number(n) - 1));
-  return (html) => sanitizeHtml(promote(html), ctx).replace(
-    /href="https:\/\/github\.com\/t\/([^/"?#]+)\/([0-9]+)\/(#[^"]*)?"/g,
-    (m, slug, num, hash) => {
-      let decoded;
-      try { decoded = decodeURIComponent(slug); } catch (error) { return m; }
-      return pages.has(decoded + '/' + Number(num)) ? 'href="' + threadPath(decoded, num) + (hash || '') + '"' : m;
-    }
-  );
+  return (html) => sanitizeHtml(promote(html), ctx);
 }
 
 // ---------------------------------------------------------------- head tags
@@ -235,7 +237,7 @@ function structuredData(page) {
     const d = page.detail;
     graph.push({
       '@type': 'DiscussionForumPosting', '@id': url + '#posting', url,
-      headline: plain(t.title), text: clipText(t.text, 1000),
+      headline: titleText(t.title), text: clipText(t.text, 1000),
       datePublished: t.created, dateModified: t.at,
       author: { '@type': 'Person', name: t.user, url: 'https://github.com/' + encodeURIComponent(t.user) },
       commentCount: d.comments.length,
@@ -253,7 +255,7 @@ function structuredData(page) {
     webPage.about = { '@id': 'https://drayker.com/#organization' };
     webPage.mainEntity = {
       '@type': 'ItemList', numberOfItems: newest.length, itemListOrder: 'https://schema.org/ItemListOrderDescending',
-      itemListElement: newest.map((t, i) => ({ '@type': 'ListItem', position: i + 1, url: BASE + threadPath(t.slug, t.num).slice(1), name: plain(t.title) }))
+      itemListElement: newest.map((t, i) => ({ '@type': 'ListItem', position: i + 1, url: BASE + threadPath(t.slug, t.num).slice(1), name: titleText(t.title) }))
     };
   } else {
     webPage.about = { '@id': 'https://drayker.com/#organization' };
@@ -321,6 +323,7 @@ const STYLE = [
   '#forum-static .fs-sub{list-style:none;margin:4px 0 0;padding:0;font-size:.875rem}',
   '#forum-static .fs-state{display:inline-block;padding:0 6px;border:1px solid var(--fs-line);border-radius:4px;font-size:.75rem;line-height:1.5;text-transform:uppercase;letter-spacing:.04em}',
   '#forum-static .fs-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin:20px 0}',
+  '#forum-static .fs-locked{color:var(--fs-muted)}',
   '#forum-static .fs-button{display:inline-block;padding:8px 14px;border:1px solid var(--fs-link);border-radius:6px;font-weight:600;text-decoration:none}',
   '#forum-static .fs-body{overflow-wrap:anywhere}',
   '#forum-static .fs-body img{max-width:100%;height:auto}',
@@ -365,7 +368,7 @@ const stateLabel = (t) => (t.open ? 'open' : t.state_reason === 'not_planned' ? 
 // comments, descriptions); everything else is the site's own wording.
 function listMain(forum, meta) {
   const c = forum.counts;
-  const rows = forum.threads.map((t) => '<li><a class="ugc" href="' + threadPath(t.slug, t.num) + '">' + esc(plain(t.title)) + '</a>'
+  const rows = forum.threads.map((t) => '<li><a class="ugc" href="' + threadPath(t.slug, t.num) + '">' + esc(titleText(t.title)) + '</a>'
     + '<p class="fs-meta">' + esc(t.repo) + ' #' + t.num + ' · <span class="fs-state">' + esc(t.open ? 'open' : 'closed') + '</span> · '
     + esc(plural(t.comments, 'reply', 'replies')) + ' · last activity ' + time(t.at) + '</p></li>').join('');
   return '<h1>' + esc(meta.list.t) + '</h1>'
@@ -377,7 +380,8 @@ function listMain(forum, meta) {
 
 function threadMain(forum, thread, detail, resanitize) {
   const lookup = new Map(forum.threads.map((t) => [t.repo.toLowerCase() + '#' + t.num, t]));
-  const person = (login) => '<a href="https://github.com/' + encodeURIComponent(login) + '">' + esc(login) + '</a>';
+  // GitHub logins are mirrored text, so they are marked ugc like titles and bodies.
+  const person = (login) => '<a class="ugc" href="https://github.com/' + encodeURIComponent(login) + '">' + esc(login) + '</a>';
   const meta = [
     esc(thread.repo) + ' #' + thread.num,
     '<span class="fs-state">' + esc(stateLabel(thread)) + '</span>',
@@ -396,16 +400,19 @@ function threadMain(forum, thread, detail, resanitize) {
     const href = local ? threadPath(local.slug, local.num) : r.url;
     const what = (r.kind === 'pr' ? 'Pull request ' : 'Issue ') + r.repo + ' #' + r.num;
     const status = r.kind === 'pr' && r.merged ? 'merged ' + fmtDate(r.merged) : r.state;
-    return '<li><a class="ugc" href="' + esc(href) + '">' + esc(plain(r.title)) + '</a><p class="fs-meta">' + esc(what + ' · ' + status) + '</p></li>';
+    return '<li><a class="ugc" href="' + esc(href) + '">' + esc(titleText(r.title)) + '</a><p class="fs-meta">' + esc(what + ' · ' + status) + '</p></li>';
   }).join('');
   return '<p class="fs-meta"><a href="/">All threads</a></p>'
     + '<article>'
-    + '<h1 class="ugc">' + esc(plain(thread.title)) + '</h1>'
+    + '<h1 class="ugc">' + esc(titleText(thread.title)) + '</h1>'
     + '<p class="fs-meta">' + meta + '</p>' + labels
     + '<div class="fs-body ugc">' + body + '</div>'
     + '</article>'
-    + '<p class="fs-actions"><a class="fs-button" href="' + esc(thread.url) + '#new_comment_field">Reply on GitHub</a>'
-    + '<a href="' + esc(thread.url) + '">Read on GitHub</a></p>'
+    + (thread.locked
+      ? '<p class="fs-actions"><span class="fs-locked">Conversation locked on GitHub</span>'
+        + '<a class="fs-button" href="' + esc(thread.url) + '">Read on GitHub</a></p>'
+      : '<p class="fs-actions"><a class="fs-button" href="' + esc(thread.url) + '#new_comment_field">Reply on GitHub</a>'
+        + '<a href="' + esc(thread.url) + '">Read on GitHub</a></p>')
     + '<section aria-label="Replies"><h2>' + esc(plural(detail.comments.length, 'reply', 'replies')) + '</h2>'
     + (comments ? '<ol class="fs-comments">' + comments + '</ol>' : '<p class="fs-meta">No replies yet.</p>') + '</section>'
     + (refs ? '<section aria-label="Referenced by"><h2>Referenced by</h2><ul class="fs-list">' + refs + '</ul></section>' : '');
@@ -423,9 +430,9 @@ function decisionsMain(forum, meta) {
   const body = groups.map((g) => '<section><h2>' + esc(monthName(g.month)) + '</h2><ul class="fs-list">'
     + g.items.map((d) => {
       const threads = (d.threads || []).map((r) => lookup.get(r.slug + '/' + r.num)).filter(Boolean)
-        .map((t) => '<li>Thread: <a class="ugc" href="' + threadPath(t.slug, t.num) + '">' + esc(plain(t.title)) + '</a></li>').join('');
-      return '<li><a class="ugc" href="' + esc(d.url) + '">' + esc(plain(d.title)) + '</a>'
-        + '<p class="fs-meta">' + esc(d.repo) + ' #' + d.num + ' · merged ' + time(d.merged) + ' · by ' + esc(d.user) + '</p>'
+        .map((t) => '<li>Thread: <a class="ugc" href="' + threadPath(t.slug, t.num) + '">' + esc(titleText(t.title)) + '</a></li>').join('');
+      return '<li><a class="ugc" href="' + esc(d.url) + '">' + esc(titleText(d.title)) + '</a>'
+        + '<p class="fs-meta">' + esc(d.repo) + ' #' + d.num + ' · merged ' + time(d.merged) + ' · by <span class="ugc">' + esc(d.user) + '</span></p>'
         + (threads ? '<ul class="fs-sub">' + threads + '</ul>' : '') + '</li>';
     }).join('') + '</ul></section>').join('');
   return '<h1>' + esc(heading(meta.decisions)) + '</h1>'
@@ -506,7 +513,7 @@ function threadFeed(forum, details, resanitize) {
     entries: newest.map((t) => {
       const d = details.get(t.slug + '/' + t.num);
       return {
-        id: t.url, title: plain(t.title), link: BASE + threadPath(t.slug, t.num).slice(1), related: t.url,
+        id: t.url, title: titleText(t.title), link: BASE + threadPath(t.slug, t.num).slice(1), related: t.url,
         published: t.created, updated: t.at, author: t.user, categories: [t.repo].concat(t.labels || []),
         content: absolutize(d && d.html ? resanitize(d.html) : '<p>' + esc(t.excerpt) + '</p>')
       };
@@ -522,9 +529,9 @@ function decisionFeed(forum) {
     self: BASE + 'decisions/feed.xml', alternate: BASE + 'decisions/', fallbackUpdated: forum.generated_at,
     entries: forum.decisions.slice(0, FEED_MAX).map((d) => {
       const threads = (d.threads || []).map((r) => lookup.get(r.slug + '/' + r.num)).filter(Boolean)
-        .map((t) => '<li><a href="' + BASE + threadPath(t.slug, t.num).slice(1) + '">' + esc(plain(t.title)) + '</a></li>').join('');
+        .map((t) => '<li><a href="' + BASE + threadPath(t.slug, t.num).slice(1) + '">' + esc(titleText(t.title)) + '</a></li>').join('');
       return {
-        id: d.url, title: plain(d.title), link: d.url, published: d.merged, updated: d.merged, author: d.user, categories: [d.repo],
+        id: d.url, title: titleText(d.title), link: d.url, published: d.merged, updated: d.merged, author: d.user, categories: [d.repo],
         content: (d.excerpt ? '<p>' + esc(d.excerpt) + '</p>' : '') + '<p>' + esc(d.repo + ' #' + d.num) + ', merged ' + esc(fmtDate(d.merged)) + '.</p>'
           + (threads ? '<p>Threads:</p><ul>' + threads + '</ul>' : '')
       };
@@ -568,7 +575,7 @@ function pagesFor(forum, details, meta) {
     pages.push({
       kind: 'thread', key: 'thread', file: 't/' + thread.slug + '/' + thread.num + '/index.html',
       url: BASE + threadPath(thread.slug, thread.num).slice(1), forum,
-      title: plain(thread.title) + SUFFIX, description: clipText(lead, DESCRIPTION_MAX),
+      title: titleText(thread.title) + SUFFIX, description: clipText(lead, DESCRIPTION_MAX),
       thread, detail: details.get(thread.slug + '/' + thread.num)
     });
   }
@@ -644,6 +651,6 @@ if (require.main === module) {
 }
 
 module.exports = {
-  plain, compact, clipText, esc, objectLiteral, readMeta, makeResanitize, threadPath,
+  plain, titleText, compact, clipText, esc, objectLiteral, readMeta, makeResanitize, threadPath,
   BASE, START, END, EMPTY_REGION, META_KEYS, DESCRIPTION_MAX, FEED_MAX
 };

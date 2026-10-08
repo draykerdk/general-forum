@@ -42,8 +42,9 @@ function nextLink(link) {
 }
 
 // Recorded fixtures keep only the fields the snapshot builder reads, so the
-// committed fixture stays small. Lists of repositories, issues and comments are
-// recognised by their item shape; any other body is saved unchanged.
+// committed fixture stays small. Lists of repositories, pull requests, issues
+// and comments are recognised by their item shape; any other body is saved
+// unchanged.
 const pick = (obj, keys) => {
   if (!obj || typeof obj !== 'object') return obj;
   const out = {};
@@ -57,13 +58,18 @@ function trimForFixture(body) {
   return body.map((item) => {
     if (!item || typeof item !== 'object') return item;
     if ('full_name' in item && 'has_issues' in item) {
-      return pick(item, ['name', 'private', 'visibility', 'archived', 'has_issues', 'description', 'homepage', 'html_url']);
+      return pick(item, ['name', 'private', 'visibility', 'archived', 'has_issues', 'description', 'homepage', 'html_url', 'default_branch']);
+    }
+    if ('number' in item && 'base' in item && 'head' in item) {
+      const out = pick(item, ['number', 'state', 'merged_at']);
+      out.base = item.base ? pick(item.base, ['ref']) : item.base;
+      return out;
     }
     if ('issue_url' in item) {
       return Object.assign(pick(item, ['id', 'issue_url', 'html_url', 'created_at', 'updated_at', 'body', 'body_html']), { user: pickUser(item.user) });
     }
     if ('number' in item && 'state' in item) {
-      const out = pick(item, ['number', 'title', 'html_url', 'state', 'state_reason', 'created_at', 'updated_at', 'closed_at', 'comments', 'body', 'body_html']);
+      const out = pick(item, ['number', 'title', 'html_url', 'state', 'state_reason', 'created_at', 'updated_at', 'closed_at', 'comments', 'locked', 'active_lock_reason', 'body', 'body_html']);
       out.user = pickUser(item.user);
       out.labels = (item.labels || []).map((label) => pick(label, ['name']));
       if (item.pull_request) out.pull_request = pick(item.pull_request, ['html_url', 'merged_at']);

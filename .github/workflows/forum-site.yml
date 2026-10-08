@@ -5,7 +5,14 @@ on:
     branches:
       - master
   schedule:
+    # Every 15 minutes: read GitHub, rebuild, deploy when something changed.
     - cron: '7,22,37,52 * * * *'
+    # Weekly keepalive (Monday 03:07 UTC). GitHub disables scheduled workflows
+    # in a public repository after 60 days without repository activity, and
+    # this workflow never commits, so the keepalive job re-enables it through
+    # the API every week. Only this schedule runs the keepalive job, and it runs
+    # nothing else.
+    - cron: '7 3 * * 1'
   workflow_dispatch:
 
 permissions:
@@ -14,11 +21,25 @@ permissions:
   id-token: write
 
 concurrency:
-  group: github-pages
+  # The keepalive run stays out of the Pages queue.
+  group: ${{ github.event.schedule == '7 3 * * 1' && 'forum-keepalive' || 'github-pages' }}
   cancel-in-progress: false
 
 jobs:
+  keepalive:
+    if: github.event_name == 'schedule' && github.event.schedule == '7 3 * * 1'
+    runs-on: ubuntu-latest
+    # A job-level block replaces the workflow-level permissions for this job only.
+    permissions:
+      actions: write
+    steps:
+      - name: Keep the scheduled workflow enabled
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/forum-site.yml/enable"
+
   build:
+    if: github.event_name != 'schedule' || github.event.schedule != '7 3 * * 1'
     runs-on: ubuntu-latest
     outputs:
       deploy: ${{ steps.decide.outputs.deploy }}
@@ -33,10 +54,14 @@ jobs:
         run: node tools/build-forum-snapshot.js --out _site
       - name: Prerender pages, sitemap and feeds
         run: node tools/prerender.js --out _site
+      # Only checks that content written on GitHub cannot fail: the data and
+      # UI checks run on the recorded fixture, and the site check runs in live
+      # mode (structure, site wording and parsed markup; see tools/forum-check.js).
       - name: Validate the site
-        run: npm test
-      # push and workflow_dispatch always deploy. A scheduled run deploys only
-      # when content_hash or site_rev differ from the live data/meta.json.
+        run: node tools/test.js --live
+      # push and workflow_dispatch always deploy. A scheduled run deploys when
+      # content_hash or site_rev differ from the live data/meta.json, or when
+      # the live generated_at is more than 24 hours old.
       - name: Decide whether to deploy
         id: decide
         env:
