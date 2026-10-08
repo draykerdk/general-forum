@@ -12,7 +12,7 @@ const save = (rel, body) => {
   fs.writeFileSync(path.join(dir, fixtureName(url)), JSON.stringify({ url, link: null, body }, null, 1) + '\n');
 };
 save('/orgs/draykerdk/repos?type=public&per_page=100', [
-  { name: 'xss-lab', private: false, visibility: 'public', archived: false, has_issues: true, description: 'Synthetic repository for sanitizer tests', homepage: null, html_url: 'https://github.com/draykerdk/xss-lab' }
+  { name: 'xss-lab', private: false, visibility: 'public', archived: false, has_issues: true, description: 'Synthetic repository for sanitizer tests', homepage: null, html_url: 'https://github.com/draykerdk/xss-lab', default_branch: 'main' }
 ]);
 const issueBody = [
   '<p>Intro <script>alert("script")</script>text</p>',
@@ -29,9 +29,10 @@ const issueBody = [
   '<math><mi xlink:href="javascript:alert(13)">mathtext</mi></math>',
   '<form action="https://example.com/steal"><input name="q" value="formtext"><button>buttontext</button></form>',
   '<p>Link to <a href="https://github.com/draykerdk/xss-lab/issues/1#issuecomment-2" class="issue-link js-issue-link" data-hovercard-type="issue" data-hovercard-url="/draykerdk/xss-lab/issues/1/hovercard">#1</a> and to <a href="https://github.com/draykerdk/xss-lab/issues/99">#99</a></p>',
+  '<p>A malformed escape: <a href="https://github.com/draykerdk/a%E9/issues/1">bad escape</a></p>',
   '<p><b>unclosed bold <i>and italic'
 ].join('\n');
-save('/repos/draykerdk/xss-lab/issues?state=all&per_page=100&sort=updated', [
+save('/repos/draykerdk/xss-lab/issues?state=all&per_page=100&sort=created&direction=asc', [
   {
     number: 1, title: 'Sanitizer <script>alert("title")</script> test', html_url: 'https://github.com/draykerdk/xss-lab/issues/1',
     state: 'open', state_reason: null, created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-03T00:00:00Z', closed_at: null,

@@ -16,7 +16,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { execFileSync } = require('child_process');
 const { createClient } = require('./lib/github');
-const { sanitizeHtml, htmlToText } = require('./lib/sanitize');
+const { sanitizeHtml, htmlToText, tokenize } = require('./lib/sanitize');
 
 const ORG = 'draykerdk';
 const ROOT = path.join(__dirname, '..');
@@ -59,36 +59,46 @@ function clip(text, max) {
   return cut.replace(/[\s,;:.\-–—]+$/, '') + '…';
 }
 
-// Removes fenced and inline code so that '#12' inside code is not read as a reference.
-function stripCode(markdown) {
-  return String(markdown || '')
-    .replace(/```[\s\S]*?(```|$)/g, ' ')
-    .replace(/~~~[\s\S]*?(~~~|$)/g, ' ')
-    .replace(/`[^`\n]*`/g, ' ');
+// GitHub links every real reference to an issue or pull request when it renders
+// body_html, so references are read from the rendered anchors rather than the
+// markdown (code, indented blocks and in-page anchors are never links there).
+const REF_HREF = /^https:\/\/(?:www\.)?github\.com\/([A-Za-z0-9-]+)\/([A-Za-z0-9._-]+)\/(?:issues|pull)\/([0-9]+)\/?(?:#.*)?$/i;
+
+// Returns [{ repo, num }] for links to draykerdk issues and pull requests in
+// GitHub-rendered HTML, in document order, duplicates removed. The repository
+// name is as written in the link; callers resolve it case-insensitively.
+function findReferences(html) {
+  const refs = [];
+  const seen = new Set();
+  tokenize(html || '', (tok) => {
+    if (tok.type !== 'start' || tok.name !== 'a' || !tok.attrs.has('href')) return;
+    let href;
+    try { href = new URL(String(tok.attrs.get('href')).trim(), 'https://github.com/').href; } catch (error) { return; }
+    const m = REF_HREF.exec(href);
+    if (!m || m[1].toLowerCase() !== ORG) return;
+    const ref = { repo: m[2], num: Number(m[3]) };
+    const key = keyFor(ref.repo, ref.num);
+    if (seen.has(key)) return;
+    seen.add(key);
+    refs.push(ref);
+  });
+  return refs;
 }
 
-// Returns [{ repo, num }] in order of appearance, duplicates removed.
-function findReferences(markdown, repo) {
-  const text = stripCode(markdown);
-  const found = [];
-  const push = (r, n, at) => found.push({ repo: r, num: Number(n), at });
-  let m;
-  const url = /https?:\/\/(?:www\.)?github\.com\/([A-Za-z0-9-]+)\/([A-Za-z0-9._-]+)\/(?:issues|pull)\/([0-9]+)/gi;
-  while ((m = url.exec(text))) if (m[1].toLowerCase() === ORG) push(m[2], m[3], m.index);
-  const full = /(^|[^A-Za-z0-9_/.-])([A-Za-z0-9-]+)\/([A-Za-z0-9._-]+)#([0-9]+)\b/g;
-  while ((m = full.exec(text))) if (m[2].toLowerCase() === ORG) push(m[3], m[4], m.index + m[1].length);
-  const short = /(^|[^A-Za-z0-9_/&#.-])#([0-9]+)\b/g;
-  while ((m = short.exec(text))) push(repo, m[2], m.index + m[1].length);
-  found.sort((a, b) => a.at - b.at);
-  const seen = new Set();
-  const refs = [];
-  for (const ref of found) {
-    const key = keyFor(ref.repo, ref.num);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    refs.push({ repo: ref.repo, num: ref.num });
+const escapeText = (s) => String(s).replace(/\u0000/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+// Sanitizes one issue, pull request or comment body. A body that makes the
+// sanitizer throw is kept as escaped plain text with a warning, so that one bad
+// fragment never stops the build.
+function sanitizeFragment(html, ctx, where, sanitize = sanitizeHtml, warn = (m) => console.warn(m)) {
+  try {
+    return sanitize(html || '', ctx);
+  } catch (error) {
+    let text = '';
+    try { text = htmlToText(html || ''); } catch (inner) { text = String(html || '').replace(/\s+/g, ' ').trim(); }
+    warn('build-forum-snapshot: warning: ' + where + ' could not be sanitized (' + error.message + '); kept as plain text');
+    return text ? '<p>' + escapeText(text) + '</p>' : '';
   }
-  return refs;
 }
 
 function siteRevision() {
@@ -109,9 +119,15 @@ async function readOrg(gh) {
   const result = [];
   for (const repo of repos) {
     const base = '/repos/' + ORG + '/' + encodeURIComponent(repo.name);
-    const items = await gh.paginate(base + '/issues?state=all&per_page=100&sort=updated');
+    // Oldest first: new items are appended at the end and updates do not move
+    // items across pages while they are being read.
+    const items = await gh.paginate(base + '/issues?state=all&per_page=100&sort=created&direction=asc');
     const comments = await gh.paginate(base + '/issues/comments?per_page=100&sort=created&direction=asc');
-    result.push({ repo, items, comments });
+    // Base branches of merged pull requests, read only where there are any.
+    const pulls = items.some((item) => item.pull_request && item.pull_request.merged_at)
+      ? await gh.paginate(base + '/pulls?state=closed&per_page=100')
+      : null;
+    result.push({ repo, items, comments, pulls });
   }
   return result;
 }
@@ -130,6 +146,7 @@ function buildSnapshot(org, generatedAt) {
     return hit ? hit.slug : null;
   };
   const ctxFor = (rawBody) => ({ org: ORG, threadExists, rawBody: rawBody || '' });
+  const clean = (html, rawBody, where) => sanitizeFragment(html, ctxFor(rawBody), where);
 
   const repos = [];
   const threads = [];
@@ -137,8 +154,12 @@ function buildSnapshot(org, generatedAt) {
   const sources = []; // issues and pull requests that may reference threads
   const decisions = [];
 
-  for (const { repo, items, comments } of org) {
+  for (const { repo, items, comments, pulls } of org) {
     const slug = slugFor(repo.name);
+    const baseByNum = new Map((pulls || []).map((p) => [p.number, p && p.base ? p.base.ref : null]));
+    // A merged pull request is a decision when it went into the default branch.
+    // Without pull data for it, it is kept.
+    const intoDefault = (num) => !repo.default_branch || !baseByNum.has(num) || !baseByNum.get(num) || baseByNum.get(num) === repo.default_branch;
     const commentsByNum = new Map();
     for (const comment of comments) {
       const num = numFromIssueUrl(comment.issue_url);
@@ -153,7 +174,7 @@ function buildSnapshot(org, generatedAt) {
     let repoOpen = 0;
     const seenNums = new Set();
     for (const item of items) {
-      if (seenNums.has(item.number)) continue; // paging by update time can repeat an item
+      if (seenNums.has(item.number)) continue; // an item may repeat across pages
       seenNums.add(item.number);
       const itemComments = commentsByNum.get(item.number) || [];
       const isPr = Boolean(item.pull_request);
@@ -161,13 +182,13 @@ function buildSnapshot(org, generatedAt) {
 
       if (isPr) {
         const merged = item.pull_request.merged_at || null;
-        if (!merged) continue;
-        const html = sanitizeHtml(item.body_html || '', ctxFor(item.body));
+        if (!merged || !intoDefault(item.number)) continue;
+        const html = clean(item.body_html, item.body, repo.name + '#' + item.number);
         decisions.push({
           repo: repo.name, slug, num: item.number, title: item.title, url: item.html_url,
           user: login(item.user), merged,
           excerpt: clip(htmlToText(html), EXCERPT_MAX),
-          threads: findReferences(item.body, repo.name)
+          threads: findReferences(item.body_html)
             .map((ref) => threadIndex.get(keyFor(ref.repo, ref.num)))
             .filter(Boolean)
             .map((t) => ({ repo: t.repo, slug: t.slug, num: t.num }))
@@ -178,7 +199,7 @@ function buildSnapshot(org, generatedAt) {
       repoThreads++;
       const open = item.state === 'open';
       if (open) repoOpen++;
-      const html = sanitizeHtml(item.body_html || '', ctxFor(item.body));
+      const html = clean(item.body_html, item.body, repo.name + '#' + item.number);
       const plain = htmlToText(html);
       const participants = [];
       for (const who of [login(item.user)].concat(itemComments.map((c) => login(c.user)))) {
@@ -198,6 +219,8 @@ function buildSnapshot(org, generatedAt) {
         state: open ? 'open' : 'closed',
         state_reason: item.state_reason || null,
         open,
+        locked: Boolean(item.locked),
+        lock_reason: item.locked ? item.active_lock_reason || null : null,
         created: item.created_at,
         at: item.updated_at,
         closed: item.closed_at || null,
@@ -217,7 +240,7 @@ function buildSnapshot(org, generatedAt) {
           user_id: userId(c.user),
           created: c.created_at,
           updated: c.updated_at,
-          html: sanitizeHtml(c.body_html || '', ctxFor(c.body)),
+          html: clean(c.body_html, c.body, repo.name + '#' + item.number + ' comment ' + c.id),
           url: c.html_url
         }))
       });
@@ -233,9 +256,9 @@ function buildSnapshot(org, generatedAt) {
   const refsByKey = new Map();
   for (const source of sources) {
     const own = keyFor(source.repo, source.item.number);
-    const texts = [source.item.body].concat(source.comments.map((c) => c.body));
-    for (const text of texts) {
-      for (const ref of findReferences(text, source.repo)) {
+    const bodies = [source.item.body_html].concat(source.comments.map((c) => c.body_html));
+    for (const body of bodies) {
+      for (const ref of findReferences(body)) {
         const key = keyFor(ref.repo, ref.num);
         if (key === own || !threadByKey.has(key)) continue;
         if (!refsByKey.has(key)) refsByKey.set(key, new Map());
@@ -349,4 +372,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { buildSnapshot, findReferences, clip, contentHash, slugFor };
+module.exports = { buildSnapshot, findReferences, sanitizeFragment, clip, contentHash, slugFor };

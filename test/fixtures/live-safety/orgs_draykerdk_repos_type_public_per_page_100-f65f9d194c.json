@@ -3,14 +3,14 @@
  "link": null,
  "body": [
   {
-   "name": "xss-lab",
+   "name": "lab",
    "private": false,
    "visibility": "public",
    "archived": false,
    "has_issues": true,
-   "description": "Synthetic repository for sanitizer tests",
+   "description": "Synthetic repository for the live-mode checks",
    "homepage": null,
-   "html_url": "https://github.com/draykerdk/xss-lab",
+   "html_url": "https://github.com/draykerdk/lab",
    "default_branch": "main"
   }
  ]

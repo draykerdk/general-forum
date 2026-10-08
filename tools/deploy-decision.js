@@ -9,11 +9,15 @@
  *
  * push and workflow_dispatch always deploy. A scheduled run skips the deploy
  * only when the live meta.json has the same content_hash and site_rev as the
- * new build; if the live file cannot be read, it deploys. Writes deploy=true
- * or deploy=false to $GITHUB_OUTPUT when that variable is set, and logs why.
+ * new build and its generated_at is at most MAX_AGE_MS older than the new
+ * build's, so the published update time is never more than about a day old;
+ * if the live file cannot be read, it deploys. Writes deploy=true or
+ * deploy=false to $GITHUB_OUTPUT when that variable is set, and logs why.
  */
 
 const fs = require('fs');
+
+const MAX_AGE_MS = 24 * 3600 * 1000;
 
 function parseArgs(argv) {
   const args = { event: process.env.GITHUB_EVENT_NAME || '', meta: '_site/data/meta.json', live: 'https://forum.drayker.org/data/meta.json' };
@@ -46,6 +50,11 @@ async function decide(args, read = readLive) {
   }
   const sameContent = live && live.content_hash === local.content_hash;
   const sameRev = live && live.site_rev === local.site_rev;
+  const age = Date.parse(local.generated_at) - Date.parse(live && live.generated_at);
+  const fresh = !(age > MAX_AGE_MS) && !Number.isNaN(age);
+  if (sameContent && sameRev && !fresh) {
+    return { deploy: true, reason: 'content unchanged, but the live generated_at ' + String(live && live.generated_at) + ' is more than 24 h older than ' + String(local.generated_at) };
+  }
   if (sameContent && sameRev) {
     return { deploy: false, reason: 'content_hash ' + String(local.content_hash).slice(0, 12) + ' and site_rev ' + String(local.site_rev).slice(0, 12) + ' are already live' };
   }
@@ -66,4 +75,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { decide };
+module.exports = { decide, MAX_AGE_MS };

@@ -4,17 +4,26 @@
 /*
  * Validates the built site and the repository configuration it depends on.
  *
- *   node tools/forum-check.js [--site _site]
+ *   node tools/forum-check.js [--site _site] [--live]
  *
  * Run after a build (npm run build:fixture or npm run build). It checks the
  * pages written by tools/prerender.js, the sitemap and feeds, the template
  * contract in index.html, the issue form field ids and the workflows.
  * UI behaviour is not tested here.
+ *
+ * --live is for a build from the live GitHub data, which anyone can write to.
+ * It keeps only checks that such content cannot fail: structure (files,
+ * canonical and robots tags, JSON-LD, the static region, sitemap, feeds and
+ * entry counts), wording checks that skip mirrored content (class="ugc"), and
+ * security checks that read the parsed markup (tags and attributes), never the
+ * escaped text. Without --live (the fixture builds), the stricter text checks
+ * and the sanitizer fixed-point check run as well.
  */
 
 const fs = require('fs');
 const path = require('path');
 const pre = require('./prerender');
+const { tokenize } = require('./lib/sanitize');
 
 const ROOT = path.join(__dirname, '..');
 const BASE = pre.BASE;
@@ -27,9 +36,10 @@ let checks = 0;
 const check = (condition, message) => { checks++; if (!condition) failures.push(message); return Boolean(condition); };
 
 function parseArgs(argv) {
-  const args = { site: '_site' };
+  const args = { site: '_site', live: false };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--site') args.site = argv[++i];
+    else if (argv[i] === '--live') args.live = true;
     else throw new Error('Unknown argument: ' + argv[i]);
   }
   return args;
@@ -37,10 +47,15 @@ function parseArgs(argv) {
 
 const read = (file) => fs.readFileSync(file, 'utf8');
 const exists = (file) => fs.existsSync(file);
-const decode = (s) => String(s)
-  .replace(/&#(\d+);/g, (m, n) => String.fromCodePoint(Number(n)))
-  .replace(/&#x([0-9a-f]+);/gi, (m, n) => String.fromCodePoint(parseInt(n, 16)))
-  .replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&');
+// Decodes the references the site and feeds write, in one pass.
+const ENTITIES = { quot: '"', lt: '<', gt: '>', nbsp: '\u00a0', amp: '&', apos: "'" };
+const decode = (s) => String(s).replace(/&(#[0-9]+|#x[0-9a-f]+|[a-z]+);/gi, (m, ref) => {
+  if (ref[0] === '#') {
+    const code = ref[1] === 'x' || ref[1] === 'X' ? parseInt(ref.slice(2), 16) : Number(ref.slice(1));
+    return code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : m;
+  }
+  return Object.prototype.hasOwnProperty.call(ENTITIES, ref) ? ENTITIES[ref] : m;
+});
 
 // ------------------------------------------------------------ XML checking
 
@@ -134,34 +149,63 @@ function xmlError(xml) {
 // ------------------------------------------------------------ HTML helpers
 
 // Removes elements whose class list contains "ugc" (text mirrored from
-// GitHub), <style> blocks and comments, and returns the remaining text.
+// GitHub), <style> and <script> content and comments, and returns the
+// remaining text. Uses the sanitizer's tokenizer, so escaped text is never
+// mistaken for markup.
 function siteText(html) {
   const out = [];
-  let skip = 0;
   const stack = [];
-  const re = /<!--[\s\S]*?-->|<style\b[\s\S]*?<\/style>|<(\/?)([a-zA-Z][a-zA-Z0-9]*)\b([^>]*)>|([^<]+)/g;
-  let m;
-  while ((m = re.exec(html))) {
-    if (m[4] !== undefined) { if (!skip) out.push(m[4]); continue; }
-    if (!m[2]) continue;
-    const tag = m[2].toLowerCase();
-    if (m[1]) {
-      while (stack.length) {
-        const top = stack.pop();
-        if (top.skip) skip--;
-        if (top.tag === tag) break;
-      }
-      out.push(' ');
-      continue;
-    }
-    if (VOID.has(tag) || /\/\s*$/.test(m[3])) { out.push(' '); continue; }
-    const cls = /\bclass="([^"]*)"/.exec(m[3]);
-    const isUgc = Boolean(cls && cls[1].split(/\s+/).includes('ugc'));
-    stack.push({ tag, skip: isUgc });
-    if (isUgc) skip++;
+  let skip = 0;
+  tokenize(html, (tok) => {
+    if (tok.type === 'text') { if (!skip) out.push(tok.text); return; }
     out.push(' ');
+    if (tok.type === 'end') {
+      for (let k = stack.length - 1; k >= 0; k--) {
+        if (stack[k].tag !== tok.name) continue;
+        while (stack.length > k) if (stack.pop().skip) skip--;
+        break;
+      }
+      return;
+    }
+    if (VOID.has(tok.name) || tok.selfClosing) return;
+    const isSkipped = tok.name === 'style' || tok.name === 'script'
+      || String(tok.attrs.get('class') || '').split(/\s+/).includes('ugc');
+    stack.push({ tag: tok.name, skip: isSkipped });
+    if (isSkipped) skip++;
+  });
+  return out.join('').replace(/\s+/g, ' ').trim();
+}
+
+// Start tags of an HTML fragment as { name, attrs: Map } with attribute
+// values decoded, read with the sanitizer's tokenizer.
+function startTags(html) {
+  const tags = [];
+  tokenize(html, (tok) => { if (tok.type === 'start') tags.push({ name: tok.name, attrs: tok.attrs }); });
+  return tags;
+}
+
+const DANGEROUS_URL = /^(javascript|vbscript|data):/i;
+const urlCore = (value) => String(value).replace(/[\u0000-\u0020\u007f-\u009f]/g, '');
+
+// Script in real markup: <script> elements, on* attributes, and
+// javascript:, vbscript: or data: in href or src. Returns a list of findings.
+function scriptInMarkup(html) {
+  const found = [];
+  for (const tag of startTags(html)) {
+    if (tag.name === 'script') found.push('<script> element');
+    for (const [name, value] of tag.attrs) {
+      if (/^on/i.test(name)) found.push(name + ' attribute on <' + tag.name + '>');
+      if ((name === 'href' || name === 'src') && DANGEROUS_URL.test(urlCore(value))) found.push(name + '="' + String(value).slice(0, 40) + '" on <' + tag.name + '>');
+    }
   }
-  return decode(out.join('')).replace(/\s+/g, ' ').trim();
+  return found;
+}
+
+// href and src values of real markup.
+function markupUrls(html) {
+  const urls = [];
+  for (const tag of startTags(html)) for (const [name, value] of tag.attrs) if (name === 'href' || name === 'src') urls.push(value);
+  return urls;
 }
 
 function staticRegion(page) {
@@ -226,7 +270,8 @@ function checkConfig() {
   const site = read(path.join(ROOT, '.github', 'workflows', 'forum-site.yml'));
   check(site.includes('tools/build-forum-snapshot.js') && site.includes('--out _site'), 'site workflow does not build the snapshot into _site');
   check(site.includes('tools/prerender.js'), 'site workflow does not prerender');
-  check(site.includes('npm test'), 'site workflow does not run the tests');
+  check(/run:\s*node tools\/test\.js --live\s*\n/.test(site), 'site workflow does not run the tests in live mode (node tools/test.js --live)');
+  check(!/npm test/.test(site), 'site workflow must not run the fixture-mode tests on live data');
   check(/actions\/upload-pages-artifact@v4[\s\S]*?path:\s*_site\b/.test(site), 'site workflow must upload _site with upload-pages-artifact@v4');
   check(site.includes('actions/deploy-pages@v4'), 'site workflow does not deploy with deploy-pages@v4');
   check(site.includes('pages: write') && site.includes('id-token: write') && site.includes('contents: read'), 'site workflow permissions are incomplete');
@@ -234,9 +279,16 @@ function checkConfig() {
   check(site.includes('tools/deploy-decision.js') && site.includes('https://forum.drayker.org/data/meta.json'), 'site workflow does not compare the deployed meta.json');
   check(/if:\s*steps\.decide\.outputs\.deploy == 'true'\s*\n\s*uses: actions\/upload-pages-artifact@v4/.test(site), 'site workflow uploads the artifact without a deploy decision');
   check(/if:\s*needs\.build\.outputs\.deploy == 'true'/.test(site), 'deploy job does not depend on the deploy decision');
+  // Keepalive: GitHub disables schedules after 60 days without repository activity.
+  check(site.includes("cron: '7 3 * * 1'"), 'site workflow has no weekly keepalive schedule');
+  const keepalive = (/\n  keepalive:\n([\s\S]*?)\n  [a-z]+:\n/.exec(site) || [])[1] || '';
+  check(/if: github\.event_name == 'schedule' && github\.event\.schedule == '7 3 \* \* 1'/.test(keepalive), 'keepalive job must run only on its own schedule');
+  check(/permissions:\s*\n\s*actions: write\s*\n/.test(keepalive) && !/pages: write|id-token: write|contents: write/.test(keepalive), 'keepalive job must have only actions: write');
+  check(keepalive.includes('gh api -X PUT "repos/${{ github.repository }}/actions/workflows/forum-site.yml/enable"') && keepalive.includes('GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}'), 'keepalive job does not re-enable the workflow');
+  check(/\n  build:\n    if: github\.event_name != 'schedule' \|\| github\.event\.schedule != '7 3 \* \* 1'\n/.test(site), 'build job must not run on the keepalive schedule');
   const decision = read(path.join(ROOT, 'tools', 'deploy-decision.js'));
   check(decision.includes('content_hash') && decision.includes('site_rev'), 'deploy decision does not compare content_hash and site_rev');
-  check(/group:\s*github-pages/.test(site) && /cancel-in-progress:\s*false/.test(site), 'site workflow concurrency changed');
+  check(/group:.*'github-pages'/.test(site) && /cancel-in-progress:\s*false/.test(site), 'site workflow concurrency changed');
 
   const prFile = path.join(ROOT, '.github', 'workflows', 'forum-check.yml');
   check(exists(prFile), 'forum-check workflow is missing');
@@ -257,7 +309,7 @@ function checkConfig() {
   check(read(path.join(ROOT, '.gitignore')).split(/\r?\n/).includes('_site/'), '_site/ is not git-ignored');
 }
 
-function checkSite(siteDir) {
+function checkSite(siteDir, live) {
   const at = (rel) => path.join(siteDir, rel);
   if (!check(exists(at('data/forum.json')) && exists(at('index.html')), 'no built site in ' + siteDir + ' (run npm run build:fixture first)')) return;
 
@@ -309,17 +361,31 @@ function checkSite(siteDir) {
     const region = staticRegion(page);
     if (!check(region !== null, label + ' has no static region')) continue;
     for (const part of [head, region]) {
-      for (const m of part.matchAll(/\s(?:src|href)="([^"]*)"/g)) {
-        check(/^(\/|https?:\/\/|mailto:|#)/.test(m[1]) && !m[1].startsWith('//'), label + ' has a relative URL: ' + m[1]);
+      for (const url of markupUrls(part)) {
+        check(/^(\/|https?:\/\/|mailto:|#)/.test(url) && !url.startsWith('//'), label + ' has a relative URL: ' + url);
       }
     }
     check(region.startsWith('<div id="forum-static"><style>') && region.endsWith('</div>'), label + ' static region is not a single #forum-static block');
     const text = siteText(region);
-    const allText = decode(region.replace(/<style\b[\s\S]*?<\/style>/g, ' ').replace(/<[^>]*>/g, ' ')).replace(/\s+/g, ' ').trim();
-    check(allText.length > 80, label + ' static region is empty');
-    check(!allText.includes('{{'), label + ' static region shows a raw template expression');
-    check(!/<script\b/i.test(region) && !/\son[a-z]+\s*=/i.test(region) && !/javascript:/i.test(region), label + ' static region contains script');
-    check(!/\s(?:style|data-[\w-]+|id)="/.test(region.replace(/<div id="forum-static">/, '').replace(/<li class="fs-comment" id="comment-\d+">/g, '')), label + ' static region has attributes outside the policy');
+    check(text.length > 40, label + ' static region has no site text');
+    check(!text.includes('{{'), label + ' static region shows a raw template expression');
+    const script = scriptInMarkup(region);
+    check(!script.length, label + ' static region contains script: ' + script.join(', '));
+    const stray = [];
+    for (const tag of startTags(region)) {
+      for (const name of tag.attrs.keys()) {
+        if (name === 'id' && ((tag.name === 'div' && tag.attrs.get('id') === 'forum-static') || (tag.name === 'li' && /^comment-\d+$/.test(tag.attrs.get('id'))))) continue;
+        if (name === 'style' || name === 'id' || name.startsWith('data-')) stray.push(name + ' on <' + tag.name + '>');
+      }
+    }
+    check(!stray.length, label + ' static region has attributes outside the policy: ' + stray.slice(0, 5).join(', '));
+    if (!live) {
+      // Text checks over everything, mirrored content included: fixture builds only.
+      const allText = decode(region.replace(/<style\b[\s\S]*?<\/style>/g, ' ').replace(/<[^>]*>/g, ' ')).replace(/\s+/g, ' ').trim();
+      check(allText.length > 80, label + ' static region is empty');
+      check(!allText.includes('{{'), label + ' static region text shows a raw template expression');
+      check(!/<script\b/i.test(region) && !/\son[a-z]+\s*=/i.test(region) && !/javascript:/i.test(region), label + ' static region text mentions script');
+    }
     const own = [text];
     if (p.kind !== 'thread') own.push(title, description);
     for (const re of FORBIDDEN) check(!own.some((s) => re.test(s)), label + ' site text contains ' + re);
@@ -334,18 +400,22 @@ function checkSite(siteDir) {
       const t = p.thread;
       const detailFile = at('data/t/' + t.slug + '/' + t.num + '.json');
       const detail = JSON.parse(read(detailFile));
-      check(title === pre.plain(t.title) + SUFFIX, label + ' title is not the full thread title');
+      check(title === pre.titleText(t.title) + SUFFIX, label + ' title is not the full thread title');
       const post = byType('DiscussionForumPosting')[0];
       if (check(post, label + ' has no DiscussionForumPosting')) {
-        check(post.url === p.url && post.headline === pre.plain(t.title), label + ' posting url or headline is wrong');
+        check(post.url === p.url && post.headline === pre.titleText(t.title), label + ' posting url or headline is wrong');
         check(post.datePublished === t.created && post.dateModified === t.at, label + ' posting dates are wrong');
-        check(post.author && post.author['@type'] === 'Person' && post.author.name === t.user && post.author.url === 'https://github.com/' + t.user, label + ' posting author is wrong');
+        check(post.author && post.author['@type'] === 'Person' && post.author.name === t.user && post.author.url === 'https://github.com/' + encodeURIComponent(t.user), label + ' posting author is wrong');
         check(typeof post.text === 'string' && post.text.length <= 1000, label + ' posting text is missing or too long');
         check(post.commentCount === detail.comments.length && Array.isArray(post.comment) && post.comment.length === detail.comments.length, label + ' comment count is wrong');
         check((post.comment || []).every((c) => c['@type'] === 'Comment' && c.author && c.author.name && c.datePublished && typeof c.text === 'string' && c.text.length <= 500 && c.url), label + ' comments are incomplete');
         check(post.isPartOf && post.isPartOf['@id'] === BASE + '#website' && post.mainEntityOfPage, label + ' posting is not linked to the site');
       }
-      check(region.includes('href="' + t.url + '#new_comment_field">Reply on GitHub</a>'), label + ' has no Reply on GitHub link');
+      if (t.locked) {
+        check(region.includes('Conversation locked on GitHub') && region.includes('href="' + t.url + '">Read on GitHub</a>') && !region.includes('Reply on GitHub'), label + ' is locked but does not say so');
+      } else {
+        check(region.includes('href="' + t.url + '#new_comment_field">Reply on GitHub</a>'), label + ' has no Reply on GitHub link');
+      }
       check((region.match(/<li class="fs-comment"/g) || []).length === detail.comments.length, label + ' does not show every comment');
       check(region.includes('<div class="fs-body ugc">' + (detail.html ? resanitize(detail.html) : '')) || !detail.html, label + ' does not show the sanitized body');
       for (const r of t.refs || []) check(region.includes(r.url) || r.kind === 'issue', label + ' does not list the back-link ' + r.repo + '#' + r.num);
@@ -372,10 +442,12 @@ function checkSite(siteDir) {
     }
   }
 
-  // Every data fragment must be a fixed point of the sanitizer.
+  // Every data fragment must be a fixed point of the sanitizer (fixture builds
+  // only: the pages show the second pass either way, so this checks the
+  // sanitizer, not the safety of the output).
   let fragments = 0;
   let unstable = 0;
-  for (const t of forum.threads) {
+  for (const t of live ? [] : forum.threads) {
     const file = at('data/t/' + t.slug + '/' + t.num + '.json');
     if (!check(exists(file), 'missing thread data ' + t.slug + '/' + t.num)) continue;
     const detail = JSON.parse(read(file));
@@ -384,7 +456,7 @@ function checkSite(siteDir) {
       if (resanitize(html) !== html) unstable++;
     }
   }
-  check(unstable === 0, unstable + ' of ' + fragments + ' HTML fragments change when sanitized again');
+  if (!live) check(unstable === 0, unstable + ' of ' + fragments + ' HTML fragments change when sanitized again');
 
   // Sitemap: exactly the indexable pages.
   const sitemap = read(at('sitemap.xml'));
@@ -418,8 +490,10 @@ function checkSite(siteDir) {
       const content = /<content type="html">([\s\S]*?)<\/content>/.exec(e);
       if (check(content, f.file + ' entry has no html content: ' + id)) {
         const html = decode(content[1]);
-        check(!/<script\b/i.test(html) && !/\son[a-z]+\s*=/i.test(html) && !/javascript:/i.test(html), f.file + ' entry content contains script: ' + id);
-        for (const m of html.matchAll(/\s(?:src|href)="([^"]*)"/g)) check(/^(https?:\/\/|mailto:|#)/.test(m[1]), f.file + ' entry content has a relative URL: ' + m[1]);
+        const script = scriptInMarkup(html);
+        check(!script.length, f.file + ' entry content contains script: ' + id + ': ' + script.join(', '));
+        if (!live) check(!/<script\b/i.test(html) && !/\son[a-z]+\s*=/i.test(html) && !/javascript:/i.test(html), f.file + ' entry content text mentions script: ' + id);
+        for (const url of markupUrls(html)) check(/^(https?:\/\/|mailto:|#)/.test(url), f.file + ' entry content has a relative URL: ' + url);
       }
     }
     const own = [(/<title>([^<]*)<\/title>/.exec(xml) || [])[1] || '', (/<subtitle>([^<]*)<\/subtitle>/.exec(xml) || [])[1] || ''];
@@ -440,20 +514,26 @@ async function checkDeployDecision() {
   const os = require('os');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'forum-deploy-'));
   const meta = path.join(dir, 'meta.json');
-  fs.writeFileSync(meta, JSON.stringify({ content_hash: 'a'.repeat(64), site_rev: 'r1' }));
+  const now = '2026-10-08T12:00:00Z';
+  fs.writeFileSync(meta, JSON.stringify({ generated_at: now, content_hash: 'a'.repeat(64), site_rev: 'r1' }));
+  const hoursBefore = (h) => new Date(Date.parse(now) - h * 3600 * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z');
   const live = (value) => async () => value;
+  const same = (extra) => live(Object.assign({ generated_at: hoursBefore(1), content_hash: 'a'.repeat(64), site_rev: 'r1' }, extra || {}));
   const fail = async () => { throw new Error('offline'); };
   const cases = [
-    ['push', live({ content_hash: 'a'.repeat(64), site_rev: 'r1' }), true],
-    ['workflow_dispatch', live({ content_hash: 'a'.repeat(64), site_rev: 'r1' }), true],
-    ['schedule', live({ content_hash: 'a'.repeat(64), site_rev: 'r1' }), false],
-    ['schedule', live({ content_hash: 'b'.repeat(64), site_rev: 'r1' }), true],
-    ['schedule', live({ content_hash: 'a'.repeat(64), site_rev: 'r2' }), true],
-    ['schedule', fail, true]
+    ['push', same(), true, 'push'],
+    ['workflow_dispatch', same(), true, 'workflow_dispatch'],
+    ['schedule', same(), false, 'unchanged and an hour old'],
+    ['schedule', same({ generated_at: hoursBefore(23.5) }), false, 'unchanged and 23.5 h old'],
+    ['schedule', same({ generated_at: hoursBefore(25) }), true, 'unchanged but 25 h old'],
+    ['schedule', same({ generated_at: undefined }), true, 'live generated_at missing'],
+    ['schedule', same({ content_hash: 'b'.repeat(64) }), true, 'content changed'],
+    ['schedule', same({ site_rev: 'r2' }), true, 'site changed'],
+    ['schedule', fail, true, 'live unreadable']
   ];
-  for (const [event, read, expected] of cases) {
+  for (const [event, read, expected, what] of cases) {
     const result = await decide({ event, meta, live: 'https://example.invalid/meta.json' }, read);
-    check(result.deploy === expected && result.reason, 'deploy decision for ' + event + ' should be ' + expected);
+    check(result.deploy === expected && result.reason, 'deploy decision (' + what + ') should be ' + expected);
   }
   fs.rmSync(dir, { recursive: true, force: true });
 }
@@ -466,13 +546,13 @@ async function main() {
   checkXmlChecker();
   checkTemplate();
   checkConfig();
-  checkSite(siteDir);
+  checkSite(siteDir, args.live);
   if (failures.length) {
     failures.slice(0, 200).forEach((failure) => console.error('FAIL: ' + failure));
     console.error(failures.length + ' of ' + checks + ' site checks failed');
     process.exit(1);
   }
-  console.log(checks + ' site checks passed (' + path.relative(process.cwd(), siteDir) + ')');
+  console.log(checks + ' site checks passed (' + (path.relative(process.cwd(), siteDir) || '.') + (args.live ? ', live mode' : '') + ')');
 }
 
 if (require.main === module) {
@@ -482,4 +562,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { xmlError, siteText };
+module.exports = { xmlError, siteText, scriptInMarkup, markupUrls };

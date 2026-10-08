@@ -18,8 +18,9 @@ const { spawnSync } = require('child_process');
 
 const ROOT = path.join(__dirname, '..');
 const { sanitizeHtml, htmlToText } = require('./lib/sanitize');
-const { createClient, fixtureName } = require('./lib/github');
-const { findReferences, clip } = require('./build-forum-snapshot');
+const { createClient, fixtureName, trimForFixture } = require('./lib/github');
+const { findReferences, sanitizeFragment, clip } = require('./build-forum-snapshot');
+const { scriptInMarkup, markupUrls } = require('./forum-check');
 const { createServer } = require('./serve');
 
 const tests = [];
@@ -30,6 +31,7 @@ function build(fixture, out) {
   const run = spawnSync(process.execPath, [path.join(ROOT, 'tools/build-forum-snapshot.js'), '--fixture', fixture, '--out', out], { encoding: 'utf8' });
   return run;
 }
+const runTool = (file, args) => spawnSync(process.execPath, [path.join(ROOT, 'tools', file)].concat(args), { encoding: 'utf8', cwd: ROOT });
 function buildOk(fixture, out) {
   const run = build(fixture, out);
   assert.strictEqual(run.status, 0, 'build failed: ' + run.stderr);
@@ -47,7 +49,7 @@ function assertSafe(html, where) {
   assert.ok(!/\sstyle\s*=/i.test(tags), 'style attribute survived' + label);
   assert.ok(!/\s(id|name|data-[a-z-]+|aria-[a-z-]+|target)\s*=/i.test(tags), 'disallowed attribute survived' + label);
   const urls = [];
-  html.replace(/\s(href|src)="([^"]*)"/g, (_m, _k, v) => urls.push(v));
+  tags.replace(/\s(href|src)="([^"]*)"/g, (_m, _k, v) => urls.push(v));
   for (const value of urls) {
     assert.ok(/^(https?:|mailto:|\/t\/)/i.test(value), 'unexpected URL scheme' + label + ': ' + value);
     assert.ok(!/^\s*(javascript|vbscript|data):/i.test(value), 'dangerous URL' + label + ': ' + value);
@@ -62,7 +64,7 @@ function assertSafe(html, where) {
     assert.ok(!tag.includes('private-user-images'), 'expiring private image URL survived' + label);
     return tag;
   });
-  html.replace(/class="([^"]*)"/g, (_m, value) => {
+  tags.replace(/\sclass="([^"]*)"/g, (_m, value) => {
     for (const token of value.split(' ')) assert.ok(/^(pl-[a-z0-9]+|task-list-item|task-list-item-checkbox|contains-task-list|user-mention|issue-link)$/.test(token), 'class not allowed: ' + token);
   });
 }
@@ -165,6 +167,36 @@ test('sanitizer adds rel, resolves and rewrites links', () => {
   assert.strictEqual(clean('<a href="https://github.com/draykerdk/uid/issues/2">x</a>'), '<a href="https://github.com/draykerdk/uid/issues/2" rel="nofollow ugc noopener noreferrer">x</a>', 'unknown thread stays on GitHub');
   assert.strictEqual(clean('<a href="https://github.com/other/uid/issues/1">x</a>'), '<a href="https://github.com/other/uid/issues/1" rel="nofollow ugc noopener noreferrer">x</a>', 'other orgs are not rewritten');
   assert.strictEqual(clean('<a href="https://github.com/draykerdk/uid/pull/1">x</a>'), '<a href="https://github.com/draykerdk/uid/pull/1" rel="nofollow ugc noopener noreferrer">x</a>');
+  // A malformed percent-escape in the repository part is left unrewritten instead of throwing.
+  assert.strictEqual(clean('<a href="https://github.com/draykerdk/a%E9/issues/1">x</a>'), '<a href="https://github.com/draykerdk/a%E9/issues/1" rel="nofollow ugc noopener noreferrer">x</a>');
+  assert.strictEqual(clean('<a href="https://github.com/draykerdk/a%/issues/1">x</a>'), '<a href="https://github.com/draykerdk/a%/issues/1" rel="nofollow ugc noopener noreferrer">x</a>');
+});
+
+test('sanitizer keeps its own forum paths only with ctx.internalPath', () => {
+  const internal = { internalPath: (slug, num) => slug === 'uid' && num === 1 };
+  // First pass: a user's /t/ path or github.com/t/ link stays on github.com.
+  assert.strictEqual(clean('<a href="/t/uid/1/">x</a>'), '<a href="https://github.com/t/uid/1/" rel="nofollow ugc noopener noreferrer">x</a>');
+  assert.strictEqual(clean('<a href="https://github.com/t/uid/1/">x</a>'), '<a href="https://github.com/t/uid/1/" rel="nofollow ugc noopener noreferrer">x</a>');
+  // Second pass: the build's own rewrites are kept, so sanitizing again is a fixed point.
+  for (const html of ['<a href="https://github.com/draykerdk/uid/issues/1">x</a>', '<a href="https://github.com/draykerdk/uid/issues/1#issuecomment-9">x</a>',
+    '<a href="https://github.com/t/uid/1/">x</a>', '<a href="/t/uid/1/">x</a>', '<a href="https://github.com/draykerdk/uid/issues/1#a&amp;b\'c">x</a>']) {
+    const once = clean(html);
+    assert.strictEqual(clean(once, internal), once, 'fixed point for ' + html);
+  }
+  assert.strictEqual(clean('<a href="/t/uid/2/">x</a>', internal), '<a href="https://github.com/t/uid/2/" rel="nofollow ugc noopener noreferrer">x</a>', 'only existing pages are kept');
+  assert.strictEqual(clean('<a href="/t/uid/1/?x=1">x</a>', internal), '<a href="https://github.com/t/uid/1/?x=1" rel="nofollow ugc noopener noreferrer">x</a>');
+  assert.strictEqual(clean('<a href="/t/%E9/1/">x</a>', { internalPath: () => true }), '<a href="https://github.com/t/%E9/1/" rel="nofollow ugc noopener noreferrer">x</a>', 'malformed slug escape');
+});
+
+test('one fragment that cannot be sanitized does not stop the build', () => {
+  const warnings = [];
+  const throwing = () => { throw new URIError('URI malformed'); };
+  const out = sanitizeFragment('<p>Hello <b>world</b> <script>x()</script> & <i>more</i></p>', ctx, 'lab#1', throwing, (m) => warnings.push(m));
+  assert.strictEqual(out, '<p>Hello world &amp; more</p>');
+  assert.strictEqual(warnings.length, 1);
+  assert.ok(/lab#1 could not be sanitized \(URI malformed\)/.test(warnings[0]), warnings[0]);
+  assert.strictEqual(sanitizeFragment('', ctx, 'x', throwing, () => {}), '');
+  assert.strictEqual(sanitizeFragment('<p>ok</p>', ctx, 'x'), '<p>ok</p>');
 });
 
 test('sanitizer rewrites expiring private images and keeps image policy', () => {
@@ -208,11 +240,30 @@ test('htmlToText extracts readable plain text', () => {
   assert.strictEqual(clip('short', 280), 'short');
 });
 
-test('reference parsing finds org issue references', () => {
-  const refs = findReferences('Closes #3, fixes draykerdk/dk#2 and https://github.com/draykerdk/uid/issues/7. Also other/x#9, `#99` in code, &#35; and #3 again.\n```\n#100\n```', 'dfmp');
-  assert.deepStrictEqual(refs, [{ repo: 'dfmp', num: 3 }, { repo: 'dk', num: 2 }, { repo: 'uid', num: 7 }]);
-  assert.deepStrictEqual(findReferences('see https://example.com/page#12 and a/b/c#4', 'dk'), []);
-  assert.deepStrictEqual(findReferences('', 'dk'), []);
+test('references are read from the anchors GitHub rendered', () => {
+  const link = (href, text, cls) => '<a' + (cls ? ' class="issue-link js-issue-link"' : '') + ' href="' + href + '">' + text + '</a>';
+  const html = '<p>Closes ' + link('https://github.com/draykerdk/dfmp/issues/3', '#3', true)
+    + ', fixes ' + link('https://github.com/draykerdk/dk/issues/2', 'draykerdk/dk#2', true)
+    + ' and ' + link('https://github.com/DraykerDK/uid/pull/7#issuecomment-1', 'a pull request')
+    + '. Also ' + link('https://github.com/other/x/issues/9', 'other/x#9', true)
+    + ', ' + link('https://github.com/draykerdk/dfmp/issues/3', '#3 again', true) + '.</p>'
+    // None of these are references: GitHub renders no link for them.
+    + '<pre><code>    #7 in indented code</code></pre><code>#8</code><pre>#9</pre><p><code>``code #13 ``</code> '
+    + link('#11', 'see') + ' ' + link('https://example.com/page#12', 'x') + ' ' + link('https://github.com/draykerdk/dk/issues', 'list')
+    + ' ' + link('https://github.com/draykerdk/dk/issues/5?x=1', 'query') + '</p>';
+  assert.deepStrictEqual(findReferences(html), [{ repo: 'dfmp', num: 3 }, { repo: 'dk', num: 2 }, { repo: 'uid', num: 7 }]);
+  assert.deepStrictEqual(findReferences('Closes #3 and draykerdk/dk#2 in plain text'), []);
+  assert.deepStrictEqual(findReferences(''), []);
+  assert.deepStrictEqual(findReferences(null), []);
+});
+
+test('fixture trimming keeps the fields the builder reads', () => {
+  const [repo] = trimForFixture([{ name: 'x', full_name: 'draykerdk/x', has_issues: true, default_branch: 'main', owner: { login: 'draykerdk' } }]);
+  assert.deepStrictEqual(repo, { name: 'x', has_issues: true, default_branch: 'main' });
+  const [pr] = trimForFixture([{ number: 4, state: 'closed', merged_at: '2026-01-01T00:00:00Z', base: { ref: 'main', sha: 'abc' }, head: { ref: 'f' }, title: 't', body: 'b' }]);
+  assert.deepStrictEqual(pr, { number: 4, state: 'closed', merged_at: '2026-01-01T00:00:00Z', base: { ref: 'main' } });
+  const [item] = trimForFixture([{ number: 1, state: 'open', title: 't', locked: true, active_lock_reason: 'resolved', author_association: 'OWNER', user: { login: 'a', id: 1, type: 'User' } }]);
+  assert.deepStrictEqual(item, { number: 1, title: 't', state: 'open', locked: true, active_lock_reason: 'resolved', user: { login: 'a', id: 1 }, labels: [] });
 });
 
 // ---------------------------------------------------------------- GitHub client
@@ -261,7 +312,7 @@ test('GitHub client retries, paginates, records without secrets and replays', as
 // ---------------------------------------------------------------- snapshot contract
 
 const ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
-const THREAD_KEYS = ['repo', 'slug', 'num', 'title', 'url', 'user', 'user_id', 'labels', 'state', 'state_reason', 'open', 'created', 'at', 'closed', 'comments', 'last_user', 'last_at', 'participants', 'excerpt', 'text', 'refs'];
+const THREAD_KEYS = ['repo', 'slug', 'num', 'title', 'url', 'user', 'user_id', 'labels', 'state', 'state_reason', 'open', 'locked', 'lock_reason', 'created', 'at', 'closed', 'comments', 'last_user', 'last_at', 'participants', 'excerpt', 'text', 'refs'];
 const REF_KEYS = ['repo', 'slug', 'num', 'kind', 'title', 'url', 'merged', 'state'];
 const DECISION_KEYS = ['repo', 'slug', 'num', 'title', 'url', 'user', 'merged', 'excerpt', 'threads'];
 const COMMENT_KEYS = ['id', 'user', 'user_id', 'created', 'updated', 'html', 'url'];
@@ -301,6 +352,8 @@ function validateSnapshot(dataDir) {
     assert.ok(t.labels.every((l) => l === l.toLowerCase()), 'labels lowercased: ' + where);
     assert.ok(t.state === 'open' || t.state === 'closed');
     assert.strictEqual(t.open, t.state === 'open');
+    assert.strictEqual(typeof t.locked, 'boolean', 'locked is a boolean: ' + where);
+    assert.ok(t.lock_reason === null || (t.locked && typeof t.lock_reason === 'string'), 'lock_reason only on locked threads: ' + where);
     assert.ok(t.state_reason === null || ['completed', 'not_planned', 'reopened', 'duplicate'].includes(t.state_reason), 'state_reason: ' + t.state_reason);
     assert.ok(ISO.test(t.created) && ISO.test(t.at));
     assert.ok(t.open ? t.closed === null || ISO.test(t.closed) : ISO.test(t.closed));
@@ -352,7 +405,9 @@ function validateSnapshot(dataDir) {
       assert.ok(ref.kind === 'pr' || ref.kind === 'issue');
       assert.strictEqual(ref.url, 'https://github.com/draykerdk/' + ref.repo + (ref.kind === 'pr' ? '/pull/' : '/issues/') + ref.num);
       if (ref.kind === 'issue') assert.ok(threadKeys.has(key), 'issue ref points to a thread: ' + key);
-      if (ref.kind === 'pr' && ref.merged) assert.ok(decisionKeys.has(key), 'merged PR ref points to a decision: ' + key);
+      // A merged pull request is a decision only when it went into the default branch.
+      if (ref.kind === 'pr' && ref.merged) assert.ok(ISO.test(ref.merged), 'merged PR ref has a merge time: ' + key);
+      if (ref.kind === 'pr' && decisionKeys.has(key)) assert.ok(ref.merged, 'decision ref is merged: ' + key);
       if (ref.kind === 'issue') assert.strictEqual(ref.merged, null);
     }
   }
@@ -438,12 +493,70 @@ test('synthetic attack fixture is neutralised end to end', () => {
   assert.strictEqual((detail.comments[1].html.match(/<div>/g) || []).length, 32, 'depth limited to 32');
   assert.ok(detail.comments[1].html.includes('<h3>Heading one</h3><h5>Heading four</h5>'), 'headings remapped');
   assert.ok(!all.includes('example.com/plain.png') && !all.includes('data:image'), 'non-https images dropped');
+  assert.ok(all.includes('<a href="https://github.com/draykerdk/a%E9/issues/1" rel="nofollow ugc noopener noreferrer">bad escape</a>'), 'malformed escape kept as a GitHub link, build not aborted');
   const thread = forum.threads[0];
   assert.deepStrictEqual(thread.labels, ['proposal']);
   assert.deepStrictEqual(thread.participants, ['tester', 'replier']);
   assert.strictEqual(thread.last_user, 'tester');
   assert.deepStrictEqual(thread.refs, [], 'a thread does not reference itself');
   assert.ok(!/<|>/.test(thread.excerpt.replace(/"&gt;|">/g, '')), 'excerpt is plain text');
+});
+
+// Content anyone can post on GitHub must never block a deploy: the live-mode
+// site check passes on it, the output stays safe, and the data cases for
+// decisions, references and locked threads hold.
+test('live-safety fixture passes the live-mode checks and stays safe', () => {
+  const out = path.join(tmp, 'live-safety');
+  const data = path.join(buildOk(path.join(ROOT, 'test/fixtures/live-safety'), out), 'data');
+  const { forum } = validateSnapshot(data);
+  const pre = runTool('prerender.js', ['--out', out]);
+  assert.strictEqual(pre.status, 0, 'prerender failed: ' + pre.stderr);
+  const live = runTool('forum-check.js', ['--site', out, '--live']);
+  assert.strictEqual(live.status, 0, 'live-mode forum-check failed:\n' + live.stdout + live.stderr);
+  const strict = runTool('forum-check.js', ['--site', out]);
+  assert.notStrictEqual(strict.status, 0, 'fixture-mode forum-check should flag the template and script wording');
+  assert.ok(/raw template expression/.test(strict.stderr) && /mentions script/.test(strict.stderr), strict.stderr);
+
+  const byNum = new Map(forum.threads.map((t) => [t.num, t]));
+  const page = (rel) => fs.readFileSync(path.join(out, rel), 'utf8');
+  const region = (html) => html.slice(html.indexOf('<!-- FORUM_STATIC_START -->'), html.indexOf('<!-- FORUM_STATIC_END -->'));
+  for (const t of forum.threads) {
+    const detail = readJson(path.join(data, 't/lab/' + t.num + '.json'));
+    for (const html of [detail.html].concat(detail.comments.map((c) => c.html))) assertSafe(html, 'lab#' + t.num);
+    const r = region(page('t/lab/' + t.num + '/index.html'));
+    assert.deepStrictEqual(scriptInMarkup(r), [], 'no script in lab#' + t.num);
+    assert.ok(markupUrls(r).every((u) => /^(\/|https?:\/\/|mailto:)/.test(u)), 'absolute URLs in lab#' + t.num);
+  }
+  // SEC-1: the malformed escape survives as an unrewritten GitHub link.
+  assert.ok(readJson(path.join(data, 't/lab/1.json')).html.includes('href="https://github.com/draykerdk/a%E9/issues/1"'));
+  // SEC-3: logins are mirrored text.
+  const one = region(page('t/lab/1/index.html'));
+  assert.ok(one.includes('<a class="ugc" href="https://github.com/open-source-fan">open-source-fan</a>') && one.includes('<a class="ugc" href="https://github.com/OWNER-dev">OWNER-dev</a>'));
+  assert.ok(region(page('decisions/index.html')).includes('by <span class="ugc">MEMBER-bot</span>'));
+  // SEC-4: titles are shown as written, never emptied.
+  assert.strictEqual(byNum.get(1).title, '>');
+  assert.ok(one.includes('<h1 class="ugc">&gt;</h1>') && page('t/lab/1/index.html').includes('<title>&gt; — Drayker Forum</title>'));
+  assert.ok(page('t/lab/2/index.html').includes('<h1 class="ugc">- item</h1>'));
+  assert.ok(page('feed.xml').includes('<title>&gt;</title>') && page('feed.xml').includes('<title>- item</title>'));
+  // SEC-5: a user's link to https://github.com/t/<slug>/<n>/ stays on github.com.
+  const two = region(page('t/lab/2/index.html'));
+  assert.ok(two.includes('<a href="https://github.com/t/lab/1/" rel="nofollow ugc noopener noreferrer">github.com/t/lab/1</a>'));
+  assert.ok(two.includes('<a href="https://github.com/t/lab/1/" rel="nofollow ugc noopener noreferrer">/t/lab/1/</a>'), 'a relative /t/ link in a body resolves to github.com');
+  // DB-5: only the pull request merged into the default branch is a decision.
+  assert.deepStrictEqual(forum.decisions.map((d) => d.num), [4]);
+  assert.deepStrictEqual(forum.decisions[0].threads, [{ repo: 'lab', slug: 'lab', num: 1 }]);
+  // DB-6: references come from rendered links only (not from code or in-page anchors).
+  assert.deepStrictEqual(byNum.get(1).refs.map((r) => r.num), [4]);
+  assert.deepStrictEqual(byNum.get(2).refs.map((r) => r.kind + r.num), ['pr5', 'issue1']);
+  assert.deepStrictEqual(byNum.get(3).refs, []);
+  // DB-8: lock state is kept and the page says the conversation is locked.
+  assert.strictEqual(byNum.get(3).locked, true);
+  assert.strictEqual(byNum.get(3).lock_reason, 'resolved');
+  assert.strictEqual(byNum.get(1).locked, false);
+  assert.strictEqual(byNum.get(1).lock_reason, null);
+  const three = region(page('t/lab/3/index.html'));
+  assert.ok(three.includes('Conversation locked on GitHub') && three.includes('>Read on GitHub</a>') && !three.includes('Reply on GitHub'));
+  assert.ok(one.includes('#new_comment_field">Reply on GitHub</a>'));
 });
 
 test('builder fails clearly on missing data', () => {
