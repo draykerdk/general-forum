@@ -29,7 +29,7 @@ const { tokenize } = require('./lib/sanitize');
 
 const ROOT = path.join(__dirname, '..');
 const BASE = pre.BASE;
-const SUFFIX = ' — Drayker Forum';
+const SUFFIX = ' — Drayker General Forum';
 const FORBIDDEN = [/Dknowledger/i, /open[\s-]source/i, /organization’s|organization's/i, /\b(MEMBER|OWNER|CONTRIBUTOR|COLLABORATOR)\b/];
 const VOID = new Set('area base br col embed hr img input link meta param source track wbr'.split(' '));
 

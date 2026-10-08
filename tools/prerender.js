@@ -32,7 +32,7 @@ const { sanitizeHtml, htmlToText } = require('./lib/sanitize');
 const ROOT = path.join(__dirname, '..');
 const BASE = 'https://forum.drayker.org/';
 const ORG = 'draykerdk';
-const SITE = 'Drayker Forum';
+const SITE = 'Drayker General Forum';
 const SUFFIX = ' — ' + SITE;
 const START = '<!-- FORUM_STATIC_START -->';
 const END = '<!-- FORUM_STATIC_END -->';
@@ -400,7 +400,7 @@ const STYLE = [
 
 function header(activeKey) {
   const items = NAV.map((n) => '<li><a href="' + n.href + '"' + (n.key === activeKey ? ' aria-current="page"' : '') + '>' + esc(n.label) + '</a></li>').join('');
-  return '<header class="fs-top"><div class="fs-wrap"><a class="fs-brand" href="/">Drayker <span>·</span> forum</a>'
+  return '<header class="fs-top"><div class="fs-wrap"><a class="fs-brand" href="/">Drayker <span>·</span> general forum</a>'
     + '<nav class="fs-nav" aria-label="Forum"><ul>' + items + '</ul></nav></div></header>';
 }
 
@@ -603,7 +603,7 @@ function atom({ id, title, subtitle, self, alternate, entries, fallbackUpdated }
 function threadFeed(forum, details, resanitize) {
   const newest = forum.threads.slice().sort(byCreatedDesc).slice(0, FEED_MAX);
   return atom({
-    id: BASE + 'feed.xml', title: 'Drayker Forum — threads',
+    id: BASE + 'feed.xml', title: 'Drayker General Forum — threads',
     subtitle: 'The newest public threads across github.com/' + ORG + '.',
     self: BASE + 'feed.xml', alternate: BASE, fallbackUpdated: forum.generated_at,
     entries: newest.map((t) => {
@@ -620,7 +620,7 @@ function threadFeed(forum, details, resanitize) {
 function decisionFeed(forum) {
   const lookup = new Map(forum.threads.map((t) => [t.slug + '/' + t.num, t]));
   return atom({
-    id: BASE + 'decisions/feed.xml', title: 'Drayker Forum — decisions',
+    id: BASE + 'decisions/feed.xml', title: 'Drayker General Forum — decisions',
     subtitle: 'The newest merged pull requests across github.com/' + ORG + '.',
     self: BASE + 'decisions/feed.xml', alternate: BASE + 'decisions/', fallbackUpdated: forum.generated_at,
     entries: forum.decisions.slice(0, FEED_MAX).map((d) => {
