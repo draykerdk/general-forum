@@ -5,11 +5,17 @@
  * UI checks for index.html: the page contract, and the logic script run in a bare
  * VM against a real snapshot.
  *
- *   node tools/ui-check.js [path/to/data/forum.json]
+ *   node tools/ui-check.js [path/to/data/forum.json] [--fixture]
  *
- * Without an argument it reads _site/data/forum.json, and if that is missing it
- * builds one from test/fixtures/github with tools/build-forum-snapshot.js.
+ * Without a path it reads _site/data/forum.json, and if that is missing it builds
+ * one from test/fixtures/github with tools/build-forum-snapshot.js.
  * Thread files are read from the t/ directory next to forum.json.
+ *
+ * The checks are content-agnostic: expected counts come from the data, so a new
+ * repository or a retitled issue on GitHub never fails them. Assertions pinned to
+ * the recorded content (a known title, author or number) run only on the recorded
+ * fixture: with --fixture, when this script built the data from the fixture, or
+ * when every thread matches the fixture's issues.
  */
 
 const assert = require('assert');
@@ -33,15 +39,20 @@ async function check(name, fn) {
 // ---------------------------------------------------------------------------
 // Snapshot data
 // ---------------------------------------------------------------------------
+const ARGS = process.argv.slice(2);
+const FIXTURE_FLAG = ARGS.includes('--fixture');
+const FIXTURE_DIR = path.join(root, 'test', 'fixtures', 'github');
+let builtFromFixture = false;
 function findData() {
-  if (process.argv[2]) return path.resolve(process.argv[2]);
+  const arg = ARGS.find((a) => !a.startsWith('--'));
+  if (arg) return path.resolve(arg);
   const built = path.join(root, '_site', 'data', 'forum.json');
   if (fs.existsSync(built)) return built;
   const builder = path.join(root, 'tools', 'build-forum-snapshot.js');
-  const fixture = path.join(root, 'test', 'fixtures', 'github');
-  if (fs.existsSync(builder) && fs.existsSync(fixture)) {
+  if (fs.existsSync(builder) && fs.existsSync(FIXTURE_DIR)) {
     const out = fs.mkdtempSync(path.join(os.tmpdir(), 'forum-ui-check-'));
-    execFileSync(process.execPath, [builder, '--fixture', fixture, '--out', out], { stdio: 'ignore' });
+    execFileSync(process.execPath, [builder, '--fixture', FIXTURE_DIR, '--out', out], { stdio: 'ignore' });
+    builtFromFixture = true;
     return path.join(out, 'data', 'forum.json');
   }
   console.error('No snapshot: pass the path to data/forum.json, or run `npm run data:fixture` first.');
@@ -49,6 +60,20 @@ function findData() {
 }
 const dataFile = findData();
 const DATA = JSON.parse(fs.readFileSync(dataFile, 'utf8'));
+// The recorded fixture, recognised by its issues: same threads, same titles.
+function matchesFixture() {
+  try {
+    const titles = new Map();
+    for (const f of fs.readdirSync(FIXTURE_DIR)) {
+      if (!/_issues_state_all_/.test(f)) continue;
+      const rec = JSON.parse(fs.readFileSync(path.join(FIXTURE_DIR, f), 'utf8'));
+      const repo = (String(rec.url || '').match(/\/repos\/[^/]+\/([^/]+)\/issues/) || [])[1];
+      for (const i of rec.body || []) if (repo && i && !i.pull_request) titles.set(repo + '#' + i.number, i.title);
+    }
+    return titles.size > 0 && titles.size === DATA.threads.length && DATA.threads.every((t) => titles.get(t.repo + '#' + t.num) === t.title);
+  } catch (e) { return false; }
+}
+const ON_FIXTURE = FIXTURE_FLAG || builtFromFixture || matchesFixture();
 // The live layer depends on the snapshot's age; the checks pin it to two hours.
 DATA.generated_at = new Date(Date.now() - 2 * 3600 * 1000).toISOString().replace(/\.[0-9]{3}Z$/, 'Z');
 const threadDir = path.join(path.dirname(dataFile), 't');
@@ -86,7 +111,8 @@ const win = {
   innerWidth: 1440,
   location: { pathname: '/', search: '', hash: '', href: 'https://forum.drayker.org/', origin: 'https://forum.drayker.org' },
   history: {
-    pushState: (_s, _t, target) => setLocation(target),
+    pushes: 0,
+    pushState: (_s, _t, target) => { win.history.pushes++; setLocation(target); },
     replaceState: (_s, _t, target) => setLocation(target)
   },
   scrollTo: () => {}, open: () => {}, addEventListener: () => {}, removeEventListener: () => {},
@@ -129,7 +155,7 @@ const context = {
   }
 };
 vm.createContext(context);
-vm.runInContext(script + '\n;globalThis.__forum = { Component, PARTS, ROUTES, POST, META, TYPES, composePost, componentFor, similarThreads, meaningfulWords, URL_MAX, TITLE_MIN };', context);
+vm.runInContext(script + '\n;globalThis.__forum = { Component, PARTS, ROUTES, POST, META, TYPES, titleOf, composePost, componentFor, similarThreads, meaningfulWords, URL_MAX, TITLE_MIN };', context);
 const F = context.__forum;
 
 const flush = async () => { for (let i = 0; i < 12; i++) await new Promise((r) => setImmediate(r)); };
@@ -142,11 +168,12 @@ async function boot(url, opts) {
   env.calls = [];
   env.api = opts.api || (() => Promise.reject(new TypeError('Failed to fetch')));
   win.innerWidth = opts.vw || 1440;
+  win.history.pushes = 0;
   const c = new F.Component();
   c.props = {};
   c.state = Object.assign({}, c.state, { vw: win.innerWidth });
   c.readRoute();
-  if (opts.data !== false) c.setData(clone(opts.data || DATA), 'published');
+  if (opts.data !== false) c.setData(clone(opts.data || DATA), opts.source || 'published');
   await flush();
   c.syncRoute();
   return c;
@@ -238,6 +265,8 @@ function checkBindings(vals, label) {
     const head = html.slice(0, html.indexOf('</head>'));
     assert(/classList\.add\('js'\)/.test(head) && head.includes("'drayker-theme'") && head.includes('fs-fallback') && head.includes('8000'), 'pre-paint script incomplete');
     assert(head.indexOf("classList.add('js')") < head.indexOf('src="/support.js"'), 'pre-paint script must run before the runtime');
+    assert(/querySelector\('meta\[name="theme-color"\]'\)[\s\S]*theme === 'light' \? '#FAF8F5' : '#08080A'/.test(head), 'pre-paint script must set theme-color');
+    assert(/addEventListener\('error'[\s\S]*unpkg\\\.com[\s\S]*fallback\(\)/.test(head), 'a failed runtime script must show the static page at once');
     assert(head.includes('<link rel="alternate" type="application/atom+xml" href="/feed.xml" title="Drayker Forum — new threads">'), 'thread feed link missing');
     assert(head.includes('<link rel="alternate" type="application/atom+xml" href="/decisions/feed.xml" title="Drayker Forum — decisions">'), 'decisions feed link missing');
     for (const tag of ['<title>Drayker Forum — every public thread</title>', '<meta name="description" content="', '<link rel="canonical" href="https://forum.drayker.org/">',
@@ -262,6 +291,11 @@ function checkBindings(vals, label) {
     for (const t of ['sc-if', 'sc-for']) assert.strictEqual((template.match(new RegExp('<' + t + '[\\s>]', 'g')) || []).length, (template.match(new RegExp('</' + t + '>', 'g')) || []).length, t + ' tags unbalanced');
     assert(!/\{\{[^}]*(\?|&&|\|\||\(\s*\w+\s*\))[^}]*\}\}/.test(template), 'template expression uses unsupported syntax');
     assert.strictEqual(Object.keys(F.META).length, 7, 'META must have seven routes');
+    assert.strictEqual(F.META.about.d, 'A reading surface over a conversation that already exists on GitHub. No accounts, no database, no ranking; moderation stays on GitHub under the code of conduct.');
+    assert(!/no moderation/i.test(JSON.stringify(F.META)), 'moderation is never denied without its qualifier');
+    assert(/html\{scroll-padding-top:72px\}/.test(html) && /\{html\{scroll-padding-top:110px\}\}/.test(html), 'sticky header needs scroll padding');
+    assert(/\[data-theme="light"\] :focus-visible\{outline-color:var\(--acc-tx\)\}/.test(html), 'light focus ring uses the darker accent');
+    assert(/\.field\{[^}]*border:1px solid var\(--field-line\)/.test(html) && !/\.chip-n\{[^}]*opacity/.test(html), 'field borders and chip counts keep their contrast');
     assert(F.META.notfound && F.META.notfound.t && F.META.notfound.d, 'notfound META missing');
     assert.strictEqual(F.PARTS.length, 26, 'one part per public repository');
     assert.strictEqual(new Set(F.PARTS.map((p) => p.repo)).size, 26, 'parts map to distinct repositories');
@@ -277,7 +311,9 @@ function checkBindings(vals, label) {
     assert.strictEqual(v.showing, 'Showing ' + v.rows.length + ' of ' + DATA.threads.length + ' threads');
     assert.deepStrictEqual(clone(v.stats.map((s) => s.v)), [DATA.counts.threads, DATA.counts.open, DATA.counts.unanswered, DATA.counts.decisions].map(String));
     assert(v.rows.every((r) => /^\/t\/[^/]+\/[0-9]+\/$/.test(r.href)), 'row links must be clean thread paths');
-    assert(v.sync.stamp.startsWith('Updated from GitHub ') && / UTC\)$/.test(v.sync.stamp));
+    assert(/^Last change picked up from GitHub .+ \(([0-9]+ [A-Z][a-z]{2} [0-9]{4}, )?[0-9]{2}:[0-9]{2} UTC\) · GitHub is checked about every 15 minutes$/.test(v.sync.stamp), v.sync.stamp);
+    assert(!/newer than that/.test(v.sync.detail), 'no claim of newer threads before a check found any');
+    assert.strictEqual(v.countCls, 'count mono');
     assert(!env.calls.some((u) => u.startsWith('https://api.github.com/')), 'list must make no API call on load');
     assert(v.partOpts.length - 1 === new Set(DATA.threads.map((t) => t.slug)).size, 'every repo with threads is a part option');
   });
@@ -306,23 +342,82 @@ function checkBindings(vals, label) {
 
   await check('search: case, accents, all words, #number', async () => {
     const c = await boot('/');
-    const titles = (q) => { c.setState({ q }); return c.renderVals().rows.map((r) => r.title); };
-    const veto = titles('VETO');
-    assert(veto.length > 0);
-    assert(veto.every((t) => c.hay[DATA.threads.find((x) => x.title === t).slug + '/' + DATA.threads.find((x) => x.title === t).num].includes('veto')));
-    assert.deepStrictEqual(clone(titles('veto banana-nothing')), []);
-    const both = titles('veto chain');
-    assert(both.includes('Specify one entry of the veto chain'));
-    assert(both.length <= veto.length);
-    const portuguese = DATA.threads.find((t) => /Português/.test(t.title));
-    if (portuguese) assert(titles('portugues').includes(portuguese.title), 'accent-insensitive search failed');
-    c.setState({ q: '#5' });
-    const rows5 = c.renderVals().rows;
-    assert(rows5.length > 0 && rows5.every((r) => / #5$/.test(r.where)), '#number must match the number exactly');
-    c.setState({ q: 'hyadhuad' });
-    assert(c.renderVals().rows.length > 0, 'search must include the author');
-    c.setState({ q: 'skill:research' });
-    assert.strictEqual(c.renderVals().rows.length, DATA.threads.filter((t) => t.labels.includes('skill:research')).length, 'search must include labels');
+    c.setState({ n: 100000 });
+    const hrefs = (q) => { c.setState({ q }); return c.renderVals().rows.map((r) => r.href); };
+    const hrefOf = (t) => '/t/' + encodeURIComponent(t.slug) + '/' + t.num + '/';
+    // Content-agnostic: words taken from a real thread must find it.
+    const sample = DATA.threads.find((t) => (String(t.title).match(/[A-Za-z]{5,}/g) || []).length >= 2) || DATA.threads[0];
+    const words = String(sample.title).match(/[A-Za-z]{5,}/g) || [];
+    if (words.length) {
+      const one = hrefs(words[0].toUpperCase());
+      assert(one.includes(hrefOf(sample)), 'search is case-insensitive');
+      assert(one.every((h) => c.hay[h.split('/')[2] + '/' + h.split('/')[3]].includes(words[0].toLowerCase())), 'every match contains the word');
+      assert.deepStrictEqual(clone(hrefs(words[0] + ' banana-nothing-zzqq')), [], 'all words must match');
+      if (words[1]) {
+        const both = hrefs(words[0] + ' ' + words[1]);
+        assert(both.includes(hrefOf(sample)) && both.length <= one.length);
+      }
+    }
+    const byNum = hrefs('#' + sample.num);
+    assert(byNum.includes(hrefOf(sample)) && byNum.every((h) => h.split('/')[3] === String(sample.num)), '#number must match the number exactly');
+    if (sample.user) assert(hrefs(sample.user).includes(hrefOf(sample)), 'search must include the author');
+    const labelled = DATA.threads.find((t) => t.labels && t.labels.length && !/\s/.test(t.labels[0]));
+    if (labelled) assert.strictEqual(hrefs(labelled.labels[0]).length, DATA.threads.filter((t) => c.hay[t.slug + '/' + t.num].includes(labelled.labels[0])).length, 'search must include labels');
+    const accented = DATA.threads.find((t) => /[À-ÿ]/.test(t.title));
+    if (accented) {
+      const w = (accented.title.match(/[A-Za-zÀ-ÿ]*[À-ÿ][A-Za-zÀ-ÿ]*/) || [''])[0];
+      assert(hrefs(w.normalize('NFD').replace(/[\u0300-\u036f]/g, '')).includes(hrefOf(accented)), 'accent-insensitive search failed');
+    }
+    if (ON_FIXTURE) {
+      // Pinned to the recorded fixture.
+      const titles = (q) => { c.setState({ q }); return c.renderVals().rows.map((r) => r.title); };
+      const veto = titles('VETO');
+      assert(veto.length > 0);
+      assert.deepStrictEqual(clone(titles('veto banana-nothing')), []);
+      const both = titles('veto chain');
+      assert(both.includes('Specify one entry of the veto chain') && both.length <= veto.length);
+      assert(titles('portugues').includes('Bring the Português README up to date'), 'accent-insensitive search failed');
+      c.setState({ q: '#5' });
+      const rows5 = c.renderVals().rows;
+      assert(rows5.length > 0 && rows5.every((r) => / #5$/.test(r.where)), '#number must match the number exactly');
+      c.setState({ q: 'hyadhuad' });
+      assert(c.renderVals().rows.length > 0, 'search must include the author');
+      c.setState({ q: 'skill:research' });
+      assert.strictEqual(c.renderVals().rows.length, DATA.threads.filter((t) => t.labels.includes('skill:research')).length, 'search must include labels');
+    }
+  });
+
+  await check('kinds follow labels, state and the composer’s title prefix', async () => {
+    const c = await boot('/');
+    const k = (labels, open, title) => c.kindOf({ labels, open, state: open ? 'open' : 'closed', title: title || 'Plain title' });
+    for (const l of ['open-function', 'good first issue', 'help wanted']) assert.strictEqual(k([l], true), 'work', l);
+    assert.strictEqual(k(['open-function', 'claimed'], true), 'claimed', 'claimed work is not free work');
+    assert.strictEqual(k(['claimed'], true), 'claimed');
+    assert.strictEqual(k(['open-function'], false), 'function', 'a closed function is not work to pick up');
+    assert.strictEqual(k(['open-function', 'claimed'], false), 'function');
+    assert.strictEqual(k(['motion'], true), 'proposal');
+    assert.strictEqual(k(['partnership'], false), 'proposal');
+    assert.strictEqual(k(['documentation'], true), 'docs');
+    assert.strictEqual(k(['volunteer-introduction'], true), 'intro');
+    assert.strictEqual(k([], true, '[Proposal] Something'), 'proposal');
+    assert.strictEqual(k([], false, '[Motion] Something'), 'proposal');
+    assert.strictEqual(k([], true, '[Report] Something'), 'report');
+    for (const t of ['[Question] Something', '[Idea] Something', 'Something']) assert.strictEqual(k([], true, t), 'open', t);
+    assert.strictEqual(k(['open-function'], true, '[Proposal] Something'), 'work', 'labels come before the title prefix');
+    assert.deepStrictEqual(clone(F.TYPES.map((t) => t.label)), ['EVERYTHING', 'PROPOSALS', 'WORK TO PICK UP', 'CLAIMED', 'FUNCTION', 'DOCUMENTATION', 'INTRODUCTIONS', 'REPORTS', 'QUESTIONS & IDEAS']);
+    const v = c.renderVals();
+    const chips = v.kindChips.filter((x) => x.t !== 'EVERYTHING');
+    assert(chips.every((x) => Number(x.n) >= 1), 'only kinds with threads get a chip');
+    assert.strictEqual(chips.reduce((a, x) => a + Number(x.n), 0), DATA.threads.length, 'chip counts add up to every thread');
+    for (const t of DATA.threads) {
+      const kind = c.kindOf(t);
+      if (kind === 'work') assert(t.open && !t.labels.includes('claimed'), 'work to pick up must be open and unclaimed: ' + t.repo + ' #' + t.num);
+    }
+    if (ON_FIXTURE) {
+      assert.deepStrictEqual(clone(v.kindChips.map((x) => x.t + ' ' + x.n)), ['EVERYTHING 29', 'WORK TO PICK UP 21', 'FUNCTION 8']);
+      c.setState({ status: 'closed', n: 100 });
+      assert(c.renderVals().rows.every((r) => r.kindLabel === 'FUNCTION'), 'closed functions are labelled FUNCTION');
+    }
   });
 
   await check('kind, label and status filters', async () => {
@@ -332,14 +427,17 @@ function checkBindings(vals, label) {
     assert.strictEqual(count({ status: 'open' }), open);
     assert.strictEqual(count({ status: 'closed' }), DATA.threads.length - open);
     assert.strictEqual(count({ status: 'waiting' }), DATA.threads.filter((t) => t.open && !t.comments).length);
-    assert.strictEqual(count({ kind: 'work' }), DATA.threads.filter((t) => c.kindOf(t.labels) === 'work').length);
+    assert.strictEqual(count({ kind: 'work' }), DATA.threads.filter((t) => c.kindOf(t) === 'work').length);
     assert.strictEqual(count({ label: 'skill:research' }), DATA.threads.filter((t) => t.labels.includes('skill:research')).length);
     assert.strictEqual(count({ part: 'uid' }), DATA.threads.filter((t) => t.slug === 'uid').length);
     c.setState({ kind: 'proposal', label: '', status: 'all', part: 'all' });
     const v = c.renderVals();
     checkBindings(v, 'empty list');
-    if (!DATA.threads.some((t) => c.kindOf(t.labels) === 'proposal')) assert(v.noMatch && !v.hasRows, 'an empty filter shows the no-match panel');
-    const present = new Set(DATA.threads.map((t) => c.kindOf(t.labels)));
+    if (!DATA.threads.some((t) => c.kindOf(t) === 'proposal')) {
+      assert(v.noMatch && !v.hasRows, 'an empty filter shows the no-match panel');
+      assert(v.listReady && v.showing === 'No thread matches these filters' && v.countCls === 'sr-only', 'an empty result is announced');
+    }
+    const present = new Set(DATA.threads.map((t) => c.kindOf(t)));
     assert.strictEqual(v.kindChips.filter((k) => k.t !== 'EVERYTHING').length, present.size + (present.has('proposal') ? 0 : 1), 'kind chips: present kinds plus the selected one');
     const groups = c.renderVals().labelGroups.map((g) => g.name);
     for (const [prefix, name] of [['skill:', 'Skill'], ['level:', 'Level'], ['effort:', 'Effort']]) {
@@ -393,6 +491,12 @@ function checkBindings(vals, label) {
       assert.strictEqual(c.state.page, page, p);
     }
     assert(c.isAppPath('/') && c.isAppPath('/t/dk/2/') && c.isAppPath('/about/') && !c.isAppPath('/feed.xml') && !c.isAppPath('/data/forum.json'));
+    // A non-canonical entry address is replaced, never pushed, so Back leaves the page.
+    for (const [p, canonical] of [['/index.html', '/'], ['/t/dfmp/01/', '/t/dfmp/1/'], ['/t/' + t.slug + '/' + t.num + '/index.html', '/t/' + encodeURIComponent(t.slug) + '/' + t.num + '/'], ['/about', '/about/']]) {
+      c = await boot(p);
+      assert.strictEqual(win.location.pathname, canonical, p + ' canonicalized');
+      assert.strictEqual(win.history.pushes, 0, p + ' must not push a history entry');
+    }
   });
 
   await check('thread with comments from the snapshot', async () => {
@@ -501,6 +605,129 @@ function checkBindings(vals, label) {
     const v = c.renderVals();
     checkBindings(v, 'failed thread');
     assert(v.tFailed && !v.tReadyBody && /HTTP 500/.test(v.tFailedText) && !v.cmtNote.show);
+  });
+
+  await check('thread file comes before GitHub when the data is missing or stale', async () => {
+    const t = DATA.threads[0];
+    const tPath = '/t/' + t.slug + '/' + t.num + '/';
+    const issueCall = (u) => /\/issues\/[0-9]+$/.test(u);
+    // forum.json fails: the thread's own file is the published copy.
+    const realFetch = context.fetch;
+    context.fetch = (url) => (url === '/data/forum.json' ? Promise.resolve(response(503, {})) : realFetch(url));
+    let c = await boot(tPath, { data: false });
+    await c.loadData(true);
+    await flush();
+    context.fetch = realFetch;
+    let v = c.renderVals();
+    checkBindings(v, 'thread without data');
+    assert(v.listError === true && v.tReadyBody && !v.tLive, 'thread file used when forum.json fails');
+    assert(!env.calls.some(issueCall), 'no live issue call when the file exists');
+    // A browser copy of the data older than the thread: the file, not a live read.
+    const older = Object.assign(clone(DATA), { threads: DATA.threads.filter((x) => !(x.slug === t.slug && x.num === t.num)) });
+    c = await boot(tPath, { data: older, source: 'cache' });
+    v = c.renderVals();
+    assert(v.tReadyBody && !v.tLive, 'stale browser copy still loads the permanent page');
+    assert(!env.calls.some(issueCall), 'no live issue call for a thread with a file');
+    // No file either: read live.
+    const live = (url) => Promise.resolve(response(200, { number: 424242, title: 'Only on GitHub', html_url: 'https://github.com/draykerdk/' + t.repo + '/issues/424242',
+      repository_url: 'https://api.github.com/repos/draykerdk/' + t.repo, user: { login: 'a', id: 1 }, labels: [], state: 'open', created_at: '2026-10-08T00:00:00Z',
+      updated_at: '2026-10-08T00:00:00Z', comments: 0, body_html: '<p>b</p>' }));
+    c = await boot('/t/' + t.slug + '/424242/', { data: DATA, source: 'cache', api: live });
+    v = c.renderVals();
+    assert(v.tLive && v.tv.title === 'Only on GitHub', 'a 404 file falls back to GitHub');
+  });
+
+  await check('a transferred issue is shown at its own address', async () => {
+    const free = (repo) => { let n = 900000; while (DATA.threads.some((x) => x.repo === repo && x.num === n)) n++; return n; };
+    const num = free('general-forum');
+    const api = (url) => (url.endsWith('/repos/draykerdk/emergence-initiative/issues/' + 77777)
+      ? Promise.resolve(response(200, { number: num, title: 'Moved here', html_url: 'https://github.com/draykerdk/general-forum/issues/' + num,
+        repository_url: 'https://api.github.com/repos/draykerdk/general-forum', user: { login: 'a', id: 1 }, labels: [], state: 'open',
+        created_at: '2026-10-08T00:00:00Z', updated_at: '2026-10-08T00:00:00Z', comments: 0, body_html: '<p>b</p>' }))
+      : Promise.resolve(response(404, {})));
+    const data = Object.assign(clone(DATA), { threads: DATA.threads.filter((x) => !(x.repo === 'emergence-initiative' && x.num === 77777)) });
+    const c = await boot('/t/emergence-initiative/77777/', { data, api });
+    const v = c.renderVals();
+    assert.strictEqual(win.location.pathname, '/t/general-forum/' + num + '/');
+    assert.strictEqual(win.history.pushes, 0, 'the move replaces the address');
+    assert(v.tLive && v.tv.where === 'general-forum #' + num && v.tv.partName === c.partName('general-forum'), v.tv.where);
+  });
+
+  await check('closed, locked and untitled threads', async () => {
+    const closed = DATA.threads.find((t) => !t.open && !t.comments);
+    if (closed) {
+      const v = (await boot('/t/' + closed.slug + '/' + closed.num + '/')).renderVals();
+      assert.strictEqual(v.cmtNote.text, 'No replies before it was closed.');
+      assert(!v.tv.locked && /#new_comment_field$/.test(v.tv.replyUrl));
+    }
+    const open = DATA.threads.find((t) => t.open && !t.comments);
+    if (open) assert(/^Nobody has replied to this yet\./.test((await boot('/t/' + open.slug + '/' + open.num + '/', { api: () => Promise.resolve(response(200, [])) })).renderVals().cmtNote.text));
+    // Locked on GitHub: no reply button.
+    const t = DATA.threads[0];
+    const realFetch = context.fetch;
+    context.fetch = (url) => (String(url).startsWith('/data/t/')
+      ? realFetch(url).then((r) => r.json()).then((j) => response(200, Object.assign(j, { locked: true, lock_reason: 'resolved' })))
+      : realFetch(url));
+    const lv = (await boot('/t/' + t.slug + '/' + t.num + '/')).renderVals();
+    context.fetch = realFetch;
+    checkBindings(lv, 'locked thread');
+    assert(lv.tv.locked, 'locked state carried to the page');
+    assert(template.includes('Conversation locked on GitHub.') && /<sc-if value="\{\{ tv\.locked \}\}">\s*<a class="cta cta-lg" href="\{\{ tv\.url \}\}">Read on GitHub →<\/a>/.test(template));
+    assert(/<sc-if value="\{\{ !tv\.locked \}\}">\s*<a class="cta cta-lg" href="\{\{ tv\.replyUrl \}\}">Reply on GitHub →<\/a>/.test(template));
+    // Empty and blank titles are shown as "(untitled)".
+    assert.strictEqual(F.titleOf('  '), '(untitled)');
+    assert.strictEqual(F.titleOf('>'), '>');
+    const blank = clone(DATA);
+    blank.threads[0].title = '   ';
+    const rows = (await boot('/', { data: blank })).renderVals().rows;
+    assert.strictEqual(rows.find((r) => r.href === '/t/' + encodeURIComponent(blank.threads[0].slug) + '/' + blank.threads[0].num + '/').title, '(untitled)');
+  });
+
+  await check('thread page: navigation state and checked time', async () => {
+    const t = DATA.threads.find((x) => x.open && !x.comments) || DATA.threads[0];
+    const c = await boot('/t/' + t.slug + '/' + t.num + '/', { api: () => Promise.resolve(response(200, [])) });
+    let v = c.renderVals();
+    assert.deepStrictEqual(clone(v.nav.map((n) => n.current + ':' + n.cls)), ['true:on', 'false:', 'false:', 'false:'], 'Threads is the current section on a thread page');
+    assert(/^Checked GitHub just now: nothing new since the last update\.$/.test(v.fresh.text), v.fresh.text);
+    c.setState({ fresh: Object.assign({}, c.state.fresh, { at: Date.now() - 5 * 60000 }) });
+    v = c.renderVals();
+    assert(/^Checked GitHub 5 min ago: /.test(v.fresh.text), 'the checked time is relative to now: ' + v.fresh.text);
+    const missing = (await boot('/t/dfmp/99999/', { api: () => Promise.resolve(response(404, {})) })).renderVals();
+    assert.deepStrictEqual(clone(missing.nav.map((n) => n.current + ':' + n.cls)), ['false:', 'false:', 'false:', 'false:'], 'a missing thread is no section');
+  });
+
+  await check('after Check GitHub the thread page follows the list', async () => {
+    const t = DATA.threads[DATA.threads.length - 1];
+    const tPath = '/t/' + encodeURIComponent(t.slug) + '/' + t.num + '/';
+    const c = await boot('/');
+    env.api = (url) => {
+      if (/\/search\/issues/.test(url)) {
+        return Promise.resolve(response(200, { items: [{ repository_url: 'https://api.github.com/repos/draykerdk/' + t.repo, number: t.num, title: 'Renamed on GitHub', html_url: t.url,
+          user: { login: t.user, id: 1 }, labels: [], state: 'closed', state_reason: 'completed', created_at: t.created, updated_at: '2031-01-01T00:00:00Z',
+          closed_at: '2031-01-01T00:00:00Z', comments: t.comments || 0, body_text: 'x', locked: true }] }));
+      }
+      if (/\/comments\?since=/.test(url)) return Promise.resolve(response(200, []));
+      if (url.endsWith('/issues/' + t.num)) {
+        return Promise.resolve(response(200, { number: t.num, title: 'Renamed on GitHub', html_url: t.url, user: { login: t.user, id: 1 }, labels: [], state: 'closed',
+          state_reason: 'completed', created_at: t.created, updated_at: '2031-01-01T00:00:00Z', closed_at: '2031-01-01T00:00:00Z', comments: t.comments || 0,
+          body_html: '<p>New body</p>', locked: true }));
+      }
+      return Promise.reject(new TypeError('unexpected ' + url));
+    };
+    c.checkGitHub();
+    await flush();
+    let v = c.renderVals();
+    assert(/newer than that are on GitHub/.test(v.sync.detail), 'the detail mentions newer activity once a check found some');
+    c.navigate(tPath);
+    await flush();
+    v = c.renderVals();
+    checkBindings(v, 'checked thread');
+    assert.strictEqual(v.tv.title, 'Renamed on GitHub');
+    assert.strictEqual(v.tv.stateText, 'Closed — completed');
+    assert(v.tv.locked && !v.tLive);
+    assert(/shown as they are on GitHub now\.$/.test(v.fresh.text) && !/nothing new/.test(v.fresh.text), v.fresh.text);
+    assert.strictEqual(c.slots[v.tv.bodySlot].mode, 'live', 'a body read from the API is sanitized as live HTML');
+    assert(env.calls.some((u) => u.endsWith('/issues/' + t.num)), 'the issue itself was read again');
   });
 
   await check('list check merges newer activity', async () => {
@@ -687,7 +914,8 @@ function checkBindings(vals, label) {
     assert(v.cp.disabled);
     v.openPost();
     assert.strictEqual(opened.length, 0, 'nothing opens while invalid');
-    assert.strictEqual(v.cPartOpts.length, 1 + 26, 'Not sure yet plus every repository');
+    assert.strictEqual(v.cPartOpts.length, 1 + new Set(F.PARTS.map((x) => x.repo).concat(DATA.repos.map((r) => r.name))).size, 'Not sure yet plus every repository');
+    assert(v.cPartOpts.every((o) => o.t && !/^ \(/.test(o.t)), 'every repository has a display name');
     assert.strictEqual(v.cPartOpts[0].v, '');
     v.setCTitle({ target: { value: TITLE } });
     v = c.renderVals();
@@ -763,6 +991,7 @@ function checkBindings(vals, label) {
     assert.strictEqual(v.dec.total, '120 merged pull requests across 1 repository in the last update');
     assert(v.dec.hasMore && v.dec.moreLabel === 'Show more (50)');
     v.decMore();
+    assert.strictEqual(c.focusDec, 50, 'Show more moves focus to the first revealed decision');
     c.syncRoute();
     assert.strictEqual(win.location.search, '?n=100');
     v = c.renderVals();
@@ -775,6 +1004,11 @@ function checkBindings(vals, label) {
   });
 
   await check('decisions: rows, thread links, search and part filter in the URL', async () => {
+    const empty = await boot('/decisions/', { data: Object.assign(clone(DATA), { decisions: [] }) });
+    const ev = empty.renderVals();
+    checkBindings(ev, 'no decisions');
+    assert(ev.dec.none && !ev.dec.ready);
+    if (!DATA.decisions.length) return;
     const c = await boot('/decisions/');
     let v = c.renderVals();
     const items = decItems(v);
@@ -817,10 +1051,6 @@ function checkBindings(vals, label) {
     assert.strictEqual(win.location.search, '');
     const back = await boot('/decisions/?q=' + encodeURIComponent(word) + '&part=' + slug);
     assert.deepStrictEqual([back.state.dq, back.state.dpart], [word, slug], 'filters restored from the URL');
-    const empty = await boot('/decisions/', { data: Object.assign(clone(DATA), { decisions: [] }) });
-    const ev = empty.renderVals();
-    checkBindings(ev, 'no decisions');
-    assert(ev.dec.none && !ev.dec.ready);
   });
 
   // -------------------------------------------------------------------------
@@ -845,9 +1075,21 @@ function checkBindings(vals, label) {
     }
     const names = v.repoList.map((x) => x.name.toLowerCase());
     assert.deepStrictEqual(names, names.slice().sort(), 'sorted by display name');
-    for (const r of DATA.repos) assert(F.PARTS.some((p) => p.repo === r.name), r.name + ' has a display name in PARTS');
+    // A repository missing from PARTS still gets a name: its own.
+    for (const r of DATA.repos) assert(c.partName(r.name) && v.repoList.find((x) => x.repo === 'draykerdk/' + r.name).name, r.name + ' has a display name');
+    assert.strictEqual(c.partName('zz-repository-created-later'), 'zz-repository-created-later', 'unknown repositories fall back to their name');
     assert.strictEqual(c.partName('metadfmp'), 'Meta DFM');
-    assert.deepStrictEqual(clone(v.routes.map((r) => r.repo.split('/')[1])), ['dfmp', 'dknowledge', 'dk', 'uid', 'daf', 'dfmpproject', 'emergence-initiative', 'drayker.org', 'general-forum']);
+    // The routing table mirrors the README table row for row, plus the forum row.
+    const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
+    const table = readme.slice(readme.indexOf('| If it is about'));
+    const rows = table.split('\n').slice(2).filter((l) => /^\|/.test(l)).map((l) => {
+      const cells = l.split('|').slice(1, -1).map((x) => x.trim());
+      return { about: cells[0].replace(/'/g, '’'), repos: (cells[1].match(/`[^`]+`/g) || []).map((x) => x.slice(1, -1)) };
+    });
+    assert(rows.length >= 8, 'README routing table not found');
+    const routes = v.routes.map((r) => ({ about: r.about, repos: r.repos.map((x) => x.repo.split('/')[1]) }));
+    assert.deepStrictEqual(clone(routes), rows.concat([{ about: 'This forum, or anything you are not sure about', repos: ['general-forum'] }]));
+    assert(v.routes.every((r) => r.repos.every((x) => x.href === 'https://github.com/' + x.repo + '/issues')));
     const loading = (await boot('/routing/', { data: false })).renderVals();
     checkBindings(loading, 'routing loading');
     assert(!loading.hasRepoList && loading.listLoading);
@@ -857,7 +1099,8 @@ function checkBindings(vals, label) {
     const v = (await boot('/about/')).renderVals();
     assert.strictEqual(v.aboutLead, 'Drayker’s public discussion happens in the issues of its ' + DATA.counts.repos + ' public repositories.');
     assert.strictEqual((await boot('/about/', { data: false })).renderVals().aboutLead, 'Drayker’s public discussion happens in the issues of its public repositories.');
-    for (const s of ['href="/feed.xml"', 'href="/decisions/feed.xml"', 'about every 15 minutes', 'It is the first step of the public contribution path.',
+    assert(!/rebuilt from GitHub’s public API about every 15 minutes|refreshes from GitHub about every 15 minutes/.test(template), 'old refresh claim');
+    for (const s of ['href="/feed.xml"', 'href="/decisions/feed.xml"', 'GitHub is checked about every 15 minutes; the site is republished when something changed.', 'It is the first step of the public contribution path.',
       'Nothing here is decided in a private meeting or a private vote. In the founding phase the founding steward integrates changes in public, as <a href="https://github.com/draykerdk/.github/blob/master/GOVERNANCE.md">GOVERNANCE.md</a> documents.',
       'The merge is how the decision enters the record.', 'Drayker’s code of conduct', 'where Drayker keeps its review history', 'https://drayker.org/fn/',
       'CC BY 4.0 · PUBLIC DOCUMENTATION · NON-PROFIT', 'unpkg, jsDelivr', 'Google Fonts']) assert(template.includes(s), 'missing: ' + s);
@@ -899,5 +1142,5 @@ function checkBindings(vals, label) {
     console.error(failures.length + ' failed, ' + passed + ' passed');
     process.exit(1);
   }
-  console.log(passed + ' UI check groups passed (' + path.relative(process.cwd(), dataFile) + ', ' + DATA.threads.length + ' threads)');
+  console.log(passed + ' UI check groups passed (' + path.relative(process.cwd(), dataFile) + ', ' + DATA.threads.length + ' threads' + (ON_FIXTURE ? ', recorded fixture' : '') + ')');
 })();

@@ -32,7 +32,8 @@
 <script>
 // Before first paint: mark that scripts run (the static region hides itself and the
 // app takes over) and apply the saved theme, so neither flashes. If the app has not
-// mounted 8 s after load, the static region comes back as the readable page.
+// mounted 8 s after load, the static region comes back as the readable page; if a
+// runtime library fails to load from unpkg, it comes back at once.
 (function () {
   var d = document.documentElement;
   d.classList.add('js');
@@ -45,7 +46,13 @@
     theme = light ? 'light' : 'dark';
   }
   d.setAttribute('data-theme', theme);
+  var tc = document.querySelector('meta[name="theme-color"]');
+  if (tc) tc.setAttribute('content', theme === 'light' ? '#FAF8F5' : '#08080A');
   var fallback = function () { if (!window.__forumMounted) d.classList.add('fs-fallback'); };
+  window.addEventListener('error', function (e) {
+    var t = e && e.target;
+    if (t && t.tagName === 'SCRIPT' && /^https:\/\/unpkg\.com\//.test(t.src || '')) fallback();
+  }, true);
   var arm = function () { setTimeout(fallback, 8000); };
   if (document.readyState === 'complete') arm(); else window.addEventListener('load', arm);
   setTimeout(fallback, 15000);
@@ -66,14 +73,15 @@
      fails to load, the mark stays the plain sphere. -->
 <style>
   *{box-sizing:border-box}
-  :root,[data-theme="dark"]{--bg:#08080A;--surf:#0C0C0F;--surf2:#111115;--line:#18181E;--line2:#222230;--line3:#2E2E38;--tx:#EDECF0;--tx2:#9898A8;--tx3:#84849A;--hdr:rgba(11,11,12,0.9);--acc-tx:#FF5500;--acc-hi:#FF7A33;--pl-c:#8E8EA4;--pl-k:#FF7B72;--pl-s:#A5D6FF;--pl-en:#D2A8FF;--pl-c1:#79C0FF;--pl-v:#FFA657;--pl-ent:#7EE787;--pl-del:#FFA198;--pl-ins:#7EE787}
-  [data-theme="light"]{--bg:#FAF8F5;--surf:#FFFFFF;--surf2:#F3F0EB;--line:#E4E0D8;--line2:#D6D1C7;--line3:#C2BCB0;--tx:#14141A;--tx2:#56545F;--tx3:#66646F;--hdr:rgba(250,248,245,0.92);--acc-tx:#B83D00;--acc-hi:#8F2F00;--pl-c:#57606A;--pl-k:#CF222E;--pl-s:#0A3069;--pl-en:#8250DF;--pl-c1:#0550AE;--pl-v:#953800;--pl-ent:#116329;--pl-del:#82071E;--pl-ins:#116329}
+  :root,[data-theme="dark"]{--bg:#08080A;--surf:#0C0C0F;--surf2:#111115;--line:#18181E;--line2:#222230;--line3:#2E2E38;--tx:#EDECF0;--tx2:#9898A8;--tx3:#84849A;--hdr:rgba(11,11,12,0.9);--field-line:#626276;--acc-tx:#FF5500;--acc-hi:#FF7A33;--pl-c:#8E8EA4;--pl-k:#FF7B72;--pl-s:#A5D6FF;--pl-en:#D2A8FF;--pl-c1:#79C0FF;--pl-v:#FFA657;--pl-ent:#7EE787;--pl-del:#FFA198;--pl-ins:#7EE787}
+  [data-theme="light"]{--bg:#FAF8F5;--surf:#FFFFFF;--surf2:#F3F0EB;--line:#E4E0D8;--line2:#D6D1C7;--line3:#C2BCB0;--tx:#14141A;--tx2:#56545F;--tx3:#66646F;--hdr:rgba(250,248,245,0.92);--field-line:#8F897E;--acc-tx:#B83D00;--acc-hi:#8F2F00;--pl-c:#57606A;--pl-k:#CF222E;--pl-s:#0A3069;--pl-en:#8250DF;--pl-c1:#0550AE;--pl-v:#953800;--pl-ent:#116329;--pl-del:#82071E;--pl-ins:#116329}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--tx);font-family:'Archivo',system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;transition:background .25s ease,color .25s ease}
   a{color:var(--acc-tx);text-decoration:none}
   a:hover{color:var(--acc-hi)}
   ::selection{background:#FF5500;color:#0A0A0C}
   input,textarea,select,button{font-family:inherit}
   a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid #FF5500;outline-offset:2px}
+  [data-theme="light"] :focus-visible{outline-color:var(--acc-tx)}
   h1[tabindex="-1"]:focus,main:focus{outline:none}
   .mono{font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace}
   .sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
@@ -94,6 +102,9 @@
   .shell{background:var(--bg);min-height:100vh;display:flex;flex-direction:column}
   .wrap{max-width:1320px;margin:0 auto;padding-left:clamp(16px,4vw,44px);padding-right:clamp(16px,4vw,44px)}
   main{flex:1;display:block}
+  /* The sticky header must never cover the focused element or a scroll target. */
+  html{scroll-padding-top:72px}
+  @media (max-width:1023px){html{scroll-padding-top:110px}}
 
   /* Header */
   .hdr{position:sticky;top:0;z-index:50;background:var(--hdr);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
@@ -103,7 +114,7 @@
   .brand svg{display:block}
   .brand-name{font-size:17px;font-weight:600;letter-spacing:-0.02em}
   .brand-sub{font-size:10px;color:var(--tx3);letter-spacing:0.08em;padding-top:3px}
-  .nav{display:flex;align-items:center;gap:clamp(12px,1.6vw,22px);flex:1;min-width:0;overflow-x:auto;scrollbar-width:none;padding:3px 2px}
+  .nav{display:flex;align-items:center;gap:clamp(12px,1.6vw,22px);flex:1;min-width:0;overflow-x:auto;scrollbar-width:none;padding:5px;margin:-2px 0 -2px -3px}
   .nav::-webkit-scrollbar{display:none}
   .nav a{font-size:13.5px;font-weight:500;color:var(--tx2);padding:5px 0;border-bottom:2px solid transparent;white-space:nowrap}
   .nav a:hover{color:var(--tx)}
@@ -180,7 +191,7 @@
   @media (max-width:719px){.sync{padding:10px 12px;margin-bottom:12px}.sync-detail{display:none}.sync .btn-ghost{padding:8px 10px;font-size:9.5px}}
   .filters{margin-bottom:18px}
   .filter-main{display:flex;gap:8px;align-items:stretch}
-  .field{background:var(--surf);border:1px solid var(--line2);color:var(--tx);padding:11px 13px;font-size:14px;border-radius:0;min-width:0}
+  .field{background:var(--surf);border:1px solid var(--field-line);color:var(--tx);padding:11px 13px;font-size:14px;border-radius:0;min-width:0}
   .field::placeholder{color:var(--tx3)}
   .search{flex:1;-webkit-appearance:none;appearance:none}
   .filters-toggle{display:none}
@@ -189,7 +200,7 @@
   .chip{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:0.1em;padding:8px 11px;border:1px solid var(--line2);background:transparent;color:var(--tx2);cursor:pointer;line-height:1.2}
   .chip:hover{border-color:#FF5500;color:var(--tx)}
   .chip[aria-pressed="true"]{background:#FF5500;border-color:#FF5500;color:#0A0A0C}
-  .chip-n{opacity:0.75;margin-left:4px}
+  .chip-n{margin-left:4px}
   .chip-sm{font-size:10px;letter-spacing:0.04em;padding:5px 8px}
   .selects{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
   .sel{display:flex;flex-direction:column;gap:5px;flex:1 1 180px;min-width:0;max-width:280px}
@@ -241,7 +252,7 @@
   .thread-body{border-top:1px solid var(--line2);padding-top:24px}
   .cmts-h{font-size:12px;font-family:'JetBrains Mono',ui-monospace,monospace;letter-spacing:0.14em;text-transform:uppercase;color:var(--tx2);font-weight:500;margin:40px 0 0;padding-top:18px;border-top:1px solid var(--line2)}
   .cmts-note{margin-top:14px}
-  .cmt{border-top:1px solid var(--line);padding-top:18px;margin-top:22px;scroll-margin-top:120px}
+  .cmt{border-top:1px solid var(--line);padding-top:18px;margin-top:22px;scroll-margin-top:12px}
   .cmt:target{border-top-color:#FF5500}
   .cmt-head{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;margin-bottom:12px;font-size:13.5px}
   .avatar{width:32px;height:32px;border-radius:2px;background:var(--surf2);display:block;flex-shrink:0}
@@ -393,7 +404,8 @@
   .routes{list-style:none;margin:0 0 clamp(30px,4vw,52px);padding:0;display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line)}
   .routes li{background:var(--bg);padding:16px 24px;display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:8px 24px;align-items:baseline}
   .routes-about{min-width:0;font-size:15px;line-height:1.6;color:var(--tx);text-wrap:pretty}
-  .routes-repo{font-size:11.5px;letter-spacing:0.06em;color:var(--tx2);word-break:break-word}
+  .routes-repos{display:flex;flex-wrap:wrap;gap:4px 16px;min-width:0}
+  .routes-repo{display:inline-block;padding:5px 0;line-height:14px;font-size:11.5px;letter-spacing:0.06em;color:var(--tx2);word-break:break-word}
   .routes-repo:hover{color:var(--acc-tx)}
   @media (max-width:719px){.routes li{grid-template-columns:minmax(0,1fr);padding:14px}}
   .repos-h{font-weight:400}
@@ -402,7 +414,7 @@
   .repos-name{font-size:16px;font-weight:600;letter-spacing:-0.02em;margin:0;color:var(--tx)}
   .repos-id{font-size:10.5px;letter-spacing:0.06em;color:var(--tx2);word-break:break-word}
   .repos-desc{font-size:13.5px;line-height:1.55;color:var(--tx2);margin:2px 0 0;text-wrap:pretty}
-  .repos-links{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;margin-top:auto;padding-top:6px;color:var(--tx2)}
+  .repos-links{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:13px;margin-top:auto;padding-top:6px;color:var(--tx2)}
   .repos-links a{overflow-wrap:anywhere}
 
   /* About */
@@ -632,8 +644,10 @@
           </div>
         </sc-if>
 
+        <sc-if value="{{ listReady }}">
+          <div class="{{ countCls }}" role="status">{{ showing }}</div>
+        </sc-if>
         <sc-if value="{{ hasRows }}">
-          <div class="count mono" role="status">{{ showing }}</div>
           <ul class="rows">
             <sc-for list="{{ rows }}" as="r">
               <li class="row">
@@ -788,8 +802,14 @@
               </sc-for>
 
               <div class="reply">
-                <a class="cta cta-lg" href="{{ tv.replyUrl }}">Reply on GitHub →</a>
-                <p>Your reply is published from your own GitHub account, in the repository the thread lives in.</p>
+                <sc-if value="{{ tv.locked }}">
+                  <a class="cta cta-lg" href="{{ tv.url }}">Read on GitHub →</a>
+                  <p>Conversation locked on GitHub. It can still be read there in full.</p>
+                </sc-if>
+                <sc-if value="{{ !tv.locked }}">
+                  <a class="cta cta-lg" href="{{ tv.replyUrl }}">Reply on GitHub →</a>
+                  <p>Your reply is published from your own GitHub account, in the repository the thread lives in.</p>
+                </sc-if>
               </div>
             </sc-if>
           </article>
@@ -1058,7 +1078,11 @@
           <sc-for list="{{ routes }}" as="r">
             <li>
               <div class="routes-about">{{ r.about }}</div>
-              <a href="{{ r.href }}" class="routes-repo mono">{{ r.repo }} →</a>
+              <div class="routes-repos">
+                <sc-for list="{{ r.repos }}" as="rr">
+                  <a href="{{ rr.href }}" class="routes-repo mono">{{ rr.repo }} →</a>
+                </sc-for>
+              </div>
             </li>
           </sc-for>
         </ul>
@@ -1106,7 +1130,7 @@
         <h1 tabindex="-1" style="font-size:clamp(28px,3.6vw,48px);line-height:1.04;letter-spacing:-0.038em;font-weight:700;margin:0 0 20px;max-width:22ch;text-wrap:balance">A reading surface over a conversation that already exists.</h1>
         <p style="font-size:16.5px;line-height:1.7;color:var(--tx);max-width:66ch;margin:0 0 16px;text-wrap:pretty">{{ aboutLead }} That is the right place for it — a thread beside the code and documents it concerns survives, and can be argued with by whoever maintains them. It is also a place most people never look, and never think to answer in.</p>
         <p style="font-size:16px;line-height:1.68;color:var(--tx2);max-width:66ch;margin:0;text-wrap:pretty">So this site reads all of it and presents it as what it is: conversation. It keeps no accounts and no database, and asks for nothing. Every reply, proposal and correction is published from your own GitHub account, in the repository where it belongs — which means this forum can disappear tomorrow without a single word of the discussion being lost.</p>
-        <p class="about-feeds">The forum refreshes from GitHub about every 15 minutes. To follow it without visiting, subscribe to the Atom feeds for <a href="/feed.xml">new threads (/feed.xml)</a> and for <a href="/decisions/feed.xml">decisions (/decisions/feed.xml)</a>.</p>
+        <p class="about-feeds">GitHub is checked about every 15 minutes; the site is republished when something changed. To follow it without visiting, subscribe to the Atom feeds for <a href="/feed.xml">new threads (/feed.xml)</a> and for <a href="/decisions/feed.xml">decisions (/decisions/feed.xml)</a>.</p>
       </section>
 
       <section style="border-top:1px solid var(--line);background:var(--surf)">
@@ -1152,7 +1176,7 @@
             </div>
             <div style="background:var(--bg);padding:16px 20px;display:grid;grid-template-columns:minmax(0,150px) minmax(0,1fr);gap:14px;align-items:baseline">
               <dt class="mono" style="font-size:10.5px;letter-spacing:0.1em;color:var(--tx2)">NO DATABASE</dt>
-              <dd style="margin:0;font-size:14.5px;line-height:1.6;color:var(--tx2);min-width:0;text-wrap:pretty">Static pages on GitHub Pages, rebuilt from GitHub’s public API about every 15 minutes. Nothing you type here is sent anywhere until you choose to continue on GitHub.</dd>
+              <dd style="margin:0;font-size:14.5px;line-height:1.6;color:var(--tx2);min-width:0;text-wrap:pretty">Static pages on GitHub Pages, built from GitHub’s public API and republished when something changed. Nothing you type here is sent anywhere until you choose to continue on GitHub.</dd>
             </div>
             <div style="background:var(--bg);padding:16px 20px;display:grid;grid-template-columns:minmax(0,150px) minmax(0,1fr);gap:14px;align-items:baseline">
               <dt class="mono" style="font-size:10.5px;letter-spacing:0.1em;color:var(--tx2)">NO RANKING</dt>
@@ -1290,15 +1314,22 @@ const PARTS = [
   { key: 'dotgithub', name: '.github', repo: '.github' }
 ];
 
-// Kinds are the repositories’ own labels (draykerdk/.github labels.yml). A thread
-// with no such label is a question or an idea — the honest reading, not a badge.
+// Kinds come from the repositories’ own labels (draykerdk/.github labels.yml) and the
+// thread’s state. A function is work to pick up only while it is open and nobody has
+// claimed it; claimed and closed functions get their own kind. A thread with no such
+// label is read by the title prefix the composer writes ([Proposal], [Motion],
+// [Report]); anything else is a question or an idea.
+const FUNCTION_LABELS = ['open-function', 'good first issue', 'help wanted', 'claimed'];
 const TYPES = [
-  { id: 'all', label: 'EVERYTHING', match: [] },
-  { id: 'proposal', label: 'PROPOSALS', match: ['motion', 'partnership'] },
-  { id: 'work', label: 'WORK TO PICK UP', match: ['open-function', 'good first issue', 'help wanted', 'claimed'] },
-  { id: 'docs', label: 'DOCUMENTATION', match: ['documentation'] },
-  { id: 'intro', label: 'INTRODUCTIONS', match: ['volunteer-introduction'] },
-  { id: 'open', label: 'QUESTIONS & IDEAS', match: [] }
+  { id: 'all', label: 'EVERYTHING' },
+  { id: 'proposal', label: 'PROPOSALS', labels: ['motion', 'partnership'], prefix: /^\s*\[(proposal|motion)\]/i },
+  { id: 'work', label: 'WORK TO PICK UP' },
+  { id: 'claimed', label: 'CLAIMED' },
+  { id: 'function', label: 'FUNCTION' },
+  { id: 'docs', label: 'DOCUMENTATION', labels: ['documentation'] },
+  { id: 'intro', label: 'INTRODUCTIONS', labels: ['volunteer-introduction'] },
+  { id: 'report', label: 'REPORTS', prefix: /^\s*\[report\]/i },
+  { id: 'open', label: 'QUESTIONS & IDEAS' }
 ];
 
 const STATUSES = ['all', 'open', 'closed', 'waiting'];
@@ -1310,17 +1341,18 @@ const FACETS = [
 ];
 const LEVEL_ORDER = ['entry', 'intermediate', 'advanced'];
 
-// The routing table published in the general-forum README.
+// The routing table published in the general-forum README ("Where things usually
+// belong instead"), row for row, plus a last row for this forum itself.
 const ROUTES = [
-  { about: 'The collaboration method, or the path a proposal takes', repo: 'dfmp' },
-  { about: 'Papers, the roadmap or the knowledge base', repo: 'dknowledge' },
-  { about: 'The kernel, its base structure, network or cryptography', repo: 'dk' },
-  { about: 'Identity and the applications that use it', repo: 'uid' },
-  { about: 'The federation, resources or governance', repo: 'daf' },
-  { about: 'Proposing a new project of your own', repo: 'dfmpproject' },
-  { about: 'Something that has no home yet', repo: 'emergence-initiative' },
-  { about: 'The websites, including this forum', repo: 'drayker.org' },
-  { about: 'Anything you are not sure about', repo: 'general-forum' }
+  { about: 'The collaboration method or a proposal’s path', repos: ['dfmp'] },
+  { about: 'Papers, roadmap or the knowledge base', repos: ['dknowledge'] },
+  { about: 'The kernel, its structure, network or security', repos: ['dk', 'bsdk', 'dk-network', 'living-cryptography'] },
+  { about: 'Identity and applications', repos: ['uid'] },
+  { about: 'The federation, resources or governance', repos: ['daf'] },
+  { about: 'Proposing a new project', repos: ['dfmpproject'] },
+  { about: 'Something with no home yet', repos: ['emergence-initiative'] },
+  { about: 'The participation portal itself', repos: ['drayker.org'] },
+  { about: 'This forum, or anything you are not sure about', repos: ['general-forum'] }
 ];
 
 // The composer. Each kind has its own fields; every field is optional except the
@@ -1368,6 +1400,8 @@ const URL_MAX = 3800;
 const TITLE_MIN = 8;
 const oneLine = (v) => String(v == null ? '' : v).replace(/\s+/g, ' ').trim();
 const block = (v) => String(v == null ? '' : v).replace(/\r\n?/g, '\n').replace(/^\s*\n|\s+$/g, '');
+// Titles are plain text; an empty or blank one is shown as "(untitled)".
+const titleOf = (v) => oneLine(v) || '(untitled)';
 
 // o = { kind, repo ('' when not sure), title, fields: { id: text } }
 // Returns the target, the form, the exact parameters and the URL GitHub opens.
@@ -1456,7 +1490,7 @@ const META = {
   new: { t: 'Start a thread — Drayker Forum', d: 'Write a proposal, question, idea or report and publish it on GitHub under your own account.' },
   decisions: { t: 'Decisions — Drayker Forum', d: 'Every merged pull request across Drayker: how a decision enters the record in the founding phase.' },
   routing: { t: 'Where a subject belongs — Drayker Forum', d: 'Which repository owns which subject, and every repository this forum reads.' },
-  about: { t: 'About — Drayker Forum', d: 'A reading surface over a conversation that already exists on GitHub. No accounts, no database, no ranking, no moderation.' },
+  about: { t: 'About — Drayker Forum', d: 'A reading surface over a conversation that already exists on GitHub. No accounts, no database, no ranking; moderation stays on GitHub under the code of conduct.' },
   notfound: { t: 'Not found — Drayker Forum', d: 'This address is not in the forum’s last update.' }
 };
 
@@ -1680,7 +1714,7 @@ class Component extends DCLogic {
     check: { s: 'idle' },
     tState: 'idle', tKey: '', tErr: '', tReset: 0, tMissing: null,
     fresh: { key: '', s: 'idle' },
-    copied: '', copyFail: '', tick: 0,
+    copied: '', copyFail: '', tick: 0, clock: 0,
     dq: '', dpart: 'all', dN: DEC_PAGE,
     cKind: 'proposal', cPart: '', cTitle: '', cF: {}, cOpened: false,
     themePref: 'auto', resolved: 'dark',
@@ -1775,12 +1809,14 @@ class Component extends DCLogic {
   partName = (repo) => { const p = PARTS.filter((x) => x.repo && x.repo === repo)[0]; return p ? p.name : String(repo || ''); };
   isOpen = (t) => !!t && t.open !== false && t.state !== 'closed';
 
-  kindOf = (labels) => {
-    const l = labels || [];
-    for (const t of TYPES) {
-      if (t.id === 'all' || t.id === 'open') continue;
-      if (t.match.some((m) => l.indexOf(m) >= 0)) return t.id;
-    }
+  kindOf = (t) => {
+    const l = (t && t.labels) || [];
+    const has = (names) => (names || []).some((m) => l.indexOf(m) >= 0);
+    if (has(TYPES.filter((k) => k.id === 'proposal')[0].labels)) return 'proposal';
+    if (has(FUNCTION_LABELS)) return !this.isOpen(t) ? 'function' : l.indexOf('claimed') >= 0 ? 'claimed' : 'work';
+    for (const k of TYPES) if (k.labels && has(k.labels)) return k.id;
+    const title = String((t && t.title) || '');
+    for (const k of TYPES) if (k.prefix && k.prefix.test(title)) return k.id;
     return 'open';
   };
   kindLabel = (id) => { const t = TYPES.filter((x) => x.id === id)[0]; return t ? t.label : 'CONVERSATION'; };
@@ -1827,32 +1863,58 @@ class Component extends DCLogic {
     created: c.created_at || '', updated: c.updated_at || c.created_at || '', html: c.body_html || '', url: c.html_url || '', live: true
   });
 
+  apiLabels = (labels) => (labels || []).map((l) => String((l && l.name) || l || '').toLowerCase()).filter(Boolean);
+
   apiThread = (i, slug, repo) => ({
     repo, slug, num: i.number, title: i.title || '', url: i.html_url || ('https://github.com/' + ORG + '/' + repo + '/issues/' + i.number),
     user: i.user && i.user.login ? i.user.login : 'ghost', user_id: i.user && i.user.id ? i.user.id : 0,
-    labels: (i.labels || []).map((l) => String((l && l.name) || l || '').toLowerCase()).filter(Boolean),
+    labels: this.apiLabels(i.labels),
     state: i.state === 'closed' ? 'closed' : 'open', state_reason: i.state_reason || null, open: i.state !== 'closed',
     created: i.created_at || '', at: i.updated_at || i.created_at || '', closed: i.closed_at || null,
+    locked: !!i.locked, lock_reason: i.active_lock_reason || null,
     last_user: null, last_at: null, participants: [i.user && i.user.login ? i.user.login : 'ghost'],
     refs: [], html: i.body_html || '', comments: [], mode: 'live', count: i.comments || 0
   });
 
-  // Thread page, snapshot older than 10 minutes: ONE call for newer comments.
+  // The issue as GitHub has it now, over a snapshot thread: title, state, labels,
+  // lock and opening post. The body is then sanitized as live HTML.
+  mergeIssue = (t, i) => {
+    Object.assign(t, {
+      title: i.title || '', labels: this.apiLabels(i.labels),
+      state: i.state === 'closed' ? 'closed' : 'open', state_reason: i.state_reason || null, open: i.state !== 'closed',
+      closed: i.closed_at || null, at: i.updated_at || t.at, locked: !!i.locked, lock_reason: i.active_lock_reason || null,
+      html: i.body_html || '', htmlMode: 'live'
+    });
+    return true;
+  };
+
+  // Thread page, snapshot older than 10 minutes: ONE call for newer comments. When
+  // “Check GitHub” found the thread itself changed, the issue is read too (one more
+  // call), so the page does not contradict the list.
   freshen = (key) => {
     const t = this.tcache[key];
-    if (!t || t.mode !== 'snapshot' || t.freshened) return;
-    if (!this.state.genAt || Date.now() - this.state.genAt <= FRESH_MS) return;
+    if (!t || t.mode !== 'snapshot') return;
+    const meta = this.findThread(t.slug, t.num);
+    const newer = !!(meta && meta.newer && toMs(meta.at) > toMs(t.at));
+    if (t.freshened && !(newer && t.freshenedFor !== meta.at)) return;
+    const stale = !!this.state.genAt && Date.now() - this.state.genAt > FRESH_MS;
+    if (!stale && !newer) return;
     t.freshened = true;
+    t.freshenedFor = newer ? meta.at : '';
     const blocked = this.rateBlocked('core');
     if (blocked) { this.setState({ fresh: { key, s: 'limited', reset: blocked } }); return; }
     let since = t.created || '';
     t.comments.forEach((c) => { if (c.updated && toMs(c.updated) > toMs(since)) since = c.updated; });
     this.setState({ fresh: { key, s: 'busy' } });
-    this.gh(API + '/repos/' + ORG + '/' + encodeURIComponent(t.repo) + '/issues/' + t.num
-      + '/comments?since=' + encodeURIComponent(since) + '&per_page=100')
-      .then((list) => {
-        const r = this.mergeComments(t, Array.isArray(list) ? list : []);
-        this.setState((st) => ({ fresh: { key, s: 'done', added: r.added, edited: r.edited }, tick: st.tick + 1 }));
+    const base = API + '/repos/' + ORG + '/' + encodeURIComponent(t.repo) + '/issues/' + t.num;
+    Promise.all([
+      this.gh(base + '/comments?since=' + encodeURIComponent(since) + '&per_page=100'),
+      newer ? this.gh(base) : Promise.resolve(null)
+    ])
+      .then((res) => {
+        const r = this.mergeComments(t, Array.isArray(res[0]) ? res[0] : []);
+        const issue = !!(res[1] && res[1].number) && this.mergeIssue(t, res[1]);
+        this.setState((st) => ({ fresh: { key, s: 'done', at: Date.now(), added: r.added, edited: r.edited, issue }, tick: st.tick + 1 }));
       })
       .catch((e) => this.setState({ fresh: e && e.limited ? { key, s: 'limited', reset: e.reset } : { key, s: 'error', err: errText(e) } }));
   };
@@ -1895,13 +1957,18 @@ class Component extends DCLogic {
     if (this.state.dataState === 'ready') {
       const meta = this.findThread(slug, num);
       if (meta && !meta.liveOnly) { this.loadThreadFile(slug, num); return; }
+      // This browser’s copy of the data can predate the update that gave the thread
+      // its permanent page: try that page’s file before reading GitHub.
+      if (this.state.dataSource === 'cache') { this.loadThreadFile(slug, num, true); return; }
       this.loadLive(slug, num);
       return;
     }
-    if (this.state.dataState === 'error') this.loadLive(slug, num);
+    // Without the forum’s data, the thread’s own file is still the published copy.
+    if (this.state.dataState === 'error') this.loadThreadFile(slug, num, true);
   };
 
-  loadThreadFile = (slug, num) => {
+  // orLive: the thread may not have a file yet; a 404 then reads it live.
+  loadThreadFile = (slug, num, orLive) => {
     const key = slug + '/' + num;
     this.inflight[key] = true;
     this.setState({ tState: 'loading', tKey: key, tErr: '' });
@@ -1916,7 +1983,9 @@ class Component extends DCLogic {
       })
       .catch((e) => {
         delete this.inflight[key];
-        if (this.state.tKey === key) this.setState({ tState: 'failed', tErr: errText(e) });
+        if (this.state.tKey !== key) return;
+        if (orLive && e && e.status === 404) this.loadLive(slug, num);
+        else this.setState({ tState: 'failed', tErr: errText(e) });
       });
   };
 
@@ -1938,15 +2007,30 @@ class Component extends DCLogic {
           e.href = issue && issue.html_url ? issue.html_url : '';
           throw e;
         }
-        const t = this.apiThread(issue, slug, repo);
+        // A transferred issue: GitHub follows the move and answers with the issue in
+        // its new repository, under its new number.
+        const realRepo = String(issue.repository_url || '').split('/').pop() || repo;
+        const t = this.apiThread(issue, realRepo === repo ? slug : repoSlug(realRepo), realRepo);
         if (!(issue.comments > 0)) return t;
-        return this.gh(base + '/comments?per_page=100').then(
+        const realBase = API + '/repos/' + ORG + '/' + encodeURIComponent(realRepo) + '/issues/' + issue.number;
+        return this.gh(realBase + '/comments?per_page=100').then(
           (list) => { t.comments = (Array.isArray(list) ? list : []).map(this.apiComment); return t; },
           (e) => { t.cmtError = errText(e); return t; });
       })
       .then((t) => {
         delete this.inflight[key];
         if (t.comments.length) { const last = t.comments[t.comments.length - 1]; t.last_user = last.user; t.last_at = last.created; }
+        const realKey = t.slug + '/' + t.num;
+        if (realKey !== key) {
+          // Shown at its own address; a thread with a permanent page loads from its file.
+          const known = this.findThread(t.slug, t.num);
+          if (!known || known.liveOnly) this.tcache[realKey] = t;
+          if (this.state.tKey === key) {
+            try { window.history.replaceState({}, '', '/t/' + encodeURIComponent(t.slug) + '/' + t.num + '/' + (window.location.hash || '')); } catch (e) {}
+            this.readRoute();
+          }
+          return;
+        }
         this.tcache[key] = t;
         if (this.state.tKey === key) this.setState({ tState: 'ready' });
       })
@@ -1985,7 +2069,7 @@ class Component extends DCLogic {
       labels: (i.labels || []).map((l) => String((l && l.name) || '').toLowerCase()).filter(Boolean),
       state: i.state === 'closed' ? 'closed' : 'open', state_reason: i.state_reason || null, open: i.state !== 'closed',
       created: i.created_at || '', at: i.updated_at || '', closed: i.closed_at || null, comments: i.comments || 0,
-      excerpt: clip(body, 280), text: clip(body, 2000)
+      locked: !!i.locked, excerpt: clip(body, 280), text: clip(body, 2000)
     };
   };
 
@@ -2002,7 +2086,7 @@ class Component extends DCLogic {
         if (toMs(it.at) > toMs(old.at)) {
           const next = Object.assign({}, old, {
             title: it.title, state: it.state, state_reason: it.state_reason, open: it.open, closed: it.closed,
-            comments: it.comments, at: it.at, labels: it.labels, excerpt: it.excerpt, text: it.text, newer: true
+            comments: it.comments, at: it.at, labels: it.labels, locked: it.locked, excerpt: it.excerpt, text: it.text, newer: true
           });
           if (it.comments !== old.comments) { next.last_user = null; next.last_at = null; next.lastUnknown = true; }
           list[at[k]] = next;
@@ -2073,7 +2157,7 @@ class Component extends DCLogic {
     const words = fold(s.q).split(/\s+/).filter(Boolean);
     const out = (s.threads || []).filter((t) => {
       if (s.part !== 'all' && t.slug !== s.part) return false;
-      if (s.kind !== 'all' && this.kindOf(t.labels) !== s.kind) return false;
+      if (s.kind !== 'all' && this.kindOf(t) !== s.kind) return false;
       if (s.label && (t.labels || []).indexOf(s.label) < 0) return false;
       const open = this.isOpen(t);
       if (s.status === 'open' && !open) return false;
@@ -2161,17 +2245,15 @@ class Component extends DCLogic {
     const target = path + (s.page === 'list' ? this.listQuery(s) : s.page === 'decisions' ? this.decQuery(s) : '');
     if (s.page === 'list') this.lastList = target;
     const current = (loc.pathname || '/') + (loc.search || '');
-    if (current !== target && window.history) {
-      if ((loc.pathname || '/') === path) {
-        if (window.history.replaceState) window.history.replaceState({}, '', target + (loc.hash || ''));
-      } else if (window.history.pushState) {
-        window.history.pushState({}, '', target);
-      }
+    // Always replace: navigate() already pushed the entry, and a non-canonical
+    // address (/index.html, /t/dfmp/01/) must not leave a step Back returns to.
+    if (current !== target && window.history && window.history.replaceState) {
+      window.history.replaceState({}, '', target + (loc.hash || ''));
     }
     const m = META[s.page] || META.list;
     const found = s.page === 'thread' ? (this.tcache[s.tKey] || this.findThread(s.tSlug, s.tNum)) : null;
     const missing = s.page === 'thread' && s.tState === 'missing';
-    const title = missing ? META.notfound.t : found ? found.title + ' — Drayker Forum' : m.t;
+    const title = missing ? META.notfound.t : found ? titleOf(found.title) + ' — Drayker Forum' : m.t;
     const description = missing ? META.notfound.d : found ? this.socialDescription(found) : m.d;
     if (document.title !== title) document.title = title;
     const set = (sel, attr, val) => {
@@ -2267,6 +2349,11 @@ class Component extends DCLogic {
       const links = document.querySelectorAll('.rows .row-title a');
       if (links.length > this.focusRow) { try { links[this.focusRow].focus(); } catch (e) {} }
       this.focusRow = undefined;
+    }
+    if (this.focusDec !== undefined) {
+      const links = document.querySelectorAll('.dec a.dec-title');
+      if (links.length > this.focusDec) { try { links[this.focusDec].focus(); } catch (e) {} }
+      this.focusDec = undefined;
     }
   };
 
@@ -2638,8 +2725,11 @@ class Component extends DCLogic {
     window.addEventListener('hashchange', this.onHash);
     document.addEventListener('click', this.onDocClick);
     document.addEventListener('keydown', this.onKey);
-    this.onVis = () => this.syncAnim();
+    // Relative times ("12 min ago") are re-rendered once a minute while the tab is
+    // visible, and as soon as it becomes visible again.
+    this.onVis = () => { this.syncAnim(); if (!document.hidden) this.setState((st) => ({ clock: (st.clock || 0) + 1 })); };
     document.addEventListener('visibilitychange', this.onVis);
+    this.clock = setInterval(() => { if (!document.hidden) this.setState((st) => ({ clock: (st.clock || 0) + 1 })); }, 60000);
 
     // Gaze: the cursor steers the mark; after 2.4s without a pointer it drifts on
     // its own along a slow Lissajous path so it never looks frozen.
@@ -2682,6 +2772,7 @@ class Component extends DCLogic {
   }
 
   componentWillUnmount() {
+    if (this.clock) clearInterval(this.clock);
     if (this.raf) cancelAnimationFrame(this.raf);
     if (this.io) this.io.disconnect();
     window.removeEventListener('pointermove', this.onGaze);
@@ -2708,7 +2799,7 @@ class Component extends DCLogic {
     const num = (v) => (ready && isFinite(v) ? String(v) : '—');
 
     const kindCount = {};
-    threads.forEach((t) => { const k = this.kindOf(t.labels); kindCount[k] = (kindCount[k] || 0) + 1; });
+    threads.forEach((t) => { const k = this.kindOf(t); kindCount[k] = (kindCount[k] || 0) + 1; });
     const kindChips = TYPES.filter((t) => t.id === 'all' || kindCount[t.id] || s.kind === t.id).map((t) => ({
       t: t.label, n: String(t.id === 'all' ? threads.length : (kindCount[t.id] || 0)),
       pressed: String(s.kind === t.id), pick: () => this.setFilter({ kind: s.kind === t.id ? 'all' : t.id })
@@ -2761,10 +2852,13 @@ class Component extends DCLogic {
     } else if (check.s === 'error') { note = 'Could not reach GitHub just now (' + check.err + '). The list shows the last update.'; noteWarn = true; }
     else if (check.s === 'limited') { note = 'GitHub’s search limit for this network is used up until ' + fmtClock(check.reset) + ' UTC. The list shows the last update.'; noteWarn = true; }
 
+    // generated_at is the last content change: an unchanged run is not republished.
+    const foundNewer = check.s === 'done' && (check.changed || 0) + (check.added || 0) > 0;
     const sync = {
-      stamp: ready ? 'Updated from GitHub ' + ago(genIso) + ' (' + (dayOld ? fmtDate(genIso) + ', ' : '') + fmtClock(s.genAt) + ' UTC)'
+      stamp: ready ? 'Last change picked up from GitHub ' + ago(genIso) + ' (' + (dayOld ? fmtDate(genIso) + ', ' : '') + fmtClock(s.genAt) + ' UTC) · GitHub is checked about every 15 minutes'
         : s.dataState === 'error' ? 'The forum’s last update could not be loaded.' : 'Reading the forum’s last update…',
-      detail: ready ? 'Source: ' + (s.dataSource === 'cache' ? 'this browser’s copy of the published update' : 'the published update') + ' of github.com/' + this.org + '. Threads and replies newer than that are on GitHub.'
+      detail: ready ? 'Source: ' + (s.dataSource === 'cache' ? 'this browser’s copy of the published update' : 'the published update') + ' of github.com/' + this.org + '.'
+          + (foundNewer ? ' Threads and replies newer than that are on GitHub.' : '')
         : 'Threads are read from github.com/' + this.org + '.',
       hasNote: !!note, note, noteCls: noteWarn ? 'sync-note warn' : 'sync-note',
       btn: check.s === 'busy' ? 'Checking GitHub…' : 'Check GitHub for newer activity',
@@ -2794,7 +2888,10 @@ class Component extends DCLogic {
       retryData: this.retryData,
       rows: shown.map((t) => this.rowVals(t)),
       hasRows: shown.length > 0,
-      showing: 'Showing ' + shown.length + ' of ' + plural(rows.length, 'thread', 'threads'),
+      // One status region that stays mounted, so an empty result is announced too.
+      listReady: ready && threads.length > 0,
+      countCls: rows.length ? 'count mono' : 'sr-only',
+      showing: rows.length ? 'Showing ' + shown.length + ' of ' + plural(rows.length, 'thread', 'threads') : 'No thread matches these filters',
       hasMore: rows.length > shown.length,
       moreLabel: 'Show more (' + Math.min(PAGE_SIZE, rows.length - shown.length) + ')',
       showMore: this.showMore,
@@ -2804,7 +2901,7 @@ class Component extends DCLogic {
   }
 
   rowVals(t) {
-    const kind = this.kindOf(t.labels);
+    const kind = this.kindOf(t);
     const open = this.isOpen(t);
     const n = t.comments || 0;
     let last;
@@ -2813,7 +2910,7 @@ class Component extends DCLogic {
     else last = open ? 'waiting for a first reply' : 'no replies';
     return {
       href: '/t/' + encodeURIComponent(t.slug) + '/' + t.num + '/',
-      title: t.title || '(untitled)',
+      title: titleOf(t.title),
       kindLabel: this.kindLabel(kind), kindCls: kind === 'proposal' ? 'kind kind-proposal' : 'kind',
       partName: this.partName(t.repo), where: t.repo + ' #' + t.num,
       opened: 'opened by ' + (t.user || 'ghost') + ' · ' + fmtDate(t.created),
@@ -2831,7 +2928,13 @@ class Component extends DCLogic {
     const onThread = s.page === 'thread' && s.tState !== 'missing';
     const full = onThread && s.tState === 'ready' ? this.tcache[key] || null : null;
     const meta = onThread ? this.findThread(s.tSlug, s.tNum) : null;
-    const src = full || meta;
+    let src = full || meta;
+    // “Check GitHub” found the thread changed: its title, state and labels follow the
+    // list until the issue itself has been read again.
+    if (full && meta && meta.newer && toMs(meta.at) > toMs(full.at)) {
+      src = Object.assign({}, full, { title: meta.title, state: meta.state, state_reason: meta.state_reason, open: meta.open,
+        closed: meta.closed, labels: meta.labels || [], locked: meta.locked === undefined ? full.locked : meta.locked });
+    }
     const repo = src ? src.repo : this.repoForSlug(s.tSlug);
     const ghHref = src && src.url ? src.url : 'https://github.com/' + ORG + '/' + repo + '/issues/' + s.tNum;
     const open = this.isOpen(src);
@@ -2841,14 +2944,14 @@ class Component extends DCLogic {
     const tv = {
       show: !!src, title: '', kindLabel: '', kindCls: 'kind', partName: '', where: '', stateText: '', stateCls: 'state',
       user: '', userHref: '', createdIso: '', createdAbs: '', labels: [], hasLabels: false,
-      url: ghHref, replyUrl: ghHref + '#new_comment_field', bodySlot: '', noBody: false,
+      url: ghHref, replyUrl: ghHref + '#new_comment_field', locked: false, bodySlot: '', noBody: false,
       hasDocs: false, docsHref: '', docsLabel: '', repliesHeading: 'Replies'
     };
     if (src) {
-      const kind = this.kindOf(src.labels);
+      const kind = this.kindOf(src);
       const home = (this.homepages && this.homepages[src.repo]) || '';
       Object.assign(tv, {
-        title: src.title || '(untitled)', kindLabel: this.kindLabel(kind), kindCls: kind === 'proposal' ? 'kind kind-proposal' : 'kind',
+        title: titleOf(src.title), locked: !!src.locked, kindLabel: this.kindLabel(kind), kindCls: kind === 'proposal' ? 'kind kind-proposal' : 'kind',
         partName: this.partName(src.repo), where: src.repo + ' #' + src.num,
         stateText: this.stateText(src), stateCls: open ? 'state state-open' : 'state state-closed',
         user: src.user || 'ghost', userHref: 'https://github.com/' + encodeURIComponent(src.user || 'ghost'),
@@ -2860,9 +2963,10 @@ class Component extends DCLogic {
     }
     if (full) {
       const html = String(full.html || '');
-      tv.bodySlot = 'b|' + key + '|' + full.mode + '|' + html.length + '|' + (full.at || '');
+      const htmlMode = full.htmlMode || full.mode;
+      tv.bodySlot = 'b|' + key + '|' + htmlMode + '|' + html.length + '|' + (full.at || '');
       tv.noBody = !html.replace(/<[^>]*>/g, '').trim() && !/<img/i.test(html);
-      this.slots[tv.bodySlot] = { html, mode: full.mode };
+      this.slots[tv.bodySlot] = { html, mode: htmlMode };
     }
 
     const fresh = s.fresh && s.fresh.key === key ? s.fresh : { s: 'idle' };
@@ -2873,7 +2977,9 @@ class Component extends DCLogic {
         const bits = [];
         if (fresh.added) bits.push(fresh.added + ' new');
         if (fresh.edited) bits.push(fresh.edited + ' edited');
-        freshText = bits.length ? bits.join(', ') + ' since the last update.' : 'Checked GitHub just now: nothing new since the last update.';
+        const checked = 'Checked GitHub' + (fresh.at ? ' ' + ago(new Date(fresh.at).toISOString()) : '');
+        freshText = bits.length ? bits.join(', ') + ' since the last update.' : checked + (fresh.issue ? '.' : ': nothing new since the last update.');
+        if (fresh.issue) freshText += ' The title, status, labels and opening post are shown as they are on GitHub now.';
       } else if (fresh.s === 'error') { freshText = 'Could not check GitHub for newer replies (' + fresh.err + '). Showing the last update.'; freshWarn = true; }
       else if (fresh.s === 'limited') { freshText = 'GitHub’s hourly limit for reading without an account is nearly used up from this network, so newer replies were not checked. Checks resume at ' + fmtClock(fresh.reset) + ' UTC.'; freshWarn = true; }
     }
@@ -2881,7 +2987,7 @@ class Component extends DCLogic {
     const freshFailed = fresh.s === 'error' || fresh.s === 'limited';
     let cmtNote = '';
     if (full && full.cmtError) cmtNote = 'Replies could not be loaded from GitHub (' + full.cmtError + '). Read them on GitHub.';
-    else if (full && !comments.length) cmtNote = freshFailed
+    else if (full && !comments.length) cmtNote = !open ? 'No replies before it was closed.' : freshFailed
       ? 'No replies in the forum’s last update. GitHub could not be checked for newer ones just now.'
       : 'Nobody has replied to this yet. A first answer — even one that says the question is wrong — is a contribution.';
 
@@ -2934,7 +3040,7 @@ class Component extends DCLogic {
         .map((t) => ({ t, same: t.repo === src.repo ? 0 : 1 }))
         .sort((a, b) => a.same - b.same || toMs(b.t.at) - toMs(a.t.at))
         .slice(0, 5)
-        .map((x) => ({ href: '/t/' + encodeURIComponent(x.t.slug) + '/' + x.t.num + '/', title: x.t.title, meta: this.partName(x.t.repo) + ' · ' + this.stateText(x.t) }));
+        .map((x) => ({ href: '/t/' + encodeURIComponent(x.t.slug) + '/' + x.t.num + '/', title: titleOf(x.t.title), meta: this.partName(x.t.repo) + ' · ' + this.stateText(x.t) }));
     }
 
     const loading = s.tState === 'loading' || s.tState === 'idle';
@@ -2989,11 +3095,11 @@ class Component extends DCLogic {
       if (!cur || cur.month !== month) { cur = { month, items: [] }; groups.push(cur); }
       const threads = (d.threads || []).filter((x) => x && x.slug && x.num).map((x) => {
         const m = this.findThread(x.slug, x.num);
-        return { href: '/t/' + encodeURIComponent(x.slug) + '/' + x.num + '/', t: m ? m.title : (x.repo || x.slug) + ' #' + x.num };
+        return { href: '/t/' + encodeURIComponent(x.slug) + '/' + x.num + '/', t: m ? titleOf(m.title) : (x.repo || x.slug) + ' #' + x.num };
       });
       const excerpt = clip(d.excerpt || '', 280);
       cur.items.push({
-        title: d.title || '(untitled)', url: d.url || 'https://github.com/' + ORG + '/' + d.repo + '/pull/' + d.num,
+        title: titleOf(d.title), url: d.url || 'https://github.com/' + ORG + '/' + d.repo + '/pull/' + d.num,
         partName: this.partName(d.repo), where: '#' + d.num,
         meta: 'Merged ' + fmtDate(d.merged) + (d.user ? ' · by ' + d.user : ''),
         excerpt, hasExcerpt: !!excerpt, threads, hasThreads: threads.length > 0
@@ -3024,7 +3130,7 @@ class Component extends DCLogic {
       dq: s.dq, setDq: (e) => this.setDec({ dq: e.target.value }),
       dpart: s.dpart, setDpart: (e) => this.setDec({ dpart: e.target.value }),
       clearDec: this.clearDec,
-      decMore: () => this.setState((st) => ({ dN: st.dN + DEC_PAGE }))
+      decMore: () => { this.focusDec = this.state.dN; this.setState((st) => ({ dN: st.dN + DEC_PAGE })); }
     };
   }
 
@@ -3052,7 +3158,7 @@ class Component extends DCLogic {
       },
       similar: {
         show: sim.show, has: sim.items.length > 0, none: sim.show && !sim.items.length,
-        items: sim.items.map((t) => ({ href: '/t/' + encodeURIComponent(t.slug) + '/' + t.num + '/', title: t.title || '(untitled)',
+        items: sim.items.map((t) => ({ href: '/t/' + encodeURIComponent(t.slug) + '/' + t.num + '/', title: titleOf(t.title),
           meta: this.partName(t.repo) + ' · ' + this.stateText(t) + ' · ' + plural(t.comments || 0, 'reply', 'replies') }))
       },
       cOpened: s.cOpened, openPost: this.openPost
@@ -3080,8 +3186,8 @@ class Component extends DCLogic {
       .map((x) => { delete x.k; return x; });
     return {
       routes: ROUTES.map((r) => ({
-        about: r.about, repo: this.org + '/' + r.repo,
-        href: 'https://github.com/' + this.org + '/' + r.repo + '/issues'
+        about: r.about,
+        repos: r.repos.map((repo) => ({ repo: this.org + '/' + repo, href: 'https://github.com/' + this.org + '/' + repo + '/issues' }))
       })),
       repoList: list, hasRepoList: list.length > 0,
       repoCount: plural(list.length, 'public repository', 'public repositories') + ' with issues enabled'
@@ -3107,11 +3213,11 @@ class Component extends DCLogic {
     const themeNext = { light: 'dark', dark: 'auto', auto: 'light' }[s.themePref] || 'light';
 
     return Object.assign({
-      nav: navItems.map((n) => ({
-        label: n.label, href: n.href,
-        current: p === n.id ? 'page' : 'false',
-        cls: p === n.id || (n.id === 'list' && p === 'thread') ? 'on' : ''
-      })),
+      // A thread page belongs to Threads: marked for sight and for assistive technology.
+      nav: navItems.map((n) => {
+        const section = n.id === 'list' && p === 'thread' && !missing;
+        return { label: n.label, href: n.href, current: p === n.id ? 'page' : section ? 'true' : 'false', cls: p === n.id || section ? 'on' : '' };
+      }),
       themeText: s.themePref.toUpperCase(),
       themeAria: 'Theme: ' + s.themePref + (s.themePref === 'auto' ? ' (follows the system, now ' + s.resolved + ')' : '') + '. Switch to ' + themeNext + '.',
       toggleTheme: this.toggleTheme,
