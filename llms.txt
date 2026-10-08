@@ -1,18 +1,26 @@
 # Drayker Forum
 
-> General Forum brings public issues and merged pull requests into one reading surface. Discussions remain connected to their source repositories, where replies and decisions are recorded.
+> Drayker Forum brings the public issues, replies and merged pull requests of every public draykerdk repository into one reading surface. Discussions remain connected to their source repositories, where replies and decisions are recorded.
 
 ## Canonical routes
 
-- [Forum index](https://forum.drayker.org/): current public threads.
+- [Forum index](https://forum.drayker.org/): every public thread, with search and filters by part of the system, label and status.
+- [Thread pages](https://forum.drayker.org/t/dfmp/1/): one page per issue at /t/<repository>/<number>/, with the full conversation.
 - [Start a thread](https://forum.drayker.org/new/): route a proposal, question, idea or report to its owning repository.
-- [Decisions](https://forum.drayker.org/decisions/): public decision records found across repositories.
-- [Routing](https://forum.drayker.org/routing/): where each subject belongs.
+- [Decisions](https://forum.drayker.org/decisions/): every merged pull request across the repositories, newest first.
+- [Routing](https://forum.drayker.org/routing/): where each subject belongs, and every repository the forum reads.
 - [About](https://forum.drayker.org/about/): how the forum reads GitHub and where publishing happens.
+
+## Data and feeds
+
+- [forum.json](https://forum.drayker.org/data/forum.json): threads, decisions and repositories from the last update.
+- Thread files at https://forum.drayker.org/data/t/<repository>/<number>.json: one thread with all its replies.
+- [New threads feed](https://forum.drayker.org/feed.xml) and [decisions feed](https://forum.drayker.org/decisions/feed.xml) (Atom).
 
 ## Source model
 
 - Every thread has a canonical forum reading URL and an owning GitHub issue URL.
+- GitHub is checked about every 15 minutes; the site is republished when something changed.
 - Publishing, replies, edit history and moderation remain on GitHub.
 - Prefer the source issue for exact status and the forum URL for a stable public reading surface.
 
