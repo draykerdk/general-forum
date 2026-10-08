@@ -418,7 +418,7 @@ test('static and app wording of assembly reports match, and mirrored content can
   const page = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
   assert.ok(page.includes('<p>' + ASSEMBLY_NOTICE + '</p>'), 'index.html open assembly notice differs from tools/prerender.js');
   assert.ok(page.includes('<p>' + ASSEMBLY_MERGED_NOTICE + '</p>'), 'index.html merged assembly notice differs from tools/prerender.js');
-  assert.ok(ASSEMBLY_NOTICE.endsWith(' A vote line counts only if its author speaks for that holder and it falls inside the voting window; the Federation tally checks this on GitHub.'));
+  assert.ok(ASSEMBLY_NOTICE.endsWith(' A vote line counts only if its author speaks for the holder it names and it falls inside the voting window; the Federation tally checks this on GitHub.'));
   assert.ok(page.includes("voteText: vote ? 'Vote line: ' + String(vote.vote) + ' · names ' + String(vote.as) : ''"), 'index.html vote tag differs');
   assert.strictEqual(voteText({ vote: 'against', as: 'example-cedar' }), 'Vote line: against · names example-cedar');
   // The sanitizer drops the vote tag class and the notice markup from mirrored
@@ -701,8 +701,8 @@ test('recorded fixture builds a valid, stable snapshot', () => {
   // A merged report: the merged notice, and "Merged", never "closed".
   const merged = staticOf(fs.readFileSync(path.join(tmp, 'a/t/daf/9004/index.html'), 'utf8'));
   assert.ok(merged.includes('<section aria-label="Assembly report"><p>' + esc(ASSEMBLY_MERGED_NOTICE) + '</p>') && !merged.includes(esc(ASSEMBLY_NOTICE)), 'merged assembly notice');
-  assert.ok(merged.includes('<span class="fs-state">Merged 8 Oct 2026</span>') && !merged.includes('<span class="fs-state">closed'), 'merged state label');
-  assert.ok(staticOf(fs.readFileSync(path.join(tmp, 'a/index.html'), 'utf8')).includes('daf #9004 · <span class="fs-state">Merged 8 Oct 2026</span>'), 'merged state in the list');
+  assert.ok(merged.includes('<span class="fs-state">merged 8 Oct 2026</span>') && !merged.includes('<span class="fs-state">closed'), 'merged state label');
+  assert.ok(staticOf(fs.readFileSync(path.join(tmp, 'a/index.html'), 'utf8')).includes('daf #9004 · <span class="fs-state">merged 8 Oct 2026</span>'), 'merged state in the list');
   // The cycle issue links back to the report's forum page, not to GitHub.
   const cycle = staticOf(fs.readFileSync(path.join(tmp, 'a/t/daf/9002/index.html'), 'utf8'));
   assert.ok(cycle.includes('<a class="ugc" href="/t/daf/9003/">Assembly 2026-11</a><p class="fs-meta">Pull request daf #9003 · open</p>'), 'back-link to the report page');
@@ -789,17 +789,19 @@ test('live-safety fixture passes the live-mode checks and stays safe', () => {
     [2203, false, { vote: 'for', as: 'example-cedar' }],
     [2204, true, null],
     [2205, false, { vote: 'against', as: 'example-cedar' }],
-    [2206, false, null]
-  ], 'mixed case read, prose not a vote, a person\'s marker comment shown, the bot\'s tally withheld, a non-speaker\'s line tagged');
+    [2206, false, null],
+    [2207, true, { vote: 'for', as: 'example-oak' }]
+  ], 'mixed case read, prose not a vote, a person\'s marker comment shown, the bot\'s tally withheld, a non-speaker\'s line tagged, a line inside an HTML comment read');
   assert.deepStrictEqual(ownMarkers(daf(22)), { votes: [
     { comment: 2201, text: 'Vote line: for · names example-river' },
     { comment: 2203, text: 'Vote line: for · names example-cedar' },
-    { comment: 2205, text: 'Vote line: against · names example-cedar' }
+    { comment: 2205, text: 'Vote line: against · names example-cedar' },
+    { comment: 2207, text: 'Vote line: for · names example-oak' }
   ], notices: 1 });
   assert.ok(daf(22).includes('<p class="fs-meta">' + WITHHELD_NOTE + '</p>') && !fs.readFileSync(path.join(data, 't/daf/22.json'), 'utf8').includes('TALLYCOUNT-5e2b'), 'the bot\'s tally is withheld');
   assert.ok(!daf(22).includes('fs-vote">Vote line: for · names example-river</p>'), 'a forged tag keeps no class');
   assert.deepStrictEqual(ownMarkers(daf(21)), { votes: [{ comment: 2101, text: 'Vote line: for · names example-river' }], notices: 1 });
-  assert.ok(daf(21).includes(ASSEMBLY_MERGED_NOTICE) && daf(21).includes('<span class="fs-state">Merged 29 Mar 2026</span>'), 'merged report');
+  assert.ok(daf(21).includes(ASSEMBLY_MERGED_NOTICE) && daf(21).includes('<span class="fs-state">merged 29 Mar 2026</span>'), 'merged report');
   for (const n of [23, 24, 25]) {
     assert.deepStrictEqual(ownMarkers(daf(n)), { votes: [], notices: 0 }, 'no tag or notice on daf#' + n);
     assert.ok(dafJson(n).comments.every((c) => c.vote === null), 'no vote read on daf#' + n);
@@ -825,12 +827,15 @@ test('live-safety fixture passes the live-mode checks and stays safe', () => {
   assert.ok(two.includes('<a href="https://github.com/t/lab/1/" rel="nofollow ugc noopener noreferrer">/t/lab/1/</a>'), 'a relative /t/ link in a body resolves to github.com');
   // DB-5: only pull requests merged into the default branch are decisions.
   const labDecisions = forum.decisions.filter((d) => d.repo === 'lab');
-  assert.deepStrictEqual(labDecisions.map((d) => d.num), [7, 4]);
-  assert.deepStrictEqual(labDecisions[1].threads, [{ repo: 'lab', slug: 'lab', num: 1 }]);
+  assert.deepStrictEqual(labDecisions.map((d) => d.num), [8, 7, 4]);
+  assert.deepStrictEqual(labDecisions[2].threads, [{ repo: 'lab', slug: 'lab', num: 1 }]);
   assert.deepStrictEqual(forum.decisions.filter((d) => d.repo === 'daf').map((d) => d.num), [21], 'the merged assembly report is a decision');
   // CF2-10: a decision carries its description as text for search, beyond the excerpt.
-  const seven = labDecisions[0];
+  const seven = labDecisions.find((d) => d.num === 7);
   assert.ok(seven.text.includes('zeppelin') && !seven.excerpt.includes('zeppelin') && seven.excerpt.endsWith('…'), 'decision text holds the whole description');
+  // lab#8 repeats the assembly note word for word in its description: the
+  // forum-check --live run above passes only if mirrored text never counts as it.
+  assert.ok(labDecisions.some((d) => d.num === 8), 'lab#8 restates the assembly note');
   // SEC-CI-1: titles, logins and labels made only of XML-invalid characters
   // never write an empty feed element.
   for (const feed of ['feed.xml', 'decisions/feed.xml']) {

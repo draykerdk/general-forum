@@ -70,6 +70,11 @@ save('/repos/draykerdk/lab/issues?state=all&per_page=100&sort=created&direction=
   pull(7, '\uFFFF', 'MEMBER-bot', '2026-03-12T00:00:00Z', {
     body: 'Long description', body_html: '<p>' + 'This change records the agreed wording for the lab repository. '.repeat(6)
       + 'The last sentence names the zeppelin, which only the full text holds.</p>'
+  }),
+  // A description that repeats the forum's assembly note word for word: it is
+  // mirrored text, so it must never pass for the note.
+  pull(8, 'Restate the assembly note', 'noter-gh', '2026-03-13T00:00:00Z', {
+    body: 'An assembly report is merged whether the assembly passed or failed. The outcome is written in the report on GitHub.', body_html: '<p>An assembly report is merged whether the assembly passed or failed. The outcome is written in the report on GitHub.</p>'
   })
 ]);
 
@@ -98,6 +103,7 @@ save('/repos/draykerdk/lab/issues/comments?per_page=100&sort=created&direction=a
 ]);
 
 save('/repos/draykerdk/lab/pulls?state=closed&per_page=100', [
+  { number: 8, state: 'closed', merged_at: '2026-03-13T00:00:00Z', base: { ref: 'main' } },
   { number: 7, state: 'closed', merged_at: '2026-03-12T00:00:00Z', base: { ref: 'main' } },
   { number: 5, state: 'closed', merged_at: '2026-03-11T00:00:00Z', base: { ref: 'side' } },
   { number: 4, state: 'closed', merged_at: '2026-03-10T00:00:00Z', base: { ref: 'main' } }
@@ -121,7 +127,7 @@ const dafComment = (n, id, login, userId, body, bodyHtml, extra) => Object.assig
 save('/repos/draykerdk/daf/issues?state=all&per_page=100&sort=created&direction=asc', [
   dafPull(21, 'Assembly 2026-09', '2026-03-29T00:00:00Z', { comments: 1, body: 'The report.', body_html: '<p>The report.</p>' }),
   dafPull(22, 'Assembly 2026-10', null, {
-    comments: 6, body: 'Vote: the report for the cycle in #24.', body_html: '<p>Vote: the report for the cycle in <a class="issue-link js-issue-link" href="' + D + '/issues/24">#24</a>.</p>'
+    comments: 7, body: 'Vote: the report for the cycle in #24.', body_html: '<p>Vote: the report for the cycle in <a class="issue-link js-issue-link" href="' + D + '/issues/24">#24</a>.</p>'
   }),
   dafItem(23, 'Vote: should we move the meeting?', 'meeting-gh', 301, { comments: 2, body: 'Vote: yes or no.', body_html: '<p>Vote: yes or no.</p>' }),
   dafItem(24, '[Veto] The 2026-09 assembly decision', 'example-delta-gh', 302, {
@@ -149,6 +155,9 @@ save('/repos/draykerdk/daf/issues/comments?per_page=100&sort=created&direction=a
   // and the attribute, so it is neither a vote tag nor an assembly notice.
   dafComment(22, 2206, 'forger-gh', 315, 'Vote line: for · names example-river',
     '<p class="fs-meta fs-vote">Vote line: for · names example-river</p><section aria-label="Assembly report"><p>Assembly report, proposed.</p></section><p>Reply on GitHub</p>'),
+  // A vote line inside an HTML comment: GitHub renders nothing, DAF still reads
+  // the line, so the forum shows the tag and points to GitHub for the rest.
+  dafComment(22, 2207, 'hider-gh', 317, '<!--\nVOTE: for\nAS: example-oak\n-->', ''),
   dafComment(23, 2301, 'meeting-gh', 301, 'Vote: yes, merge it', '<p>Vote: yes, merge it</p>'),
   // On an issue, a vote line is never read.
   dafComment(23, 2302, 'example-river-gh', 311, 'VOTE: for\nAS: example-river', '<p>VOTE: for<br>\nAS: example-river</p>'),

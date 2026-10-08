@@ -792,7 +792,7 @@
               <sc-if value="{{ tv.isAssembly }}">
                 <section class="assembly-note" aria-label="Assembly report">
                   <sc-if value="{{ tv.isAssemblyOpen }}">
-                    <p>Assembly report, proposed: nothing in it is in the record until the assembly accepts it. Voting is transitional. The tally is computed on GitHub by the federation’s Federation tally workflow, from the comments there, not from this page. A vote line counts only if its author speaks for that holder and it falls inside the voting window; the Federation tally checks this on GitHub.</p>
+                    <p>Assembly report, proposed: nothing in it is in the record until the assembly accepts it. Voting is transitional. The tally is computed on GitHub by the federation’s Federation tally workflow, from the comments there, not from this page. A vote line counts only if its author speaks for the holder it names and it falls inside the voting window; the Federation tally checks this on GitHub.</p>
                   </sc-if>
                   <sc-if value="{{ tv.isAssemblyMerged }}">
                     <p>Assembly report, merged into the federation record. A report is merged whether the assembly passed or failed; the outcome is written in the report. Voting is transitional. The tally is computed on GitHub by the Federation tally workflow, not on this page.</p>
@@ -1176,7 +1176,7 @@
         <h1 tabindex="-1" style="font-size:clamp(28px,3.6vw,48px);line-height:1.04;letter-spacing:-0.038em;font-weight:700;margin:0 0 20px;max-width:22ch;text-wrap:balance">A reading surface over a conversation that already exists.</h1>
         <p style="font-size:16.5px;line-height:1.7;color:var(--tx);max-width:66ch;margin:0 0 16px;text-wrap:pretty">{{ aboutLead }} That is the right place for it — a thread beside the code and documents it concerns survives, and can be argued with by whoever maintains them. It is also a place most people never look, and never think to answer in.</p>
         <p style="font-size:16px;line-height:1.68;color:var(--tx2);max-width:66ch;margin:0;text-wrap:pretty">So this site reads all of it and presents it as what it is: conversation. It keeps no accounts and no database, and asks for nothing. Every reply, proposal and correction is published from your own GitHub account, in the repository where it belongs — which means this forum can disappear tomorrow without a single word of the discussion being lost.</p>
-        <p class="about-feeds">A scheduled workflow rebuilds the site from GitHub (it is set to run every 15 minutes, but GitHub may delay scheduled runs by hours) and republishes it when something changed. A thread page also asks GitHub for replies newer than the last publication. To follow it without visiting, subscribe to the Atom feeds for <a href="/feed.xml">new threads (/feed.xml)</a> and for <a href="/decisions/feed.xml">decisions (/decisions/feed.xml)</a>.</p>
+        <p class="about-feeds">A scheduled workflow rebuilds the site from GitHub (it is set to run every 15 minutes, but GitHub may delay scheduled runs by hours) and republishes it when something changed. A thread page may also ask GitHub for replies newer than the last publication. To follow it without visiting, subscribe to the Atom feeds for <a href="/feed.xml">new threads (/feed.xml)</a> and for <a href="/decisions/feed.xml">decisions (/decisions/feed.xml)</a>.</p>
       </section>
 
       <section style="border-top:1px solid var(--line);background:var(--surf)">

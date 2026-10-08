@@ -1169,7 +1169,7 @@ function checkBindings(vals, label) {
     assert.strictEqual(v.aboutLead, 'Drayker’s public discussion happens in the issues of its ' + DATA.counts.repos + ' public repositories.');
     assert.strictEqual((await boot('/about/', { data: false })).renderVals().aboutLead, 'Drayker’s public discussion happens in the issues of its public repositories.');
     assert(!/rebuilt from GitHub’s public API about every 15 minutes|refreshes from GitHub about every 15 minutes/.test(template), 'old refresh claim');
-    for (const s of ['href="/feed.xml"', 'href="/decisions/feed.xml"', 'A scheduled workflow rebuilds the site from GitHub (it is set to run every 15 minutes, but GitHub may delay scheduled runs by hours) and republishes it when something changed. A thread page also asks GitHub for replies newer than the last publication.', 'It is the first step of the public contribution path.',
+    for (const s of ['href="/feed.xml"', 'href="/decisions/feed.xml"', 'A scheduled workflow rebuilds the site from GitHub (it is set to run every 15 minutes, but GitHub may delay scheduled runs by hours) and republishes it when something changed. A thread page may also ask GitHub for replies newer than the last publication.', 'It is the first step of the public contribution path.',
       'The thread stays where it is as the record of why it was taken.</div>',
       'A thread page may ask GitHub’s public API for replies newer than the last update, a thread opened after the last update is read live from GitHub, and the list asks GitHub’s search API for newer activity only when you press Check GitHub.',
       'Say what you would like to help with and what you can contribute now. The form opens on GitHub.',
@@ -1337,7 +1337,7 @@ function checkBindings(vals, label) {
     : realFetch(url));
   // Words and numbers that would make a count, a weight, a quorum or an outcome.
   const COUNTED = /\b\d+\s*(votes?|points?|for|against|abstain(ed|s)?)\b|\b(for|against|abstain)\s*[:=]?\s*\d|\b(totals?|quorum|weights?|weighted|outcomes?|majority)\b|%/i;
-  const NOTICE = 'Assembly report, proposed: nothing in it is in the record until the assembly accepts it. Voting is transitional. The tally is computed on GitHub by the federation’s Federation tally workflow, from the comments there, not from this page. A vote line counts only if its author speaks for that holder and it falls inside the voting window; the Federation tally checks this on GitHub.';
+  const NOTICE = 'Assembly report, proposed: nothing in it is in the record until the assembly accepts it. Voting is transitional. The tally is computed on GitHub by the federation’s Federation tally workflow, from the comments there, not from this page. A vote line counts only if its author speaks for the holder it names and it falls inside the voting window; the Federation tally checks this on GitHub.';
   const MERGED_NOTICE = 'Assembly report, merged into the federation record. A report is merged whether the assembly passed or failed; the outcome is written in the report. Voting is transitional. The tally is computed on GitHub by the Federation tally workflow, not on this page.';
 
   await check('assembly report: notice, vote tags, and no count anywhere', async () => {

@@ -61,7 +61,7 @@ const DESCRIPTION_MAX = 180;
 const FEED_MAX = 50;
 // The assembly notices, word for word as index.html shows them: one while the
 // report is open (not merged), one once it is merged into the federation record.
-const ASSEMBLY_NOTICE = 'Assembly report, proposed: nothing in it is in the record until the assembly accepts it. Voting is transitional. The tally is computed on GitHub by the federation’s Federation tally workflow, from the comments there, not from this page. A vote line counts only if its author speaks for that holder and it falls inside the voting window; the Federation tally checks this on GitHub.';
+const ASSEMBLY_NOTICE = 'Assembly report, proposed: nothing in it is in the record until the assembly accepts it. Voting is transitional. The tally is computed on GitHub by the federation’s Federation tally workflow, from the comments there, not from this page. A vote line counts only if its author speaks for the holder it names and it falls inside the voting window; the Federation tally checks this on GitHub.';
 const ASSEMBLY_MERGED_NOTICE = 'Assembly report, merged into the federation record. A report is merged whether the assembly passed or failed; the outcome is written in the report. Voting is transitional. The tally is computed on GitHub by the Federation tally workflow, not on this page.';
 const assemblyNotice = (t) => (t.merged ? ASSEMBLY_MERGED_NOTICE : ASSEMBLY_NOTICE);
 // The tag on a comment that holds a vote line. It names the choice and the
@@ -419,14 +419,14 @@ function region(forum, activeKey, mainHtml) {
 const heading = (meta) => (meta.t.endsWith(SUFFIX) ? meta.t.slice(0, -SUFFIX.length) : meta.t);
 // A merged assembly report reads as merged, never as closed.
 const isMergedReport = (t) => t.kind === 'pr' && Boolean(t.merged);
-const stateLabel = (t) => (t.open ? 'open' : isMergedReport(t) ? 'Merged ' + fmtDate(t.merged) : t.state_reason === 'not_planned' ? 'closed, not planned' : 'closed');
+const stateLabel = (t) => (t.open ? 'open' : isMergedReport(t) ? 'merged ' + fmtDate(t.merged) : t.state_reason === 'not_planned' ? 'closed, not planned' : 'closed');
 
 // Elements with class "ugc" hold text mirrored from GitHub (titles, bodies,
 // comments, descriptions); everything else is the site's own wording.
 function listMain(forum, meta) {
   const c = forum.counts;
   const rows = forum.threads.map((t) => '<li><a class="ugc" href="' + threadPath(t.slug, t.num) + '">' + esc(titleText(t.title)) + '</a>'
-    + '<p class="fs-meta">' + esc(t.repo) + ' #' + t.num + ' · <span class="fs-state">' + esc(t.open ? 'open' : isMergedReport(t) ? 'Merged ' + fmtDate(t.merged) : 'closed') + '</span> · '
+    + '<p class="fs-meta">' + esc(t.repo) + ' #' + t.num + ' · <span class="fs-state">' + esc(t.open ? 'open' : isMergedReport(t) ? 'merged ' + fmtDate(t.merged) : 'closed') + '</span> · '
     + esc(plural(t.comments, 'reply', 'replies')) + ' · last activity ' + time(t.at) + '</p></li>').join('');
   return '<h1>' + esc(meta.list.t) + '</h1>'
     + '<p class="fs-lead">' + esc(meta.list.d) + '</p>'
@@ -461,10 +461,10 @@ function threadMain(forum, thread, detail, resanitize) {
     + (c.hidden
       ? '<p class="fs-meta">' + esc('Hidden on GitHub (' + c.hidden + ')') + '</p>'
         + (assembly ? '<p class="fs-meta">' + esc(HIDDEN_VOTE_NOTE) + '</p>' : '')
-      : assembly && !c.html
-        ? '<p class="fs-meta">' + esc(WITHHELD_NOTE) + '</p>'
-        : (assembly && c.vote ? voteTag(c.vote) : '')
-          + '<div class="fs-body ugc">' + resanitize(c.html) + '</div>')
+      : (assembly && c.vote ? voteTag(c.vote) : '')
+        + (assembly && !c.html
+          ? '<p class="fs-meta">' + esc(WITHHELD_NOTE) + '</p>'
+          : '<div class="fs-body ugc">' + resanitize(c.html) + '</div>'))
     + '</article></li>').join('');
   const notice = assembly
     ? '<section aria-label="Assembly report"><p>' + esc(assemblyNotice(thread)) + '</p>'
@@ -491,7 +491,7 @@ function threadMain(forum, thread, detail, resanitize) {
         + '<a href="' + esc(thread.url) + '">Read on GitHub</a></p>')
     + notice
     + '<section aria-label="Replies"><h2>' + esc(plural(detail.comments.length, 'reply', 'replies')) + '</h2>'
-    + (comments ? '<ol class="fs-comments">' + comments + '</ol>' : '<p class="fs-meta">No replies yet.</p>') + '</section>'
+    + (comments ? '<ol class="fs-comments">' + comments + '</ol>' : '<p class="fs-meta">' + (thread.open ? 'No replies yet.' : isMergedReport(thread) ? 'No replies before it was merged.' : 'No replies before it was closed.') + '</p>') + '</section>'
     + (refs ? '<section aria-label="Referenced by"><h2>Referenced by</h2><ul class="fs-list">' + refs + '</ul></section>' : '');
 }
 
@@ -628,7 +628,7 @@ function decisionFeed(forum) {
         .map((t) => '<li><a href="' + BASE + threadPath(t.slug, t.num).slice(1) + '">' + esc(titleText(t.title)) + '</a></li>').join('');
       return {
         id: d.url, title: titleText(d.title), link: d.url, published: d.merged, updated: d.merged, author: d.user, categories: [d.repo],
-        content: (d.excerpt ? '<p>' + esc(d.excerpt) + '</p>' : '') + '<p>' + esc(d.repo + ' #' + d.num) + ', merged ' + esc(fmtDate(d.merged)) + '.</p>'
+        content: (d.excerpt ? '<p class="ugc">' + esc(d.excerpt) + '</p>' : '') + '<p>' + esc(d.repo + ' #' + d.num) + ', merged ' + esc(fmtDate(d.merged)) + '.</p>'
           + (isAssemblyDecision(d) ? '<p>' + esc(ASSEMBLY_DECISION_NOTE) + '</p>' : '')
           + (threads ? '<p>Threads:</p><ul>' + threads + '</ul>' : '')
       };
