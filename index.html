@@ -791,7 +791,12 @@
 
               <sc-if value="{{ tv.isAssembly }}">
                 <section class="assembly-note" aria-label="Assembly report">
-                  <p>Assembly report, proposed: nothing in it is in the record until the assembly accepts it. Voting is transitional. The tally is computed on GitHub by the federation’s Federation tally workflow, from the comments there, not from this page.</p>
+                  <sc-if value="{{ tv.isAssemblyOpen }}">
+                    <p>Assembly report, proposed: nothing in it is in the record until the assembly accepts it. Voting is transitional. The tally is computed on GitHub by the federation’s Federation tally workflow, from the comments there, not from this page. A vote line counts only if its author speaks for that holder and it falls inside the voting window; the Federation tally checks this on GitHub.</p>
+                  </sc-if>
+                  <sc-if value="{{ tv.isAssemblyMerged }}">
+                    <p>Assembly report, merged into the federation record. A report is merged whether the assembly passed or failed; the outcome is written in the report. Voting is transitional. The tally is computed on GitHub by the Federation tally workflow, not on this page.</p>
+                  </sc-if>
                   <p class="assembly-links"><a href="{{ tv.url }}">The pull request on GitHub →</a><a href="https://github.com/draykerdk/daf/actions/workflows/federation-tally.yml">The Federation tally workflow →</a></p>
                 </section>
               </sc-if>
@@ -1171,7 +1176,7 @@
         <h1 tabindex="-1" style="font-size:clamp(28px,3.6vw,48px);line-height:1.04;letter-spacing:-0.038em;font-weight:700;margin:0 0 20px;max-width:22ch;text-wrap:balance">A reading surface over a conversation that already exists.</h1>
         <p style="font-size:16.5px;line-height:1.7;color:var(--tx);max-width:66ch;margin:0 0 16px;text-wrap:pretty">{{ aboutLead }} That is the right place for it — a thread beside the code and documents it concerns survives, and can be argued with by whoever maintains them. It is also a place most people never look, and never think to answer in.</p>
         <p style="font-size:16px;line-height:1.68;color:var(--tx2);max-width:66ch;margin:0;text-wrap:pretty">So this site reads all of it and presents it as what it is: conversation. It keeps no accounts and no database, and asks for nothing. Every reply, proposal and correction is published from your own GitHub account, in the repository where it belongs — which means this forum can disappear tomorrow without a single word of the discussion being lost.</p>
-        <p class="about-feeds">GitHub is checked about every 15 minutes; the site is republished when something changed, and at least once a day. To follow it without visiting, subscribe to the Atom feeds for <a href="/feed.xml">new threads (/feed.xml)</a> and for <a href="/decisions/feed.xml">decisions (/decisions/feed.xml)</a>.</p>
+        <p class="about-feeds">A scheduled workflow rebuilds the site from GitHub (it is set to run every 15 minutes, but GitHub may delay scheduled runs by hours) and republishes it when something changed. A thread page also asks GitHub for replies newer than the last publication. To follow it without visiting, subscribe to the Atom feeds for <a href="/feed.xml">new threads (/feed.xml)</a> and for <a href="/decisions/feed.xml">decisions (/decisions/feed.xml)</a>.</p>
       </section>
 
       <section style="border-top:1px solid var(--line);background:var(--surf)">
@@ -1217,7 +1222,7 @@
             </div>
             <div style="background:var(--bg);padding:16px 20px;display:grid;grid-template-columns:minmax(0,150px) minmax(0,1fr);gap:14px;align-items:baseline">
               <dt class="mono" style="font-size:10.5px;letter-spacing:0.1em;color:var(--tx2)">NO DATABASE</dt>
-              <dd style="margin:0;font-size:14.5px;line-height:1.6;color:var(--tx2);min-width:0;text-wrap:pretty">Static pages on GitHub Pages, built from GitHub’s public API and republished when something changed, and at least once a day. Nothing you type here is sent anywhere until you choose to continue on GitHub.</dd>
+              <dd style="margin:0;font-size:14.5px;line-height:1.6;color:var(--tx2);min-width:0;text-wrap:pretty">Static pages on GitHub Pages, rebuilt from GitHub’s public API by a scheduled workflow and republished when something changed. Nothing you type here is sent anywhere until you choose to continue on GitHub.</dd>
             </div>
             <div style="background:var(--bg);padding:16px 20px;display:grid;grid-template-columns:minmax(0,150px) minmax(0,1fr);gap:14px;align-items:baseline">
               <dt class="mono" style="font-size:10.5px;letter-spacing:0.1em;color:var(--tx2)">NO RANKING</dt>
@@ -1366,8 +1371,9 @@ const PARTS = [
 // label is read by the title prefix the composer writes ([Proposal], [Motion],
 // [Report]); anything else is a question or an idea.
 // FEDERATION is DAF's own record in the making, in the daf repository only: the
-// threads its issue forms open ([Cycle], [Claim], [Request] and their labels)
-// and its assembly reports (pull requests, kind 'pr'). A DAF claim is not the
+// threads its issue forms open ([Cycle], [Claim], [Request] and their labels,
+// and [Veto], whose form adds no label) and its assembly reports (pull
+// requests, kind 'pr'). Elsewhere these title prefixes keep their usual kind. A DAF claim is not the
 // forum's CLAIMED (the 'claimed' function label): the two are never merged.
 const FUNCTION_LABELS = ['open-function', 'good first issue', 'help wanted', 'claimed'];
 const FEDERATION_REPO = 'daf';
@@ -1380,7 +1386,7 @@ const TYPES = [
   { id: 'docs', label: 'DOCUMENTATION', labels: ['documentation'] },
   { id: 'intro', label: 'INTRODUCTIONS', labels: ['volunteer-introduction'] },
   { id: 'report', label: 'REPORTS', prefix: /^\s*\[report\]/i },
-  { id: 'federation', label: 'FEDERATION', labels: ['assembly', 'claim', 'resource-request'], prefix: /^\s*\[(cycle|claim|request)\]/i, repo: FEDERATION_REPO },
+  { id: 'federation', label: 'FEDERATION', labels: ['assembly', 'claim', 'resource-request'], prefix: /^\s*\[(cycle|claim|request|veto)\]/i, repo: FEDERATION_REPO },
   { id: 'open', label: 'QUESTIONS & IDEAS' }
 ];
 
@@ -1630,8 +1636,13 @@ const voteOf = (body) => { const v = readVote(body); return v ? { vote: v.vote, 
 const ASSEMBLY_TITLE = /^Assembly \d{4}-(0[1-9]|1[0-2])$/;
 // A merged assembly report on the Decisions page.
 const ASSEMBLY_DECISION_NOTE = 'An assembly report is merged whether the assembly passed or failed. The outcome is written in the report on GitHub.';
-// The federation's tally comment (its Federation tally workflow), never shown here.
+// The federation's tally comment (its Federation tally workflow), never shown here:
+// by github-actions[bot] (type Bot) and starting with the marker, the rule of daf
+// tools/lib/sticky.js isOurs. A person's comment that starts with the marker is
+// an ordinary comment.
 const TALLY_MARKER = /^<!-- daf-tally:v[0-9]+ -->/;
+const TALLY_BOT = 'github-actions[bot]';
+const isTallyComment = (c) => !!(c && c.user && c.user.login === TALLY_BOT && c.user.type === 'Bot' && TALLY_MARKER.test(String(c.body || '')));
 
 function loadScript(src) {
   return new Promise((resolve, reject) => {
@@ -1925,7 +1936,10 @@ class Component extends DCLogic {
     return 'open';
   };
   kindLabel = (id) => { const t = TYPES.filter((x) => x.id === id)[0]; return t ? t.label : 'CONVERSATION'; };
-  closedText = (t) => (t.state_reason === 'completed' ? 'Closed — completed'
+  // A merged assembly report (kind 'pr') reads as merged, never as closed.
+  isMergedReport = (t) => !!t && t.kind === 'pr' && !!t.merged;
+  closedText = (t) => (this.isMergedReport(t) ? 'Merged'
+    : t.state_reason === 'completed' ? 'Closed — completed'
     : t.state_reason === 'not_planned' ? 'Closed — not planned'
     : t.state_reason === 'duplicate' ? 'Closed — duplicate' : 'Closed');
   stateText = (t) => (this.isOpen(t) ? 'Open' : this.closedText(t));
@@ -1970,7 +1984,7 @@ class Component extends DCLogic {
   // comment keeps its place but not its count.
   apiComment = (c, assembly) => {
     const hidden = hiddenReason(c.minimized);
-    const withheld = !hidden && assembly === true && TALLY_MARKER.test(String(c.body || ''));
+    const withheld = !hidden && assembly === true && isTallyComment(c);
     return {
       id: c.id, user: c.user && c.user.login ? c.user.login : 'ghost', user_id: c.user && c.user.id ? c.user.id : 0,
       created: c.created_at || '', updated: c.updated_at || c.created_at || '', hidden, html: hidden || withheld ? '' : c.body_html || '',
@@ -1989,6 +2003,7 @@ class Component extends DCLogic {
     labels: this.apiLabels(i.labels),
     state: i.state === 'closed' ? 'closed' : 'open', state_reason: i.state_reason || null, open: i.state !== 'closed',
     created: i.created_at || '', at: i.updated_at || i.created_at || '', closed: i.closed_at || null,
+    merged: i.pull_request ? i.pull_request.merged_at || null : null,
     locked: !!i.locked, lock_reason: i.active_lock_reason || null,
     last_user: null, last_at: null, participants: [i.user && i.user.login ? i.user.login : 'ghost'],
     refs: [], html: i.body_html || '', comments: [], mode: 'live', count: i.comments || 0
@@ -2001,6 +2016,7 @@ class Component extends DCLogic {
       title: i.title || '', labels: this.apiLabels(i.labels),
       state: i.state === 'closed' ? 'closed' : 'open', state_reason: i.state_reason || null, open: i.state !== 'closed',
       closed: i.closed_at || null, at: i.updated_at || t.at, locked: !!i.locked, lock_reason: i.active_lock_reason || null,
+      merged: i.pull_request ? i.pull_request.merged_at || null : null,
       html: i.body_html || '', htmlMode: 'live'
     });
     return true;
@@ -3040,7 +3056,7 @@ class Component extends DCLogic {
     // of the last change on GitHub. The stamp is plain text, outside any live region.
     const foundNewer = check.s === 'done' && (check.changed || 0) + (check.added || 0) > 0;
     const sync = {
-      stamp: ready ? 'Last published ' + ago(genIso) + ' (' + (dayOld ? fmtDate(genIso) + ', ' : '') + fmtClock(s.genAt) + ' UTC) · GitHub is checked about every 15 minutes; the site is republished when something changes and at least once a day'
+      stamp: ready ? 'Last published ' + ago(genIso) + ' (' + (dayOld ? fmtDate(genIso) + ', ' : '') + fmtClock(s.genAt) + ' UTC) · A scheduled workflow rebuilds the site from GitHub; GitHub may delay scheduled runs.'
         : s.dataState === 'error' ? 'The forum’s last update could not be loaded.' : 'Reading the forum’s last update…',
       detail: ready ? 'Source: ' + (s.dataSource === 'cache' ? 'this browser’s copy of the published update' : 'the published update') + ' of github.com/' + this.org + '.'
           + (foundNewer ? ' Threads and replies newer than that are on GitHub.' : '')
@@ -3131,9 +3147,13 @@ class Component extends DCLogic {
       user: '', userHref: '', createdIso: '', createdAbs: '', labels: [], hasLabels: false,
       url: ghHref, replyUrl: ghHref + '#new_comment_field', locked: false, bodySlot: '', noBody: false,
       hasDocs: false, docsHref: '', docsLabel: '', repliesHeading: 'Replies',
-      // An assembly report of the federation: the notice above the replies.
-      isAssembly: !!(src && src.kind === 'pr' && src.repo === FEDERATION_REPO)
+      // An assembly report of the federation: the notice above the replies, one
+      // while it is not merged and one once it is merged into the record.
+      isAssembly: !!(src && src.kind === 'pr' && src.repo === FEDERATION_REPO),
+      isAssemblyOpen: false, isAssemblyMerged: false
     };
+    tv.isAssemblyMerged = tv.isAssembly && this.isMergedReport(src);
+    tv.isAssemblyOpen = tv.isAssembly && !tv.isAssemblyMerged;
     if (src) {
       const kind = this.kindOf(src);
       const home = (this.homepages && this.homepages[src.repo]) || '';
@@ -3179,7 +3199,7 @@ class Component extends DCLogic {
     const locked = !!(src && src.locked);
     if (full && full.cmtError) cmtNote = 'Replies could not be loaded from GitHub (' + full.cmtError + '). Read them on GitHub.';
     else if (full && !comments.length && locked) cmtNote = 'No replies. The conversation is locked on GitHub.';
-    else if (full && !comments.length) cmtNote = !open ? 'No replies before it was closed.' : freshFailed
+    else if (full && !comments.length) cmtNote = !open ? (this.isMergedReport(src) ? 'No replies before it was merged.' : 'No replies before it was closed.') : freshFailed
       ? 'No replies in the forum’s last update. GitHub could not be checked for newer ones just now.'
       : 'Nobody has replied to this yet. A first answer — even one that says the question is wrong — is a contribution.';
 
@@ -3206,7 +3226,7 @@ class Component extends DCLogic {
         edited: !hidden && toMs(c.updated) > toMs(c.created) + 60000,
         hidden: !!hidden, hiddenText: hidden ? 'Hidden on GitHub' + (hidden === 'hidden' ? '' : ' (' + hidden + ')') : '',
         hasNote: !!note, note,
-        hasVote: !!vote, voteText: vote ? 'Vote: ' + String(vote.vote) + ' · as ' + String(vote.as) : '',
+        hasVote: !!vote, voteText: vote ? 'Vote line: ' + String(vote.vote) + ' · names ' + String(vote.as) : '',
         slot, copy: () => this.copyLink(id),
         copyText: copied ? 'Link copied' : failed ? 'Link is in the address bar' : 'Copy link',
         copyCls: copied || failed ? 'btn-link done' : 'btn-link',
@@ -3228,13 +3248,16 @@ class Component extends DCLogic {
       (src.refs || []).forEach((r) => {
         if (!r) return;
         if (r.kind === 'pr') {
-          add('Pull request ' + r.repo + ' #' + r.num + (r.merged ? ', merged ' + fmtDate(r.merged) : r.state === 'open' ? ', open' : ', closed without merging'), r.title, r.url);
+          // A pull request with a page here (an assembly report) links to that page.
+          const prInForum = this.findThread(r.slug, r.num);
+          add('Pull request ' + r.repo + ' #' + r.num + (r.merged ? ', merged ' + fmtDate(r.merged) : r.state === 'open' ? ', open' : ', closed without merging'), r.title,
+            prInForum ? '/t/' + encodeURIComponent(r.slug) + '/' + r.num + '/' : r.url);
         } else {
           const inForum = this.findThread(r.slug, r.num);
           add('Referenced in ' + r.repo + ' #' + r.num, r.title, inForum ? '/t/' + encodeURIComponent(r.slug) + '/' + r.num + '/' : r.url);
         }
       });
-      if (!open) add(this.closedText(src) + (src.closed ? ', ' + fmtDate(src.closed) : ''));
+      if (!open) add(this.closedText(src) + (this.isMergedReport(src) ? ', ' + fmtDate(src.merged) : src.closed ? ', ' + fmtDate(src.closed) : ''));
     }
 
     let related = [];
