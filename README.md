@@ -40,7 +40,7 @@ Issues small enough for one person to finish carry the `open-function` label acr
 
 ## How the forum works
 
-- **No server.** About every 15 minutes, the *Forum site* workflow in this repository reads the issues, comments and merged pull requests of every public `draykerdk` repository through the GitHub API. It sanitizes the content, writes a static page for every thread, the feeds and the sitemap, and publishes to GitHub Pages only when something changed.
+- **No server.** About every 15 minutes, the *Forum site* workflow in this repository reads the issues, comments and merged pull requests of every public `draykerdk` repository through the GitHub API. It sanitizes the content, writes a static page for every thread, the feeds and the sitemap, and publishes to GitHub Pages when something changed, and at least once a day.
 - **Publishing stays on GitHub.** The forum keeps no accounts and no database. Posts and replies are written on GitHub under each person's own account; edits and deletions made there reach the forum at the next update.
 - **In the browser.** Pages read the published files. A thread page may make one public GitHub API call to show replies posted since the last update, and a thread opened after the last update is read live from GitHub until its page is published.
 - **Public files.** `/data/forum.json` (threads, decisions and repositories), `/data/t/<repository>/<number>.json` (one thread with its replies), `/feed.xml` (new threads), `/decisions/feed.xml` (merged pull requests), `/sitemap.xml` and `/llms.txt`. The `.github` repository appears under the path name `dot-github`.
