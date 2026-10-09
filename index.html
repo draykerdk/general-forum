@@ -286,6 +286,7 @@
   .side-note{display:block;font-size:12.5px;color:var(--tx2);margin-top:3px;line-height:1.45}
   .side-links-daf{margin-top:16px;padding-top:14px;border-top:1px solid var(--line2)}
   .side-note-daf{margin:10px 0 0}
+  .side-note-founding{overflow-wrap:anywhere;text-wrap:pretty}
   .rel{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
   .rel a{color:var(--tx);font-size:14px;line-height:1.4;font-weight:500}
   .rel a:hover{color:var(--acc-tx)}
@@ -419,6 +420,7 @@
   .routes-repo:hover{color:var(--acc-tx)}
   .routes-form{display:inline-block;padding:5px 0;line-height:14px;font-size:13px;color:var(--tx2)}
   .routes-form:hover{color:var(--acc-tx)}
+  .routes-note{flex-basis:100%;min-width:0;margin:2px 0 0;font-size:12.5px;line-height:1.45;color:var(--tx2);overflow-wrap:anywhere;text-wrap:pretty}
   @media (max-width:719px){.routes li{grid-template-columns:minmax(0,1fr);padding:14px}}
   .repos-h{font-weight:400}
   .repos{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:1px;background:var(--line);border:1px solid var(--line)}
@@ -930,6 +932,9 @@
               <li><a href="https://github.com/draykerdk/daf/issues/new?template=cycle.yml">Open an assembly cycle →</a></li>
             </ul>
             <p class="side-note side-note-daf">These open DAF’s forms on GitHub. What they create is proposed, not in the record until an assembly accepts it.</p>
+            <sc-if value="{{ foundingOpen }}">
+              <p class="side-note side-note-daf side-note-founding">{{ foundingLine }} <a href="{{ foundingUrl }}">Running an assembly →</a></p>
+            </sc-if>
           </section>
           <a href="/routing/" class="link-mono">See where each subject belongs →</a>
         </div>
@@ -1128,6 +1133,9 @@
                 <sc-if value="{{ r.hasForm }}">
                   <a href="{{ r.formHref }}" class="routes-form">{{ r.formText }}</a>
                 </sc-if>
+                <sc-if value="{{ r.hasFounding }}">
+                  <p class="routes-note">{{ r.foundingLine }} <a href="{{ r.foundingUrl }}">Running an assembly →</a></p>
+                </sc-if>
               </div>
             </li>
           </sc-for>
@@ -1194,7 +1202,7 @@
             </div>
             <div style="background:var(--bg);padding:24px 22px;display:flex;flex-direction:column;gap:10px">
               <div class="mono" style="font-size:10.5px;letter-spacing:0.14em;color:var(--acc-tx)">03 · CUT SMALL ENOUGH</div>
-              <div style="font-size:14.5px;line-height:1.62;color:var(--tx2);text-wrap:pretty">A thread that turns into work is cut into pieces one person can finish. Those carry the label <span class="mono" style="font-size:13px;color:var(--tx)">open-function</span> and appear on the board.</div>
+              <div style="font-size:14.5px;line-height:1.62;color:var(--tx2);text-wrap:pretty">A thread that turns into work is cut into pieces one person can finish. Those carry the label <span class="mono" style="font-size:13px;color:var(--tx)">open-function</span> and appear on the board. Proposed functions are reviewed before they become open functions.</div>
             </div>
             <div style="background:var(--bg);padding:24px 22px;display:flex;flex-direction:column;gap:10px">
               <div class="mono" style="font-size:10.5px;letter-spacing:0.14em;color:var(--acc-tx)">04 · ARGUED AGAINST A CHANGE</div>
@@ -1283,7 +1291,7 @@
     </div>
     <div class="ftr-base">
       <div class="wrap mono">
-        <span>CC BY 4.0 · PUBLIC DOCUMENTATION · NON-PROFIT</span>
+        <span>CC BY 4.0 · PUBLIC DOCUMENTATION · NO OWNER · NO SHAREHOLDERS · NO PROFIT DISTRIBUTION</span>
         <span>forum.drayker.org</span>
       </div>
     </div>
@@ -1375,7 +1383,11 @@ const PARTS = [
 // and [Veto], whose form adds no label) and its assembly reports (pull
 // requests, kind 'pr'). Elsewhere these title prefixes keep their usual kind. A DAF claim is not the
 // forum's CLAIMED (the 'claimed' function label): the two are never merged.
+// The "Open function" form applies 'proposed-function'. Such a thread is a
+// proposal awaiting review, never work to pick up, until a maintainer applies
+// 'open-function' (a function label then decides its kind).
 const FUNCTION_LABELS = ['open-function', 'good first issue', 'help wanted', 'claimed'];
+const PROPOSED_FUNCTION = 'proposed-function';
 const FEDERATION_REPO = 'daf';
 const TYPES = [
   { id: 'all', label: 'EVERYTHING' },
@@ -1636,6 +1648,13 @@ const voteOf = (body) => { const v = readVote(body); return v ? { vote: v.vote, 
 const ASSEMBLY_TITLE = /^Assembly \d{4}-(0[1-9]|1[0-2])$/;
 // A merged assembly report on the Decisions page.
 const ASSEMBLY_DECISION_NOTE = 'An assembly report is merged whether the assembly passed or failed. The outcome is written in the report on GitHub.';
+// While no assembly has been held (no merged assembly report among the
+// decisions), the places that open DAF's claim, request and cycle forms say that
+// the first assembly cannot be recorded yet, as daf federation/README.md does.
+const FOUNDING_LINE = 'The first assembly cannot be recorded yet: DAF-000 and DAF-001 do not say how a founding assembly is decided.';
+const FOUNDING_URL = 'https://github.com/draykerdk/daf/blob/master/federation/README.md#running-an-assembly';
+const isAssemblyDecision = (d) => !!d && d.repo === FEDERATION_REPO && ASSEMBLY_TITLE.test(String(d.title || ''));
+const isDafForm = (form) => !!form && String(form.href || '').indexOf('https://github.com/' + ORG + '/' + FEDERATION_REPO + '/') === 0;
 // The federation's tally comment (its Federation tally workflow), never shown here:
 // by github-actions[bot] (type Bot) and starting with the marker, the rule of daf
 // tools/lib/sticky.js isOurs. A person's comment that starts with the marker is
@@ -1929,6 +1948,8 @@ class Component extends DCLogic {
     if (has(TYPES.filter((k) => k.id === 'proposal')[0].labels)) return 'proposal';
     // Nobody can pick up or claim a function whose conversation is locked.
     if (has(FUNCTION_LABELS)) return !this.isOpen(t) || t.locked ? 'function' : l.indexOf('claimed') >= 0 ? 'claimed' : 'work';
+    // A proposed function is not work to pick up until it is reviewed.
+    if (has([PROPOSED_FUNCTION])) return 'proposal';
     // DAF's forms, in daf only: elsewhere a [Request] title keeps its usual kind.
     if (inDaf && (has(fed.labels) || fed.prefix.test(title))) return 'federation';
     for (const k of TYPES) if (!k.repo && k.labels && has(k.labels)) return k.id;
@@ -1936,8 +1957,14 @@ class Component extends DCLogic {
     return 'open';
   };
   kindLabel = (id) => { const t = TYPES.filter((x) => x.id === id)[0]; return t ? t.label : 'CONVERSATION'; };
+  // A proposed function (still a proposal, awaiting review) says so in its kind.
+  isProposedFunction = (t) => !!t && this.kindOf(t) === 'proposal' && ((t.labels || []).indexOf(PROPOSED_FUNCTION) >= 0);
+  threadKindLabel = (t, kind) => (kind === 'proposal' && this.isProposedFunction(t) ? 'PROPOSED FUNCTION' : this.kindLabel(kind));
   // A merged assembly report (kind 'pr') reads as merged, never as closed.
   isMergedReport = (t) => !!t && t.kind === 'pr' && !!t.merged;
+  // No assembly has been held while the decisions hold no merged assembly
+  // report (and before the forum's data is read): the founding line shows.
+  foundingOpen = () => !(this.state.decisions || []).some(isAssemblyDecision);
   closedText = (t) => (this.isMergedReport(t) ? 'Merged'
     : t.state_reason === 'completed' ? 'Closed — completed'
     : t.state_reason === 'not_planned' ? 'Closed — not planned'
@@ -3112,7 +3139,7 @@ class Component extends DCLogic {
     return {
       href: '/t/' + encodeURIComponent(t.slug) + '/' + t.num + '/',
       title: titleOf(t.title),
-      kindLabel: this.kindLabel(kind), kindCls: kind === 'proposal' ? 'kind kind-proposal' : 'kind',
+      kindLabel: this.threadKindLabel(t, kind), kindCls: kind === 'proposal' ? 'kind kind-proposal' : 'kind',
       partName: this.partName(t.repo), where: t.repo + ' #' + t.num,
       opened: 'opened by ' + (t.user || 'ghost') + ' · ' + fmtDate(t.created),
       last, lastCls: n === 0 && open && !t.locked ? 'row-wait' : '',
@@ -3158,7 +3185,7 @@ class Component extends DCLogic {
       const kind = this.kindOf(src);
       const home = (this.homepages && this.homepages[src.repo]) || '';
       Object.assign(tv, {
-        title: titleOf(src.title), locked: !!src.locked, kindLabel: this.kindLabel(kind), kindCls: kind === 'proposal' ? 'kind kind-proposal' : 'kind',
+        title: titleOf(src.title), locked: !!src.locked, kindLabel: this.threadKindLabel(src, kind), kindCls: kind === 'proposal' ? 'kind kind-proposal' : 'kind',
         partName: this.partName(src.repo), where: src.repo + ' #' + src.num,
         stateText: this.stateText(src), stateCls: open ? 'state state-open' : 'state state-closed',
         user: src.user || 'ghost', userHref: 'https://github.com/' + encodeURIComponent(src.user || 'ghost'),
@@ -3245,6 +3272,7 @@ class Component extends DCLogic {
       else if (!locked) add(open ? 'Waiting for a first reply' : 'No replies');
       if (locked) add('Locked on GitHub', src.lock_reason ? 'reason: ' + String(src.lock_reason) : nReplies > 0 ? '' : 'no replies');
       if ((src.labels || []).indexOf('claimed') >= 0) add('Claimed', 'labelled claimed on GitHub');
+      if (open && this.isProposedFunction(src)) add('Proposed, awaiting review', 'a maintainer applies open-function once it is reviewed');
       (src.refs || []).forEach((r) => {
         if (!r) return;
         if (r.kind === 'pr') {
@@ -3328,7 +3356,7 @@ class Component extends DCLogic {
       const excerpt = clip(d.excerpt || '', 280);
       // A merged assembly report is not an accepted decision: it is merged whether
       // the assembly passed or failed. No outcome and no count are shown here.
-      const isAssembly = d.repo === FEDERATION_REPO && ASSEMBLY_TITLE.test(String(d.title || ''));
+      const isAssembly = isAssemblyDecision(d);
       cur.items.push({
         title: titleOf(d.title), url: d.url || 'https://github.com/' + ORG + '/' + d.repo + '/pull/' + d.num,
         partName: this.partName(d.repo), where: '#' + d.num,
@@ -3393,7 +3421,8 @@ class Component extends DCLogic {
         items: sim.items.map((t) => ({ href: '/t/' + encodeURIComponent(t.slug) + '/' + t.num + '/', title: titleOf(t.title),
           meta: this.partName(t.repo) + ' · ' + this.stateText(t) + ' · ' + plural(t.comments || 0, 'reply', 'replies') }))
       },
-      cOpened: s.cOpened, openPost: this.openPost
+      cOpened: s.cOpened, openPost: this.openPost,
+      foundingOpen: this.foundingOpen(), foundingLine: FOUNDING_LINE, foundingUrl: FOUNDING_URL
     };
   }
 
@@ -3416,11 +3445,13 @@ class Component extends DCLogic {
       };
     }).sort((a, b) => (a.k < b.k ? -1 : a.k > b.k ? 1 : 0))
       .map((x) => { delete x.k; return x; });
+    const founding = this.foundingOpen();
     return {
       routes: ROUTES.map((r) => ({
         about: r.about,
         repos: r.repos.map((repo) => ({ repo: this.org + '/' + repo, href: 'https://github.com/' + this.org + '/' + repo + '/issues' })),
-        hasForm: !!r.form, formHref: r.form ? r.form.href : '', formText: r.form ? 'or ' + r.form.label + ' →' : ''
+        hasForm: !!r.form, formHref: r.form ? r.form.href : '', formText: r.form ? 'or ' + r.form.label + ' →' : '',
+        hasFounding: founding && isDafForm(r.form), foundingLine: FOUNDING_LINE, foundingUrl: FOUNDING_URL
       })),
       repoList: list, hasRepoList: list.length > 0,
       repoCount: plural(list.length, 'public repository', 'public repositories') + ' with issues enabled'

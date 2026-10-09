@@ -409,6 +409,15 @@ function checkBindings(vals, label) {
     assert.strictEqual(k([], true, '[Report] Something'), 'report');
     for (const t of ['[Question] Something', '[Idea] Something', 'Something']) assert.strictEqual(k([], true, t), 'open', t);
     assert.strictEqual(k(['open-function'], true, '[Proposal] Something'), 'work', 'labels come before the title prefix');
+    // The "Open function" form applies proposed-function: a proposal awaiting review, never work to pick up.
+    assert.strictEqual(k(['proposed-function'], true, '[Open function] Something'), 'proposal', 'a proposed function is not work to pick up');
+    assert.strictEqual(k(['proposed-function'], false), 'proposal');
+    assert.strictEqual(k(['proposed-function', 'open-function'], true), 'work', 'open-function marks it reviewed');
+    assert.strictEqual(k(['proposed-function', 'claimed'], true), 'claimed');
+    assert.strictEqual(k(['proposed-function', 'skill:docs'], true), 'proposal');
+    assert.strictEqual(c.threadKindLabel({ labels: ['proposed-function'], open: true, state: 'open', title: 'x' }, 'proposal'), 'PROPOSED FUNCTION');
+    assert.strictEqual(c.threadKindLabel({ labels: ['motion'], open: true, state: 'open', title: 'x' }, 'proposal'), 'PROPOSALS');
+    assert.strictEqual(c.threadKindLabel({ labels: ['proposed-function', 'open-function'], open: true, state: 'open', title: 'x' }, 'work'), 'WORK TO PICK UP');
     // FEDERATION: DAF's forms and assembly reports, in the daf repository only.
     const kd = (repo, labels, title, extra) => c.kindOf(Object.assign({ repo, labels, open: true, state: 'open', title }, extra || {}));
     for (const title of ['[Cycle] Assembly 2026-11', '[Claim] A delivered function', '[Request] Hosting', '  [request] lower case', '[CLAIM] upper case', '[Veto] Row 2 of the award', '[veto] lower case']) assert.strictEqual(kd('daf', [], title), 'federation', title);
@@ -1164,6 +1173,46 @@ function checkBindings(vals, label) {
     assert(!loading.hasRepoList && loading.listLoading);
   });
 
+  await check('founding line: on /new/ and on the federation route until an assembly report is merged', async () => {
+    // Word for word as daf federation/README.md says it ("Running an assembly").
+    const LINE = 'The first assembly cannot be recorded yet: DAF-000 and DAF-001 do not say how a founding assembly is decided.';
+    const HREF = 'https://github.com/draykerdk/daf/blob/master/federation/README.md#running-an-assembly';
+    const isReport = (d) => d.repo === 'daf' && /^Assembly \d{4}-(0[1-9]|1[0-2])$/.test(d.title || '');
+    // The template: once in Other ways in, after the DAF forms, and once on the routes.
+    const other = template.slice(template.indexOf('<h2 id="cmp-other-h"'), template.indexOf('</section>', template.indexOf('<h2 id="cmp-other-h"')));
+    assert(other.includes('<sc-if value="{{ foundingOpen }}">\n              <p class="side-note side-note-daf side-note-founding">{{ foundingLine }} <a href="{{ foundingUrl }}">Running an assembly →</a></p>\n            </sc-if>'), 'Other ways in: founding line');
+    assert(other.indexOf('{{ foundingLine }}') > other.indexOf('template=cycle.yml'), 'the line follows the DAF forms');
+    assert(template.includes('<sc-if value="{{ r.hasFounding }}">\n                  <p class="routes-note">{{ r.foundingLine }} <a href="{{ r.foundingUrl }}">Running an assembly →</a></p>'), 'routes: founding line');
+    assert.strictEqual((template.match(/\{\{ (r\.)?foundingLine \}\}/g) || []).length, 2, 'the line is in two places only');
+    // Thread pages offer no DAF form (only Reply on GitHub), so they carry no line.
+    assert(!/founding/i.test(template.slice(template.indexOf('<sc-if value="{{ isThread }}">'), template.indexOf('<sc-if value="{{ isNotFound }}">'))));
+    // The same data with no merged assembly report, and with one.
+    const none = clone(DATA);
+    none.decisions = none.decisions.filter((d) => !isReport(d));
+    none.threads = none.threads.filter((t) => !(t.kind === 'pr' && t.merged));
+    const held = clone(none);
+    held.decisions.unshift({ repo: 'daf', slug: 'daf', num: 9999, title: 'Assembly 2026-10', url: 'https://github.com/draykerdk/daf/pull/9999',
+      user: 'steward', merged: DATA.generated_at, excerpt: '', text: '', threads: [] });
+    for (const [data, open] of [[none, true], [held, false]]) {
+      const n = (await boot('/new/', { data })).renderVals();
+      checkBindings(n, 'composer, founding ' + open);
+      assert.strictEqual(n.foundingOpen, open, '/new/ founding line ' + (open ? 'missing' : 'still shown'));
+      assert(n.foundingLine === LINE && n.foundingUrl === HREF);
+      const r = (await boot('/routing/', { data })).renderVals();
+      checkBindings(r, 'routing, founding ' + open);
+      assert.deepStrictEqual(clone(r.routes.filter((x) => x.hasFounding).map((x) => x.about)), open ? ['The federation and its resources'] : [], 'routes with the founding line');
+      assert(r.routes.every((x) => x.foundingLine === LINE && x.foundingUrl === HREF));
+    }
+    // A merged report that is not titled Assembly YYYY-MM, or is outside daf, is not an assembly.
+    const other2 = clone(none);
+    other2.decisions.unshift(Object.assign(clone(held.decisions[0]), { title: 'Assembly 2026-10 report' }), Object.assign(clone(held.decisions[0]), { repo: 'dfmp', slug: 'dfmp' }));
+    assert.strictEqual((await boot('/new/', { data: other2 })).renderVals().foundingOpen, true, 'only a daf "Assembly YYYY-MM" merge counts');
+    // Before the data is read nothing says an assembly was held.
+    assert.strictEqual((await boot('/new/', { data: false })).renderVals().foundingOpen, true);
+    // The recorded fixture holds a merged report (daf #9004).
+    if (ON_FIXTURE) assert.strictEqual((await boot('/new/')).renderVals().foundingOpen, false, 'the fixture holds a merged assembly report');
+  });
+
   await check('about: repository count, feeds and refresh', async () => {
     const v = (await boot('/about/')).renderVals();
     assert.strictEqual(v.aboutLead, 'Drayker’s public discussion happens in the issues of its ' + DATA.counts.repos + ' public repositories.');
@@ -1175,11 +1224,16 @@ function checkBindings(vals, label) {
       'Say what you would like to help with and what you can contribute now. The form opens on GitHub.',
       'Nothing here is decided in a private meeting or a private vote. In the founding phase the founding steward integrates changes in public, as <a href="https://github.com/draykerdk/.github/blob/master/GOVERNANCE.md">GOVERNANCE.md</a> documents.',
       'The merge is how the decision enters the record.', 'Drayker’s code of conduct', 'where Drayker keeps its review history', 'https://drayker.org/fn/',
-      'CC BY 4.0 · PUBLIC DOCUMENTATION · NON-PROFIT', 'unpkg, jsDelivr', 'Google Fonts']) assert(template.includes(s), 'missing: ' + s);
+      'CC BY 4.0 · PUBLIC DOCUMENTATION · NO OWNER · NO SHAREHOLDERS · NO PROFIT DISTRIBUTION', 'unpkg, jsDelivr', 'Google Fonts']) assert(template.includes(s), 'missing: ' + s);
     assert(!template.includes('#org/fn'));
     assert(!/none of this is deleted|how much time you have/.test(template), 'retired copy');
     const llms = fs.readFileSync(path.join(root, 'llms.txt'), 'utf8');
     assert(!/every merged pull request/i.test(llms + fs.readFileSync(path.join(root, 'README.md'), 'utf8')), 'README and llms.txt do not claim every merged pull request');
+    // Drayker is described (no owner, no shareholders, no profit distribution), never given a status label.
+    assert(!/non[-\s]?profit/i.test(template + llms + fs.readFileSync(path.join(root, 'README.md'), 'utf8') + fs.readFileSync(path.join(root, 'tools', 'prerender.js'), 'utf8')), 'no non-profit status label in public text');
+    // Proposed functions are reviewed before they become open functions.
+    assert(template.includes('and appear on the board. Proposed functions are reviewed before they become open functions.</div>'), 'about: proposed functions are reviewed');
+    assert(fs.readFileSync(path.join(root, 'README.md'), 'utf8').includes('Proposed functions are reviewed before they become open functions.'), 'README: proposed functions are reviewed');
     assert(llms.includes('- A scheduled workflow (set to every 15 minutes; GitHub may delay scheduled runs) reads GitHub; the site is republished when something changed.'), 'llms.txt republish wording');
     // No public text promises a cadence the scheduler does not keep.
     const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
@@ -1495,6 +1549,42 @@ function checkBindings(vals, label) {
     assert(v.stands.some((x) => x.t === 'Locked on GitHub' && x.sub === 'reason: resolved'), 'side panel says locked');
     assert(!v.stands.some((x) => /^Waiting/.test(x.t)), 'no waiting stage on a locked thread');
     assert(v.tv.kindLabel !== 'WORK TO PICK UP');
+  });
+
+  await check('a proposed function is a proposal awaiting review, not work to pick up', async () => {
+    const data = clone(DATA);
+    const before = await boot('/', { data: clone(DATA) });
+    const chipsOf = (c) => { const m = {}; c.renderVals().kindChips.forEach((x) => { m[x.t] = Number(x.n); }); return m; };
+    const was = chipsOf(before);
+    const t = data.threads.find((x) => before.kindOf(x) === 'work' && x.labels.includes('open-function'));
+    assert(t, 'the snapshot has an open function to relabel');
+    // As the "Open function" form now opens it: proposed-function in place of open-function.
+    const relabel = (labels) => ['proposed-function'].concat(labels.filter((l) => l !== 'open-function'));
+    t.labels = relabel(t.labels);
+    const c = await boot('/', { data });
+    assert.strictEqual(c.kindOf(t), 'proposal');
+    const now = chipsOf(c);
+    assert.strictEqual(now['WORK TO PICK UP'] || 0, (was['WORK TO PICK UP'] || 0) - 1, 'WORK TO PICK UP does not count a proposed function');
+    assert.strictEqual(now.PROPOSALS || 0, (was.PROPOSALS || 0) + 1, 'PROPOSALS counts it');
+    const href = '/t/' + encodeURIComponent(t.slug) + '/' + t.num + '/';
+    c.setState({ kind: 'work', status: 'all', n: 100000 });
+    assert(!c.renderVals().rows.some((r) => r.href === href), 'not listed as work to pick up');
+    c.setState({ kind: 'proposal' });
+    const row = c.renderVals().rows.find((r) => r.href === href);
+    assert(row && row.kindLabel === 'PROPOSED FUNCTION' && row.kindCls === 'kind kind-proposal', 'listed as a proposed function');
+    const realFetch = context.fetch;
+    context.fetch = (url) => (String(url).startsWith('/data/t/')
+      ? realFetch(url).then((r) => r.json()).then((j) => response(200, Object.assign(j, { labels: relabel(j.labels || []) })))
+      : realFetch(url));
+    const v = (await boot(href, { data, api: () => Promise.resolve(response(200, [])) })).renderVals();
+    context.fetch = realFetch;
+    checkBindings(v, 'proposed function page');
+    assert.strictEqual(v.tv.kindLabel, 'PROPOSED FUNCTION');
+    assert(v.stands.some((x) => x.t === 'Proposed, awaiting review' && x.sub === 'a maintainer applies open-function once it is reviewed'), 'side panel says it awaits review');
+    // A reviewed function (open-function) carries no such cue.
+    const plain = data.threads.find((x) => x !== t && c.kindOf(x) === 'work');
+    const pv = (await boot('/t/' + encodeURIComponent(plain.slug) + '/' + plain.num + '/', { data, api: () => Promise.resolve(response(200, [])) })).renderVals();
+    assert(!pv.stands.some((x) => /awaiting review/.test(x.t)) && pv.tv.kindLabel === 'WORK TO PICK UP');
   });
 
   await check('freshen: partial failures keep what loaded and are retried', async () => {
