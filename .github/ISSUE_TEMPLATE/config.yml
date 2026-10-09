@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Project and contribution map
+    url: https://drayker.org/contrib/projects/
+    about: Find the repository and public entry point for each component.
+  - name: Find work
+    url: https://drayker.org/fn/
+    about: Issues small enough for one person to finish, labelled open-function across the draykerdk repositories.
+  - name: Read the forum
+    url: https://forum.drayker.org/
+    about: Read the public threads of every repository before opening a new one.
