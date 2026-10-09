@@ -36,7 +36,7 @@ Public discussions across issues, pull requests and the forum follow the princip
 
 ## Looking for something to work on?
 
-Issues small enough for one person to finish carry the `open-function` label across the `draykerdk` repositories and appear on the board at [drayker.org/fn](https://drayker.org/fn/). If nothing there fits, use the [volunteer introduction](https://github.com/draykerdk/general-forum/issues/new?template=volunteer-introduction.yml) and a first function can be shaped with you.
+Issues small enough for one person to finish carry the `open-function` label across the `draykerdk` repositories and appear on the board at [drayker.org/fn](https://drayker.org/fn/). Proposed functions are reviewed before they become open functions. If nothing there fits, use the [volunteer introduction](https://github.com/draykerdk/general-forum/issues/new?template=volunteer-introduction.yml) and a first function can be shaped with you.
 
 ## How the forum works
 

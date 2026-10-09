@@ -587,6 +587,13 @@ function checkSite(siteDir, live) {
       }
       check(routes.some((r) => r.repos.join() === 'daf' && r.form && r.form.href === 'https://github.com/draykerdk/daf/issues/new?template=claim.yml'), 'the federation route does not offer the claim form');
     }
+    // The founding line: once on each route that opens a DAF form while no
+    // assembly has been held (no merged assembly report among the decisions),
+    // and on no page once one has. Mirrored content cannot write the fs-meta class.
+    const founding = region.split(pre.foundingNote()).length - 1;
+    const foundingWanted = p.kind === 'routing' && !pre.assemblyHeld(forum) ? routes.filter((r) => pre.isDafForm(r.form)).length : 0;
+    check(founding === foundingWanted, label + ' carries the founding line ' + founding + ' times, expected ' + foundingWanted
+      + (pre.assemblyHeld(forum) ? ' (a merged assembly report is in the decisions)' : ' (no assembly has been held)'));
     if (p.kind === 'new' || p.kind === 'about') {
       check(region.includes('https://github.com/draykerdk/general-forum/issues/new/choose'), label + ' does not link the GitHub issue forms');
     }

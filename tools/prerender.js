@@ -78,6 +78,15 @@ const WITHHELD_NOTE = 'Not shown on the forum. Read this reply on GitHub.';
 const ASSEMBLY_DECISION_NOTE = 'An assembly report is merged whether the assembly passed or failed. The outcome is written in the report on GitHub.';
 const ASSEMBLY_TITLE = /^Assembly \d{4}-(0[1-9]|1[0-2])$/;
 const isAssemblyDecision = (d) => d.repo === 'daf' && ASSEMBLY_TITLE.test(String(d.title || ''));
+// While no assembly has been held (no merged assembly report among the
+// decisions), a route that opens one of DAF's forms says that the first
+// assembly cannot be recorded yet, word for word as index.html and daf
+// federation/README.md say it.
+const FOUNDING_LINE = 'The first assembly cannot be recorded yet: DAF-000 and DAF-001 do not say how a founding assembly is decided.';
+const FOUNDING_URL = 'https://github.com/' + ORG + '/daf/blob/master/federation/README.md#running-an-assembly';
+const assemblyHeld = (forum) => (forum.decisions || []).some(isAssemblyDecision);
+const isDafForm = (form) => Boolean(form) && String(form.href || '').startsWith('https://github.com/' + ORG + '/daf/');
+const foundingNote = () => '<p class="fs-meta">' + esc(FOUNDING_LINE) + ' <a href="' + esc(FOUNDING_URL) + '">Running an assembly</a></p>';
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 // ---------------------------------------------------------------- text helpers
@@ -419,6 +428,11 @@ function region(forum, activeKey, mainHtml) {
 const heading = (meta) => (meta.t.endsWith(SUFFIX) ? meta.t.slice(0, -SUFFIX.length) : meta.t);
 // A merged assembly report reads as merged, never as closed.
 const isMergedReport = (t) => t.kind === 'pr' && Boolean(t.merged);
+// The "Open function" form applies proposed-function; a maintainer applies
+// open-function once it is reviewed (index.html kindOf reads the same labels).
+const PROPOSED_FUNCTION_NOTE = 'Proposed function, awaiting review: a maintainer applies open-function once it is reviewed.';
+const isProposedFunction = (t) => Boolean(t.open) && t.kind !== 'pr' && (t.labels || []).includes('proposed-function')
+  && !(t.labels || []).some((l) => ['open-function', 'good first issue', 'help wanted', 'claimed'].includes(l));
 const stateLabel = (t) => (t.open ? 'open' : isMergedReport(t) ? 'merged ' + fmtDate(t.merged) : t.state_reason === 'not_planned' ? 'closed, not planned' : 'closed');
 
 // Elements with class "ugc" hold text mirrored from GitHub (titles, bodies,
@@ -449,7 +463,8 @@ function threadMain(forum, thread, detail, resanitize) {
     esc(plural(detail.comments.length, 'reply', 'replies')),
     'last activity ' + time(thread.at)
   ].join(' · ');
-  const labels = thread.labels && thread.labels.length ? '<p class="fs-meta">Labels: <span class="ugc">' + esc(thread.labels.join(', ')) + '</span></p>' : '';
+  const labels = (thread.labels && thread.labels.length ? '<p class="fs-meta">Labels: <span class="ugc">' + esc(thread.labels.join(', ')) + '</span></p>' : '')
+    + (isProposedFunction(thread) ? '<p class="fs-meta">' + esc(PROPOSED_FUNCTION_NOTE) + '</p>' : '');
   const body = detail.html ? resanitize(detail.html) : '<p><em>No description was written.</em></p>';
   const assembly = thread.kind === 'pr';
   // A comment hidden on GitHub shows only its author, date and the reason. On
@@ -520,10 +535,12 @@ function decisionsMain(forum, meta) {
 }
 
 function routingMain(forum, meta, routes) {
+  const founding = !assemblyHeld(forum);
   const routeRows = routes.map((r) => {
     const links = r.repos.map((repo) => '<a href="https://github.com/' + ORG + '/' + esc(repo) + '/issues">' + esc(ORG + '/' + repo) + '</a>');
     if (r.form) links.push('<a href="' + esc(r.form.href) + '">' + esc('or ' + r.form.label) + '</a>');
-    return '<li><p>' + esc(r.about) + '</p><p class="fs-meta">' + links.join(' · ') + '</p></li>';
+    return '<li><p>' + esc(r.about) + '</p><p class="fs-meta">' + links.join(' · ') + '</p>'
+      + (founding && isDafForm(r.form) ? foundingNote() : '') + '</li>';
   }).join('');
   const rows = forum.repos.map((r) => {
     const links = [
@@ -751,5 +768,6 @@ if (require.main === module) {
 module.exports = {
   plain, titleText, xmlText, compact, clipText, esc, objectLiteral, arrayLiteral, readMeta, readRoutes, makeResanitize, threadPath,
   BASE, START, END, EMPTY_REGION, META_KEYS, DESCRIPTION_MAX, FEED_MAX, SCHEMA,
-  ASSEMBLY_NOTICE, ASSEMBLY_MERGED_NOTICE, assemblyNotice, VOTE_CLASS, voteText, voteTag, stateLabel, TALLY_WORKFLOW, HIDDEN_VOTE_NOTE, WITHHELD_NOTE, ASSEMBLY_DECISION_NOTE, isAssemblyDecision
+  ASSEMBLY_NOTICE, ASSEMBLY_MERGED_NOTICE, assemblyNotice, VOTE_CLASS, voteText, voteTag, stateLabel, TALLY_WORKFLOW, HIDDEN_VOTE_NOTE, WITHHELD_NOTE, ASSEMBLY_DECISION_NOTE, isAssemblyDecision,
+  FOUNDING_LINE, FOUNDING_URL, assemblyHeld, isDafForm, foundingNote, PROPOSED_FUNCTION_NOTE, isProposedFunction
 };
