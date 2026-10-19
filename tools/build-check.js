@@ -20,7 +20,7 @@ const ROOT = path.join(__dirname, '..');
 const { sanitizeHtml, htmlToText } = require('./lib/sanitize');
 const { createClient, fixtureName, trimForFixture, isApiUrl } = require('./lib/github');
 const { findReferences, sanitizeFragment, clip, hiddenReason, buildSnapshot, SCHEMA } = require('./build-forum-snapshot');
-const { clipText, titleText, ASSEMBLY_NOTICE, ASSEMBLY_MERGED_NOTICE, TALLY_WORKFLOW, HIDDEN_VOTE_NOTE, WITHHELD_NOTE, voteText, voteTag } = require('./prerender');
+const { clipText, titleText, ASSEMBLY_NOTICE, ASSEMBLY_MERGED_NOTICE, TALLY_WORKFLOW, HIDDEN_VOTE_NOTE, WITHHELD_NOTE, voteText, voteTag, FOUNDING_LINE, FOUNDING_URL, foundingNote, PROPOSED_FUNCTION_NOTE, isProposedFunction } = require('./prerender');
 const vote = require('./lib/vote');
 const { scriptInMarkup, markupUrls, ownMarkers } = require('./forum-check');
 const { createServer } = require('./serve');
@@ -429,6 +429,18 @@ test('static and app wording of assembly reports match, and mirrored content can
   assert.deepStrictEqual(ownMarkers('<div class="fs-body ugc">' + forged + '</div>'), { votes: [], notices: 0 });
 });
 
+test('the founding line repeats daf federation/README.md, in the app and the static pages alike', () => {
+  const page = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  // Word for word as daf federation/README.md ("Running an assembly") and daf.drayker.org say it.
+  assert.strictEqual(FOUNDING_LINE, 'The first assembly cannot be recorded yet: DAF-000 and DAF-001 do not say how a founding assembly is decided.');
+  assert.strictEqual(FOUNDING_URL, 'https://github.com/draykerdk/daf/blob/master/federation/README.md#running-an-assembly');
+  assert.ok(page.includes("const FOUNDING_LINE = '" + FOUNDING_LINE + "';"), 'index.html FOUNDING_LINE differs from tools/prerender.js');
+  assert.ok(page.includes("const FOUNDING_URL = '" + FOUNDING_URL + "';"), 'index.html FOUNDING_URL differs from tools/prerender.js');
+  assert.strictEqual(foundingNote(), '<p class="fs-meta">' + FOUNDING_LINE + ' <a href="' + FOUNDING_URL + '">Running an assembly</a></p>');
+  // Mirrored content cannot write the line's markup.
+  assert.ok(!sanitizeHtml(foundingNote(), {}).includes('fs-meta'));
+});
+
 test('assembly reports become threads in daf only, and votes are only tagged', () => {
   const R = 'https://github.com/draykerdk/';
   const repo = (name) => ({ name, default_branch: 'master', html_url: R + name, description: null, homepage: null });
@@ -707,6 +719,31 @@ test('recorded fixture builds a valid, stable snapshot', () => {
   const cycle = staticOf(fs.readFileSync(path.join(tmp, 'a/t/daf/9002/index.html'), 'utf8'));
   assert.ok(cycle.includes('<a class="ugc" href="/t/daf/9003/">Assembly 2026-11</a><p class="fs-meta">Pull request daf #9003 · open</p>'), 'back-link to the report page');
   assert.ok(region.includes('<p class="fs-meta">Hidden on GitHub (off-topic)</p><p class="fs-meta">' + esc(HIDDEN_VOTE_NOTE) + '</p>'));
+  // A merged assembly report (#9004) is in the decisions: an assembly has been
+  // held, so the routing page drops the founding line.
+  assert.ok(!staticOf(fs.readFileSync(path.join(tmp, 'a/routing/index.html'), 'utf8')).includes(FOUNDING_LINE), 'founding line shown after an assembly report was merged');
+  // The same recording without the merged report: no assembly has been held,
+  // and the federation route, the one that opens a DAF form, carries the line once.
+  const unheld = path.join(tmp, 'unheld-fixture');
+  fs.cpSync(fixture, unheld, { recursive: true });
+  const drop = (rel) => {
+    const file = path.join(unheld, fixtureName('https://api.github.com' + rel));
+    const saved = readJson(file);
+    saved.body = saved.body.filter((x) => x.number !== 9004);
+    fs.writeFileSync(file, JSON.stringify(saved) + '\n');
+  };
+  drop('/repos/draykerdk/daf/issues?state=all&per_page=100&sort=created&direction=asc');
+  drop('/repos/draykerdk/daf/pulls?state=closed&per_page=100');
+  const u = buildOk(unheld, path.join(tmp, 'unheld'));
+  assert.ok(!readJson(path.join(u, 'data/forum.json')).decisions.some((d) => d.repo === 'daf' && /^Assembly /.test(d.title)), 'no merged assembly report left');
+  const preU = runTool('prerender.js', ['--out', u]);
+  assert.strictEqual(preU.status, 0, 'prerender failed: ' + preU.stderr);
+  const routing = staticOf(fs.readFileSync(path.join(u, 'routing/index.html'), 'utf8'));
+  assert.strictEqual(routing.split(foundingNote()).length - 1, 1, 'the founding line, once, while no assembly has been held');
+  const fed = routing.slice(routing.lastIndexOf('<li>', routing.indexOf(foundingNote())), routing.indexOf('</li>', routing.indexOf(foundingNote())));
+  assert.ok(fed.startsWith('<li><p>The federation and its resources</p>') && fed.includes('href="https://github.com/draykerdk/daf/issues/new?template=claim.yml"'), 'the line sits on the route that opens the claim form');
+  const checkU = runTool('forum-check.js', ['--site', u]);
+  assert.strictEqual(checkU.status, 0, 'forum-check failed on the build with no assembly held:\n' + checkU.stdout + checkU.stderr);
   assert.ok(!region.includes(esc(WITHHELD_NOTE)));
   for (const file of [path.join(tmp, 'a/t/daf/9002/index.html'), path.join(tmp, 'a/t/daf/9001/index.html'), path.join(tmp, 'a/t/daf/9005/index.html')]) {
     assert.ok(!staticOf(fs.readFileSync(file, 'utf8')).includes('aria-label="Assembly report"'), 'no assembly notice on an issue');
@@ -724,6 +761,35 @@ test('recorded fixture builds a valid, stable snapshot', () => {
     const text = fs.readFileSync(file);
     assert.ok(!text.includes('hidden-holder-4c1e') && !text.includes('HIDDENVOTE-4c1e'), 'hidden vote published in ' + path.relative(tmp, file));
   }
+});
+
+// The "Open function" form applies proposed-function; only a maintainer's
+// open-function makes it work to pick up. The recording with bsdk #2 relabelled
+// as a new proposal: its static page says it awaits review, a reviewed function does not.
+test('a proposed function awaits review in the static pages', () => {
+  const R = (l) => l.map((name) => ({ name }));
+  assert.ok(isProposedFunction({ open: true, labels: ['proposed-function'] }));
+  assert.ok(!isProposedFunction({ open: false, labels: ['proposed-function'] }), 'a closed proposal no longer awaits review');
+  for (const l of ['open-function', 'good first issue', 'help wanted', 'claimed']) assert.ok(!isProposedFunction({ open: true, labels: ['proposed-function', l] }), 'reviewed: ' + l);
+  assert.ok(!isProposedFunction({ open: true, kind: 'pr', labels: ['proposed-function'] }));
+  const copy = path.join(tmp, 'proposed-fixture');
+  fs.cpSync(path.join(ROOT, 'test/fixtures/github'), copy, { recursive: true });
+  const file = path.join(copy, fixtureName('https://api.github.com/repos/draykerdk/bsdk/issues?state=all&per_page=100&sort=created&direction=asc'));
+  const saved = readJson(file);
+  const issue = saved.body.find((x) => x.number === 2);
+  assert.ok(issue && issue.state === 'open' && issue.labels.some((l) => l.name === 'open-function'), 'bsdk #2 is an open function in the recording');
+  issue.labels = R(['proposed-function'].concat(issue.labels.map((l) => l.name).filter((n) => n !== 'open-function')));
+  fs.writeFileSync(file, JSON.stringify(saved) + '\n');
+  const out = buildOk(copy, path.join(tmp, 'proposed'));
+  assert.ok(readJson(path.join(out, 'data/forum.json')).threads.find((t) => t.repo === 'bsdk' && t.num === 2).labels.includes('proposed-function'));
+  const pre = runTool('prerender.js', ['--out', out]);
+  assert.strictEqual(pre.status, 0, 'prerender failed: ' + pre.stderr);
+  const note = '<p class="fs-meta">' + PROPOSED_FUNCTION_NOTE + '</p>';
+  assert.strictEqual(PROPOSED_FUNCTION_NOTE, 'Proposed function, awaiting review: a maintainer applies open-function once it is reviewed.');
+  assert.ok(fs.readFileSync(path.join(out, 't/bsdk/2/index.html'), 'utf8').includes(note), 'the proposed function says it awaits review');
+  assert.ok(!fs.readFileSync(path.join(out, 't/dk-network/1/index.html'), 'utf8').includes(note), 'a reviewed open function does not');
+  const check = runTool('forum-check.js', ['--site', out]);
+  assert.strictEqual(check.status, 0, 'forum-check failed on the build with a proposed function:\n' + check.stdout + check.stderr);
 });
 
 test('synthetic attack fixture is neutralised end to end', () => {
