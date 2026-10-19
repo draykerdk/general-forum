@@ -872,10 +872,12 @@ function checkBindings(vals, label) {
 
   await check('composer: general-forum proposal and every component mapping', () => {
     const expected = {
-      dfmp: 'DFM Protocol', dk: 'Dk', bsdk: 'Base structure (BSDK)', 'dk-network': 'Dk Network', 'living-cryptography': 'Living Cryptography',
-      uid: 'Universal Identity (UID)', daf: 'DAF — the federation', dknowledge: 'Dknowledge', 'drayker.org': 'The public websites',
-      'drayker.com': 'The public websites', 'drayker-theme': 'The public websites', 'drayker-propagation': 'The public websites',
-      '': 'Not sure yet', 'general-forum': 'Something else', osdk: 'Something else', pap: 'Something else', '.github': 'Something else'
+      dfmp: 'DFM Protocol', metadfmp: 'Meta DFM', dk: 'Dk', 'dk-personal': 'Dk Personal', bsdk: 'Base structure (BSDK)', 'dk-network': 'Dk Network',
+      'living-cryptography': 'Living Cryptography', osdk: 'OSDK', uid: 'UID', dknowledge: 'Dknowledge', 'dk-academy': 'Dk Academy',
+      pap: 'Projects & Applications (PAP)', daf: 'DAF — the federation', advices: 'Member councils', 'value-unit': 'Dktron & value units',
+      'distributed-support': 'Distributed Support', 'open-science': 'Open science & health', stations: 'Stations & embassies',
+      'drayker.org': 'The public websites', 'drayker.com': 'The public websites', 'drayker-theme': 'The public websites', 'drayker-propagation': 'The public websites',
+      '': 'Not sure yet', 'general-forum': 'Something else', 'emergence-initiative': 'Something else', dfmpproject: 'Something else', '.github': 'Something else'
     };
     for (const [repo, option] of Object.entries(expected)) assert.strictEqual(F.componentFor(repo), option, 'component for ' + (repo || 'none'));
     const options = fs.readFileSync(path.join(root, '.github', 'ISSUE_TEMPLATE', 'proposal.yml'), 'utf8').match(/options:\n((?:\s+- .+\n)+)/)[1]
