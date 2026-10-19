@@ -26,7 +26,7 @@ body:
     id: contribution
     attributes:
       label: What can you contribute now?
-      description: Examples include research, documentation, translation, design, code, review or organizing public information.
+      description: Examples include research, documentation, localization (planned), design, code, review or organizing public information.
     validations:
       required: true
   - type: dropdown

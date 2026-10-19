@@ -43,13 +43,23 @@ body:
       options:
         - Not sure yet
         - DFM Protocol
+        - Meta DFM
         - Dk
+        - Dk Personal
         - Base structure (BSDK)
         - Dk Network
         - Living Cryptography
-        - Universal Identity (UID)
-        - DAF — the federation
+        - OSDK
+        - UID
         - Dknowledge
+        - Dk Academy
+        - Projects & Applications (PAP)
+        - DAF — the federation
+        - Member councils
+        - Dktron & value units
+        - Distributed Support
+        - Open science & health
+        - Stations & embassies
         - The public websites
         - Something else
     validations:

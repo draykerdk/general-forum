@@ -1416,11 +1416,21 @@ const LEVEL_ORDER = ['entry', 'intermediate', 'advanced'];
 // may also offer an issue form, shown as a second link (form.label after "or").
 const ROUTES = [
   { about: 'The method, a protocol, the constitution, or a proposal’s path', repos: ['dfmp'] },
+  { about: 'The models underneath the method and research on them', repos: ['metadfmp'] },
   { about: 'Papers, roadmap or the knowledge base', repos: ['dknowledge'] },
   { about: 'The kernel, its structure, network or security', repos: ['dk', 'bsdk', 'dk-network', 'living-cryptography'] },
-  { about: 'Identity and applications', repos: ['uid'] },
+  { about: 'Devices and how they couple to the network', repos: ['osdk'] },
+  { about: 'Identity', repos: ['uid'] },
+  { about: 'Applications and the environment where projects are composed', repos: ['pap'] },
+  { about: 'The agent that belongs to one person', repos: ['dk-personal'] },
+  { about: 'Learning routes and formation', repos: ['dk-academy'] },
+  { about: 'Member councils', repos: ['advices'] },
   { about: 'The federation and its resources', repos: ['daf'],
     form: { label: 'claim a delivered function', href: 'https://github.com/draykerdk/daf/issues/new?template=claim.yml' } },
+  { about: 'Value units and the Dktron', repos: ['value-unit'] },
+  { about: 'Common capacity and support', repos: ['distributed-support'] },
+  { about: 'Research and health', repos: ['open-science'] },
+  { about: 'Stations and embassies', repos: ['stations'] },
   { about: 'Proposing a new project', repos: ['dfmpproject'] },
   { about: 'Something with no home yet', repos: ['emergence-initiative'] },
   { about: 'The participation portal itself', repos: ['drayker.org'] },
@@ -1462,9 +1472,12 @@ const FORUM_REPO = 'general-forum';
 const PLAIN_PROPOSAL_REPOS = ['daf', 'drayker.org'];
 // proposal.yml "component" dropdown, by repository.
 const COMPONENT = {
-  dfmp: 'DFM Protocol', dk: 'Dk', bsdk: 'Base structure (BSDK)', 'dk-network': 'Dk Network',
-  'living-cryptography': 'Living Cryptography', uid: 'Universal Identity (UID)', daf: 'DAF — the federation',
-  dknowledge: 'Dknowledge', 'drayker.org': 'The public websites', 'drayker.com': 'The public websites',
+  dfmp: 'DFM Protocol', metadfmp: 'Meta DFM', dk: 'Dk', 'dk-personal': 'Dk Personal', bsdk: 'Base structure (BSDK)',
+  'dk-network': 'Dk Network', 'living-cryptography': 'Living Cryptography', osdk: 'OSDK', uid: 'UID',
+  dknowledge: 'Dknowledge', 'dk-academy': 'Dk Academy', pap: 'Projects & Applications (PAP)', daf: 'DAF — the federation',
+  advices: 'Member councils', 'value-unit': 'Dktron & value units', 'distributed-support': 'Distributed Support',
+  'open-science': 'Open science & health', stations: 'Stations & embassies',
+  'drayker.org': 'The public websites', 'drayker.com': 'The public websites',
   'drayker-theme': 'The public websites', 'drayker-propagation': 'The public websites'
 };
 const componentFor = (repo) => (!repo ? 'Not sure yet' : Object.prototype.hasOwnProperty.call(COMPONENT, repo) ? COMPONENT[repo] : 'Something else');
