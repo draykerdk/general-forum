@@ -30,6 +30,8 @@ The record and replay builds must produce the same `content_hash` in `data/meta.
 
 `make-daf-federation-fixture.js` adds to the recorded `daf` issues, comments and closed pulls responses, and changes nothing else: a `[Claim]` issue (#9001, label `claim`), a `[Cycle] Assembly 2026-11` issue (#9002, label `assembly`), and an open pull request `Assembly 2026-11` (#9003) with three comments: a vote (`VOTE: for` / ``AS: `example-river` ``), a discussion comment that holds no vote, and a vote hidden on GitHub (`minimized`) whose text and holder (`HIDDENVOTE-4c1e`, `hidden-holder-4c1e`) must appear nowhere in the built site; a pull request `Assembly 2026-10` (#9004) merged into `master`, which is both a thread and a decision; and a `[Veto]` issue (#9005) with no label, as DAF's veto form opens it, which the forum lists as FEDERATION. It replaces its own items on every run and stops if GitHub has a `daf` issue numbered 9000 or above.
 
+Because #9004 is a merged assembly report, a build of this recording counts an assembly as held. `tools/build-check.js` also builds a copy without #9004, where none has been held, to check that the routing page then carries the founding line (the first assembly cannot be recorded yet).
+
 ### Trimming
 
 To keep the recording small, the recorder saves only the fields the builder reads (`trimForFixture` in `tools/lib/github.js`):
