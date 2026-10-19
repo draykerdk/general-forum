@@ -26,10 +26,20 @@ Public discussions across issues, pull requests and the forum follow the princip
 | If it is about… | Open it in |
 | --- | --- |
 | The method, a protocol, the constitution, or a proposal's path | [`dfmp`](https://github.com/draykerdk/dfmp) |
+| The models underneath the method and research on them | [`metadfmp`](https://github.com/draykerdk/metadfmp) |
 | Papers, roadmap or the knowledge base | [`dknowledge`](https://github.com/draykerdk/dknowledge) |
 | The kernel, its structure, network or security | [`dk`](https://github.com/draykerdk/dk), [`bsdk`](https://github.com/draykerdk/bsdk), [`dk-network`](https://github.com/draykerdk/dk-network), [`living-cryptography`](https://github.com/draykerdk/living-cryptography) |
-| Identity and applications | [`uid`](https://github.com/draykerdk/uid) |
+| Devices and how they couple to the network | [`osdk`](https://github.com/draykerdk/osdk) |
+| Identity | [`uid`](https://github.com/draykerdk/uid) |
+| Applications and the environment where projects are composed | [`pap`](https://github.com/draykerdk/pap) |
+| The agent that belongs to one person | [`dk-personal`](https://github.com/draykerdk/dk-personal) |
+| Learning routes and formation | [`dk-academy`](https://github.com/draykerdk/dk-academy) |
+| Member councils | [`advices`](https://github.com/draykerdk/advices) |
 | The federation and its resources | [`daf`](https://github.com/draykerdk/daf), or [claim a delivered function](https://github.com/draykerdk/daf/issues/new?template=claim.yml) |
+| Value units and the Dktron | [`value-unit`](https://github.com/draykerdk/value-unit) |
+| Common capacity and support | [`distributed-support`](https://github.com/draykerdk/distributed-support) |
+| Research and health | [`open-science`](https://github.com/draykerdk/open-science) |
+| Stations and embassies | [`stations`](https://github.com/draykerdk/stations) |
 | Proposing a new project | [`dfmpproject`](https://github.com/draykerdk/dfmpproject) |
 | Something with no home yet | [`emergence-initiative`](https://github.com/draykerdk/emergence-initiative) |
 | The participation portal itself | [`drayker.org`](https://github.com/draykerdk/drayker.org) |
