@@ -1226,12 +1226,13 @@ function checkBindings(vals, label) {
       'Say what you would like to help with and what you can contribute now. The form opens on GitHub.',
       'Nothing here is decided in a private meeting or a private vote. In the founding phase the founding steward integrates changes in public, as <a href="https://github.com/draykerdk/.github/blob/master/GOVERNANCE.md">GOVERNANCE.md</a> documents.',
       'The merge is how the decision enters the record.', 'Drayker’s code of conduct', 'where Drayker keeps its review history', 'https://drayker.org/fn/',
-      'CC BY 4.0 · PUBLIC DOCUMENTATION · NO OWNER · NO SHAREHOLDERS · NO PROFIT DISTRIBUTION', 'unpkg, jsDelivr', 'Google Fonts']) assert(template.includes(s), 'missing: ' + s);
+      'CC BY 4.0 · PUBLIC DOCUMENTATION · BELONGS TO ITS MEMBERS · NO SHAREHOLDERS · NO PROFIT DISTRIBUTION', 'unpkg, jsDelivr', 'Google Fonts']) assert(template.includes(s), 'missing: ' + s);
     assert(!template.includes('#org/fn'));
     assert(!/none of this is deleted|how much time you have/.test(template), 'retired copy');
     const llms = fs.readFileSync(path.join(root, 'llms.txt'), 'utf8');
     assert(!/every merged pull request/i.test(llms + fs.readFileSync(path.join(root, 'README.md'), 'utf8')), 'README and llms.txt do not claim every merged pull request');
-    // Drayker is described (no owner, no shareholders, no profit distribution), never given a status label.
+    // Drayker is described (it belongs to its members, with no shareholders and no profit
+    // distribution), never given a status label.
     assert(!/non[-\s]?profit/i.test(template + llms + fs.readFileSync(path.join(root, 'README.md'), 'utf8') + fs.readFileSync(path.join(root, 'tools', 'prerender.js'), 'utf8')), 'no non-profit status label in public text');
     // Proposed functions are reviewed before they become open functions.
     assert(template.includes('and appear on the board. Proposed functions are reviewed before they become open functions.</div>'), 'about: proposed functions are reviewed');
