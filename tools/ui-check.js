@@ -1177,7 +1177,7 @@ function checkBindings(vals, label) {
 
   await check('founding line: on /new/ and on the federation route until an assembly report is merged', async () => {
     // Word for word as daf federation/README.md says it ("Running an assembly").
-    const LINE = 'The first assembly cannot be recorded yet: DAF-000 and DAF-001 do not say how a founding assembly is decided.';
+    const LINE = 'In the first assembly, each participant with a delivery in its report counts once, as DAF-001 §4 says.';
     const HREF = 'https://github.com/draykerdk/daf/blob/master/federation/README.md#running-an-assembly';
     const isReport = (d) => d.repo === 'daf' && /^Assembly \d{4}-(0[1-9]|1[0-2])$/.test(d.title || '');
     // The template: once in Other ways in, after the DAF forms, and once on the routes.
