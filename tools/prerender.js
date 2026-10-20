@@ -80,9 +80,9 @@ const ASSEMBLY_TITLE = /^Assembly \d{4}-(0[1-9]|1[0-2])$/;
 const isAssemblyDecision = (d) => d.repo === 'daf' && ASSEMBLY_TITLE.test(String(d.title || ''));
 // While no assembly has been held (no merged assembly report among the
 // decisions), a route that opens one of DAF's forms says that the first
-// assembly cannot be recorded yet, word for word as index.html and daf
+// assembly is decided, word for word as index.html and daf
 // federation/README.md say it.
-const FOUNDING_LINE = 'The first assembly cannot be recorded yet: DAF-000 and DAF-001 do not say how a founding assembly is decided.';
+const FOUNDING_LINE = 'In the first assembly, each participant with a delivery in its report counts once, as DAF-001 §4 says.';
 const FOUNDING_URL = 'https://github.com/' + ORG + '/daf/blob/master/federation/README.md#running-an-assembly';
 const assemblyHeld = (forum) => (forum.decisions || []).some(isAssemblyDecision);
 const isDafForm = (form) => Boolean(form) && String(form.href || '').startsWith('https://github.com/' + ORG + '/daf/');
