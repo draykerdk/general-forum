@@ -1177,7 +1177,7 @@ function checkBindings(vals, label) {
 
   await check('founding line: on /new/ and on the federation route until an assembly report is merged', async () => {
     // Word for word as daf federation/README.md says it ("Running an assembly").
-    const LINE = 'The first assembly cannot be recorded yet: DAF-000 and DAF-001 do not say how a founding assembly is decided.';
+    const LINE = 'In the first assembly, each participant with a delivery in its report counts once, as DAF-001 §4 says.';
     const HREF = 'https://github.com/draykerdk/daf/blob/master/federation/README.md#running-an-assembly';
     const isReport = (d) => d.repo === 'daf' && /^Assembly \d{4}-(0[1-9]|1[0-2])$/.test(d.title || '');
     // The template: once in Other ways in, after the DAF forms, and once on the routes.
@@ -1226,12 +1226,13 @@ function checkBindings(vals, label) {
       'Say what you would like to help with and what you can contribute now. The form opens on GitHub.',
       'Nothing here is decided in a private meeting or a private vote. In the founding phase the founding steward integrates changes in public, as <a href="https://github.com/draykerdk/.github/blob/master/GOVERNANCE.md">GOVERNANCE.md</a> documents.',
       'The merge is how the decision enters the record.', 'Drayker’s code of conduct', 'where Drayker keeps its review history', 'https://drayker.org/fn/',
-      'CC BY 4.0 · PUBLIC DOCUMENTATION · NO OWNER · NO SHAREHOLDERS · NO PROFIT DISTRIBUTION', 'unpkg, jsDelivr', 'Google Fonts']) assert(template.includes(s), 'missing: ' + s);
+      'CC BY 4.0 · PUBLIC DOCUMENTATION · BELONGS TO ITS MEMBERS · NO SHAREHOLDERS · NO PROFIT DISTRIBUTION', 'unpkg, jsDelivr', 'Google Fonts']) assert(template.includes(s), 'missing: ' + s);
     assert(!template.includes('#org/fn'));
     assert(!/none of this is deleted|how much time you have/.test(template), 'retired copy');
     const llms = fs.readFileSync(path.join(root, 'llms.txt'), 'utf8');
     assert(!/every merged pull request/i.test(llms + fs.readFileSync(path.join(root, 'README.md'), 'utf8')), 'README and llms.txt do not claim every merged pull request');
-    // Drayker is described (no owner, no shareholders, no profit distribution), never given a status label.
+    // Drayker is described (it belongs to its members, with no shareholders and no profit
+    // distribution), never given a status label.
     assert(!/non[-\s]?profit/i.test(template + llms + fs.readFileSync(path.join(root, 'README.md'), 'utf8') + fs.readFileSync(path.join(root, 'tools', 'prerender.js'), 'utf8')), 'no non-profit status label in public text');
     // Proposed functions are reviewed before they become open functions.
     assert(template.includes('and appear on the board. Proposed functions are reviewed before they become open functions.</div>'), 'about: proposed functions are reviewed');

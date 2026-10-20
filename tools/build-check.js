@@ -432,7 +432,7 @@ test('static and app wording of assembly reports match, and mirrored content can
 test('the founding line repeats daf federation/README.md, in the app and the static pages alike', () => {
   const page = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
   // Word for word as daf federation/README.md ("Running an assembly") and daf.drayker.org say it.
-  assert.strictEqual(FOUNDING_LINE, 'The first assembly cannot be recorded yet: DAF-000 and DAF-001 do not say how a founding assembly is decided.');
+  assert.strictEqual(FOUNDING_LINE, 'In the first assembly, each participant with a delivery in its report counts once, as DAF-001 §4 says.');
   assert.strictEqual(FOUNDING_URL, 'https://github.com/draykerdk/daf/blob/master/federation/README.md#running-an-assembly');
   assert.ok(page.includes("const FOUNDING_LINE = '" + FOUNDING_LINE + "';"), 'index.html FOUNDING_LINE differs from tools/prerender.js');
   assert.ok(page.includes("const FOUNDING_URL = '" + FOUNDING_URL + "';"), 'index.html FOUNDING_URL differs from tools/prerender.js');
