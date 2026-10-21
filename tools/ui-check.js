@@ -872,7 +872,7 @@ function checkBindings(vals, label) {
 
   await check('composer: general-forum proposal and every component mapping', () => {
     const expected = {
-      dfmp: 'DFM Protocol', metadfmp: 'Meta DFM', dk: 'Dk', 'dk-personal': 'Dk Personal', bsdk: 'Base structure (BSDK)', 'dk-network': 'Dk Network',
+      dfmp: 'DFM Protocol', metadfmp: 'Meta DFM', dk: 'Dk', 'dk-personal': 'Personal Dk', bsdk: 'Base structure (BSDK)', 'dk-network': 'Dk Network',
       'living-cryptography': 'Living Cryptography', osdk: 'OSDK', uid: 'UID', dknowledge: 'Dknowledge', 'dk-academy': 'Dk Academy',
       pap: 'Projects & Applications (PAP)', daf: 'DAF — the federation', advices: 'Member councils', 'value-unit': 'Dktron & value units',
       'distributed-support': 'Distributed Support', 'open-science': 'Open science & health', stations: 'Stations & embassies',
