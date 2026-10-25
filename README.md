@@ -6,12 +6,12 @@ Search, filters by part of the system, label and status, and a permanent page fo
 
 A readable public conversation helps people understand how proposals evolve and where their own contribution can be useful.
 
-## Deliberation standard: kind to people, relentless with ideas
+## Deliberation standard: gentle with people and ruthless with ideas
 
-Public discussions across issues, pull requests and the forum follow the principle that governs every discussion in Drayker, as set out in [CONTRIBUTING.md](https://github.com/draykerdk/.github/blob/master/CONTRIBUTING.md): the system is kind to people and relentless with ideas.
+Public discussions across issues, pull requests and the forum follow the principle that governs every discussion in Drayker, as set out in [CONTRIBUTING.md](https://github.com/draykerdk/.github/blob/master/CONTRIBUTING.md): the system is gentle with people and ruthless with ideas.
 
-- **Kind to people:** every person is protected unconditionally in their dignity, context and belonging. Personal attacks, ad hominem rhetoric, condescension and harassment are not tolerated.
-- **Relentless with ideas:** every hypothesis, design and allocation is tested with uncompromising empirical rigor. No idea is protected from grounded criticism, not even Drayker's own. Grounded criticism counts as cooperation, and a failed idea does not cost its author the place to learn and keep contributing.
+- **Gentle with people:** every person is protected unconditionally in their dignity, context and belonging. Personal attacks, ad hominem rhetoric, condescension and harassment are not tolerated.
+- **Ruthless with ideas:** every hypothesis, design and allocation is tested with uncompromising empirical rigor. No idea is protected from grounded criticism, not even Drayker's own. Grounded criticism counts as cooperation, and a failed idea does not cost its author the place to learn and keep contributing.
 
 ## Public entry routes
 
