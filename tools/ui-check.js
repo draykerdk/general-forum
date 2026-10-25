@@ -958,7 +958,7 @@ function checkBindings(vals, label) {
     assert(/<button type="button" class="cta cta-lg cmp-go" onClick="\{\{ openPost \}\}" disabled="\{\{ cp\.disabled \}\}">/.test(template), 'submit control uses the disabled attribute');
     assert(template.includes('Too long to hand over in a link. Shorten it here and continue writing on GitHub.'));
     assert(template.includes('Everything you post is public on GitHub and mirrored here. Share only what you are comfortable publishing.'));
-    assert(template.includes('Kind to people, relentless with ideas.') && template.includes('not even Drayker’s own.') && template.includes('https://github.com/draykerdk/.github/blob/master/CONTRIBUTING.md'));
+    assert(template.includes('Gentle with people and ruthless with ideas.') && template.includes('not even Drayker’s own.') && template.includes('https://github.com/draykerdk/.github/blob/master/CONTRIBUTING.md'));
     assert(template.includes('https://github.com/draykerdk/general-forum/issues/new?template=volunteer-introduction.yml') && template.includes('https://github.com/draykerdk/general-forum/issues/new?template=partnership.yml'));
     // Other ways in: DAF's own forms, by exact template URL, with no labels or body.
     const other = template.slice(template.indexOf('<h2 id="cmp-other-h"'), template.indexOf('</section>', template.indexOf('<h2 id="cmp-other-h"')));
